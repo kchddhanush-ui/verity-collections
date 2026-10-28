@@ -49,9 +49,11 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_KEY
 
 ## Current scope and verification
 
+See [automatic capture setup](docs/SETUP.md) for database activation and Chrome extension installation. Source access is limited to opened district eCourts cases. Case changes update automatically, with old/new values stored in a separate audit trail.
+
 The production build has been checked. A live sign-in and email recovery test require your own configured Supabase project and account; these cannot be verified without them. No project keys or user credentials are included in this download.
 
-Company membership, roles, case records and eCourts integration are not implemented yet. This release handles authentication only. When adding company data, enforce access using database Row Level Security and verified membership on the backend. A frontend session check is not database authorization. Demo mode must never be used to query private records.
+Company workspaces, case records, automatic opened-case capture and a separate audit trail are now included. Activate them using [docs/SETUP.md](docs/SETUP.md). The SQL migration enforces workspace membership with Row Level Security; only the ingestion function writes cases and audits. Demo mode never queries private records. No approval or rejection workflow is used.
 
 Google Fonts is optional: without internet, the page uses local fallback fonts.
 
@@ -115,3 +117,13 @@ npm run preview
 - https://supabase.com/docs/reference/javascript/auth-resetpasswordforemail
 - https://supabase.com/docs/guides/auth/redirect-urls
 - https://supabase.com/docs/guides/getting-started/api-keys
+
+## Automatic capture and audit
+
+- `extension/`: Manifest V3 extension, visible-case parser, connection popup and retry worker.
+- `supabase/migrations/202610280001_case_capture_audit.sql`: workspace isolation and atomic capture/update/audit functions.
+- `src/CaseWorkspace.jsx`: case list, connection setup, current details, separate audit and captured snapshots.
+- `docs/SETUP.md`: activation, teammate membership, local Chrome installation and limitations.
+- `tests/`: embedded PostgreSQL policy/transaction tests, synthetic parser fixtures and worker tests. Run `npm test`.
+
+Live installation against your Supabase project and an actual eCourts session still needs to be verified. No live court data, extension credentials or private project keys are committed.

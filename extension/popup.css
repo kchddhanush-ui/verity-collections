@@ -1,0 +1,44 @@
+body {
+  width: 340px;
+  margin: 0;
+  padding: 22px;
+  background: #f7f8f5;
+  color: #173c34;
+  font: 14px/1.5 system-ui;
+}
+h1 {
+  font-size: 32px;
+  margin: 0;
+}
+h1 span {
+  color: #b68b40;
+}
+textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #bbc9bf;
+  border-radius: 8px;
+}
+button {
+  border: 0;
+  border-radius: 7px;
+  background: #173c34;
+  color: white;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+}
+p {
+  color: #52675e;
+}
+#status {
+  overflow-wrap: anywhere;
+}
+label {
+  font-weight: 600;
+}

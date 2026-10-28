@@ -4,6 +4,7 @@ import './styles.css';
 import { supabase } from './lib/supabase';
 import { useAuth } from './useAuth';
 import { ResetRequest, RecoveryForm } from './PasswordRecovery';
+import { CaseWorkspace } from './CaseWorkspace';
 
 function Icon({name, size=20, ...props}) {
   const paths = {
@@ -50,6 +51,8 @@ function App() {
   async function signOut() {
     setPending(true); setMessage('');
     try {
+      const { error: revokeError } = await supabase.rpc('revoke_my_capture_connections');
+      if (revokeError && !['PGRST202', '42883'].includes(revokeError.code)) { setMessage('Could not revoke extension connections. Check your connection and try signing out again.'); return; }
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) { setMessage(error.message); return; }
       setDemo(false);
@@ -58,6 +61,8 @@ function App() {
   }
   if (auth.loading) return <main className="auth-loading" role="status"><Brand/><p>Opening your workspace…</p></main>;
   if (auth.recovering && auth.session) return <RecoveryForm onComplete={() => { window.history.replaceState({}, '', window.location.pathname); auth.setRecovering(false); }}/>;
+
+  if (auth.session) return <><CaseWorkspace key={auth.session.user.id} session={auth.session} onSignOut={signOut} pending={pending}/>{message && <p className="signout-error" role="alert">{message}</p>}</>;
 
   return <>
     {demo || auth.session ? <div className="workspace"><header><Brand/><button className="text-button" disabled={pending} onClick={auth.session ? signOut : ()=>{setDemo(false);setMessage('');}}>{auth.session ? (pending ? 'Signing out…' : 'Sign out') : 'Back to login'} <Icon name="arrow" size={16}/></button></header><main className="workspace-main"><span className="eyebrow">YOUR COMPANY WORKSPACE</span><h1>A clearer view starts here.</h1><p>{auth.session ? `Signed in as ${auth.session.user.email}. Your eCourts data source is not connected yet.` : 'This is a demo workspace. No live company data is shown.'}</p><p role="status" className="status-message">{message}</p><div className="metrics">{['Total cases','Pending cases','Disposed cases','Upcoming hearings'].map(t=><div key={t}><span>{t}</span><strong>—</strong><small>Awaiting data connection</small></div>)}</div><section className="empty-state"><span className="empty-icon"><Icon name="folder" size={32}/></span><h2>Your case portfolio, in one place.</h2><p>Once a court data source is connected, your company’s cases and status updates will appear here.</p><span className="connection-status">eCourts integration · Coming next</span></section></main><footer>Verity · Legal collections, in focus.</footer></div> :

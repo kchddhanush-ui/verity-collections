@@ -1,0 +1,346 @@
+.verity-console {
+  min-height: 100vh;
+  background: #f4f6f2;
+  color: #193f36;
+  font-family: Arial, sans-serif;
+}
+.console-header {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 20px 5%;
+  background: #fff;
+  border-bottom: 1px solid #dfe7df;
+}
+.console-header > span {
+  margin-left: auto;
+  color: #617068;
+  font-size: 13px;
+}
+.console-brand {
+  font-size: 32px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #193f36;
+}
+.console-brand span {
+  color: #b38a4b;
+}
+.console-main {
+  max-width: 1400px;
+  margin: auto;
+  padding: 40px 5%;
+}
+.console-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.console-title h1 {
+  font-family: Georgia, serif;
+  font-size: 46px;
+  font-weight: 400;
+  margin: 12px 0;
+}
+.console-title p,
+.console-panel p {
+  line-height: 1.6;
+}
+.console-eyebrow {
+  letter-spacing: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #638275;
+}
+.verity-console button,
+.console-link {
+  padding: 10px 16px;
+  border: 1px solid #bdcdbf;
+  border-radius: 8px;
+  background: white;
+  color: #214c3e;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 13px;
+}
+.verity-console button:hover,
+.console-link:hover {
+  background: #e5eee6;
+}
+.verity-console button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.verity-console :focus-visible {
+  outline: 3px solid #b68b40;
+  outline-offset: 3px;
+}
+.console-toolbar {
+  display: flex;
+  align-items: end;
+  gap: 15px;
+  margin: 24px 0;
+}
+.verity-console label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.verity-console input,
+.verity-console select,
+.verity-console textarea {
+  padding: 11px;
+  border: 1px solid #c5d2c7;
+  border-radius: 7px;
+  background: #fff;
+  color: #193f36;
+  font:
+    14px Arial,
+    sans-serif;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.console-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 22px 0;
+}
+.console-metrics article {
+  padding: 22px;
+  border: 1px solid #dfe7df;
+  border-radius: 12px;
+  background: #fff;
+}
+.console-metrics strong {
+  display: block;
+  font-size: 34px;
+  margin: 13px 0;
+}
+.console-metrics small {
+  color: #687c70;
+  font-size: 11px;
+}
+.console-panel {
+  background: white;
+  border: 1px solid #dfe7df;
+  border-radius: 12px;
+  padding: 22px;
+  margin: 20px 0;
+  overflow: hidden;
+}
+.console-panel summary {
+  font-weight: 600;
+  cursor: pointer;
+}
+.inline-form {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin: 20px 0;
+}
+.console-error {
+  border: 1px solid #e4ae98;
+  background: #fff2ec;
+  color: #813b27;
+  padding: 16px;
+  margin-top: 20px;
+  border-radius: 8px;
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.section-heading h2 {
+  font:
+    28px Georgia,
+    serif;
+}
+.case-table-wrap {
+  overflow: auto;
+  max-height: 550px;
+  max-width: 100%;
+  container-type: inline-size;
+}
+.case-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  text-align: left;
+}
+.case-table caption {
+  text-align: left;
+  font-size: 12px;
+  color: #65816f;
+  padding: 12px 0;
+}
+.case-table th,
+.case-table td {
+  padding: 14px 12px;
+  border-bottom: 1px solid #e4ebe4;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  min-width: 110px;
+  max-width: 380px;
+}
+.case-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef3ed;
+  font-size: 12px;
+}
+.case-table small,
+.case-open small {
+  display: block;
+  margin-top: 6px;
+  color: #6d7d73;
+  font-size: 11px;
+}
+.case-open {
+  text-align: left;
+}
+.muted {
+  font-size: 12px;
+  color: #6d7d73;
+}
+.console-empty {
+  padding: 40px;
+  text-align: center;
+  background: #f7f9f5;
+  border-radius: 10px;
+}
+.case-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+}
+.case-tabs [aria-pressed="true"] {
+  background: #1b463b;
+  color: #fff;
+}
+.case-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+.case-facts div {
+  padding: 14px;
+  background: #f6f8f4;
+  border-radius: 7px;
+}
+.case-facts dt {
+  font-size: 12px;
+  color: #64806d;
+  margin-bottom: 6px;
+}
+.case-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.connection-list {
+  padding: 0;
+  list-style: none;
+}
+.connection-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-top: 1px solid #edf1eb;
+  padding: 12px 0;
+  font-size: 12px;
+}
+.console-panel textarea {
+  width: 100%;
+  font-family: monospace;
+  margin-bottom: 12px;
+}
+.console-panel button + button {
+  margin-left: 8px;
+}
+.audit-event {
+  border-top: 1px solid #dce6db;
+  padding: 16px 0;
+}
+.audit-event p {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.capture-entry {
+  padding: 15px 0;
+  border-bottom: 1px solid #dce6db;
+}
+.capture-entry pre {
+  overflow: auto;
+  max-height: 400px;
+  font-size: 12px;
+  background: #f6f8f4;
+  padding: 16px;
+}
+.console-footer {
+  margin-top: 35px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #687c70;
+}
+@media (max-width: 700px) {
+  .console-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .console-header > span {
+    font-size: 11px;
+  }
+  .console-title {
+    display: block;
+  }
+  .console-title h1 {
+    font-size: 36px;
+  }
+  .console-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .section-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .case-facts {
+    grid-template-columns: 1fr;
+  }
+  .console-toolbar,
+  .inline-form {
+    flex-wrap: wrap;
+  }
+  .console-panel {
+    padding: 15px;
+  }
+  .case-tabs {
+    flex-wrap: wrap;
+  }
+  .connection-list li {
+    align-items: start;
+  }
+  .console-main {
+    padding-top: 24px;
+  }
+}
+
+.signout-error {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  padding: 16px;
+  background: #fff2ec;
+  color: #813b27;
+  border: 1px solid #d69b85;
+  border-radius: 8px;
+  z-index: 1000;
+}

@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Verity Case Capture",
+  "version": "1.0.0",
+  "minimum_chrome_version": "120",
+  "description": "Automatically save opened eCourts case details to your connected Verity workspace, with a separate audit history.",
+  "permissions": ["storage", "alarms"],
+  "host_permissions": ["https://services.ecourts.gov.in/*"],
+  "optional_host_permissions": ["https://*.supabase.co/*"],
+  "background": { "service_worker": "worker.js", "type": "module" },
+  "action": { "default_popup": "popup.html" },
+  "content_scripts": [
+    {
+      "matches": ["https://services.ecourts.gov.in/ecourtindia_v6/*"],
+      "js": ["parser.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
