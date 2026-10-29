@@ -453,3 +453,210 @@
   overflow: hidden;
   overscroll-behavior: contain;
 }
+
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.portfolio-views {
+  margin-block: 24px;
+}
+.hearing-calendar .section-heading h2 {
+  margin-block: 8px;
+}
+.hearing-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding-block: 14px;
+  border-block: 1px solid #e0e8df;
+}
+.hearing-month-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-inline-end: auto;
+}
+.hearing-month-nav h3 {
+  min-inline-size: 155px;
+  text-align: center;
+  margin: 0;
+  font-size: 19px;
+}
+.hearing-toolbar label {
+  flex-direction: row;
+  align-items: center;
+}
+.hearing-summary {
+  font-weight: 600;
+}
+.hearing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 22px;
+  align-items: start;
+}
+.hearing-month-scroll {
+  overflow: auto;
+  max-inline-size: 100%;
+  border: 1px solid #dce6db;
+  border-radius: 10px;
+}
+.hearing-month {
+  inline-size: 100%;
+  min-inline-size: 700px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.hearing-month th {
+  background: #edf3e9;
+  padding: 14px 4px;
+  font-size: 12px;
+  color: #486253;
+}
+.hearing-month abbr {
+  text-decoration: none;
+}
+.hearing-month td {
+  vertical-align: top;
+  height: 135px;
+  padding: 6px;
+  border-block-start: 1px solid #e2e9df;
+  border-inline-end: 1px solid #e2e9df;
+}
+.hearing-month td:last-child {
+  border-inline-end: 0;
+}
+.hearing-blank {
+  background: #f7f9f5;
+}
+.hearing-month .hearing-selected {
+  background: #edf3e9;
+  box-shadow: inset 0 0 0 2px #53765f;
+}
+.hearing-month .hearing-today .hearing-day {
+  background: #1b463b;
+  color: white;
+}
+.hearing-calendar .hearing-day {
+  padding: 6px 8px;
+  border-color: transparent;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.hearing-day span {
+  font-size: 9px;
+  font-weight: 400;
+}
+.hearing-day-cases {
+  list-style: none;
+  margin: 7px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.hearing-calendar .hearing-case {
+  inline-size: 100%;
+  text-align: left;
+  padding: 7px 5px;
+  background: #f0f3ee;
+  border: 1px solid #d7e0d3;
+  border-radius: 5px;
+}
+.hearing-case strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.hearing-case span {
+  display: block;
+  font-size: 9px;
+  margin-block-start: 4px;
+  color: #50614f;
+}
+.hearing-calendar .hearing-next {
+  background: #e5f0df;
+  border-color: #9fbc8f;
+}
+.hearing-calendar .hearing-more {
+  padding: 6px 2px;
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+  text-align: left;
+}
+.hearing-agenda {
+  background: #f5f8f1;
+  border: 1px solid #dce6db;
+  border-radius: 10px;
+  padding: 18px;
+  overflow-wrap: anywhere;
+}
+.hearing-agenda h3 {
+  margin-block: 7px;
+  font-size: 20px;
+}
+.hearing-agenda > ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-block-size: 680px;
+  overflow-y: auto;
+}
+.hearing-agenda li {
+  border-block-start: 1px solid #dce6db;
+  padding-block: 18px;
+}
+.hearing-agenda li p {
+  font-size: 12px;
+  margin-block: 10px 0;
+}
+.hearing-agenda .case-open {
+  inline-size: 100%;
+  margin-block-start: 10px;
+  font-weight: 700;
+}
+.hearing-badge {
+  display: inline-block;
+  padding: 4px 7px;
+  font-size: 10px;
+  border: 1px solid #cedac8;
+  border-radius: 5px;
+  background: #edf1e8;
+}
+@media (max-width: 1150px) {
+  .hearing-layout {
+    grid-template-columns: 1fr;
+  }
+  .hearing-agenda > ul {
+    max-block-size: none;
+  }
+}
+@media (max-width: 700px) {
+  .hearing-toolbar {
+    align-items: start;
+    gap: 12px;
+  }
+  .hearing-month-nav {
+    inline-size: 100%;
+    justify-content: space-between;
+  }
+  .hearing-calendar .section-heading label {
+    inline-size: 100%;
+  }
+  .hearing-calendar .section-heading input {
+    inline-size: 100%;
+  }
+}
