@@ -50,3 +50,7 @@ Not supplied: live privacy policy URL, publisher name, public contact email, dis
 ## Known limitations
 
 District eCourts only; loaded fields only; PDFs and modal business details excluded. Live installation validation remains required. No store review or court endorsement is claimed.
+
+## Version 1.1.0 — 2026-10-29 (development draft)
+
+Automatically capture the loaded search-result table, row identities/parties, selected location and party-search context, and search-scoped establishment/court totals. Opening a case enriches the matching CNR. Show listed-only versus detailed coverage and preserve listing snapshots/audits separately. No new permissions. The existing eCourts host access now reads visible result tables as well as opened detail sections; optional Supabase origin access sends both capture types. The privacy disclosure must include search criteria and result-table text. Full browsing history, CAPTCHA and session tokens remain excluded. Pending uploads are bounded at 4 MB. Store submission/privacy policy and assets remain pending.

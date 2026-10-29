@@ -95,5 +95,111 @@
       return null;
     return { cnr, data, source_url: source, parser_version: version };
   }
-  globalThis.VerityParser = { extract, visible, version };
+  function extractSearch(doc, isVisible = visible) {
+    const tables = [...doc.querySelectorAll("#dispTable")].filter(isVisible);
+    if (tables.length !== 1) return null;
+    const table = tables[0],
+      root = table.parentElement;
+    const summary = text(root.querySelector("#courtSummary"));
+    const total = summary.match(/Total number of cases\s*:\s*([\d,]+)/i);
+    const establishments = summary.match(
+      /Total Number of Establishments in Court Complex\s*:\s*([\d,]+)/i,
+    );
+    if (!total) return null;
+    let court = "",
+      loaded = 0,
+      skipped = 0;
+    const entries = [],
+      seen = new Set();
+    for (const row of table.querySelectorAll("tbody tr")) {
+      const heading = row.querySelector('th[id^="td_court_name_"]');
+      if (heading) {
+        court = text(heading);
+        continue;
+      }
+      const cells = [...row.children].filter((el) => el.tagName === "TD");
+      if (cells.length < 3) continue;
+      loaded++;
+      const cnr = row
+        .querySelector('a[onclick*="viewHistory"]')
+        ?.getAttribute("onclick")
+        ?.match(/['"]([A-Z]{4}\d{12})['"]/)?.[1];
+      const reference = text(cells[1]),
+        parts = reference.match(/^(.*?)\/(\d+)\/(\d{4})$/);
+      if (!cnr || !parts || !court || seen.has(cnr)) {
+        skipped++;
+        continue;
+      }
+      seen.add(cnr);
+      const partyLines = [...cells[2].childNodes]
+        .map((node) => (node.nodeName === "BR" ? "\n" : node.textContent))
+        .join("");
+      const parties = partyLines.split(/\n\s*(?:vs\.?|versus)\s*\n/i);
+      const data = {
+        serial_number: text(cells[0]),
+        case_reference: reference,
+        case_type: parts[1],
+        registration_number: `${parts[2]}/${parts[3]}`,
+        court,
+        parties_text: text(cells[2]),
+      };
+      if (parties.length === 2) {
+        data.petitioners = [parties[0].trim()];
+        data.respondents = [parties[1].trim()];
+      }
+      entries.push({ cnr, data });
+    }
+    if (!entries.length) return null;
+    // Only these selected labels and party-search fields are collected; never copy arbitrary forms/CAPTCHA.
+    const selectedText = (id) => {
+      const el = doc.getElementById(id);
+      return text(
+        el?.selectedOptions?.[0] || el?.querySelector("option[selected]"),
+      );
+    };
+    const search_context = {
+      state: selectedText("sess_state_code"),
+      district: selectedText("sess_dist_code"),
+      court_complex: selectedText("court_complex_code"),
+      establishment: selectedText("court_est_code"),
+    };
+    if (root.closest("#partyName") || root.id === "res_party") {
+      search_context.search_type = "Party name";
+      search_context.party_name =
+        doc.getElementById("petres_name")?.value || "";
+      search_context.registration_year =
+        doc.getElementById("rgyearP")?.value || "";
+      search_context.status_filter =
+        doc.querySelector('#frmsearch_name input[name="case_status"]:checked')
+          ?.value || "";
+    }
+    const court_totals = [
+      ...root.querySelectorAll('a[href*="#td_court_name_"]'),
+    ]
+      .map((a) => {
+        const match = text(a).match(/^(.*):\s*([\d,]+)$/);
+        return match
+          ? {
+              court: match[1].trim(),
+              reported_cases: Number(match[2].replaceAll(",", "")),
+            }
+          : null;
+      })
+      .filter(Boolean);
+    return {
+      kind: "search_list",
+      source_url: source,
+      parser_version: version,
+      search_context,
+      reported_cases: Number(total[1].replaceAll(",", "")),
+      total_establishments: establishments
+        ? Number(establishments[1].replaceAll(",", ""))
+        : null,
+      court_totals,
+      loaded_rows: loaded,
+      skipped_rows: skipped,
+      entries,
+    };
+  }
+  globalThis.VerityParser = { extract, extractSearch, visible, version };
 })();

@@ -81,6 +81,12 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         workspace: "Alpha",
         expires_at: new Date(Date.now() + 86400000).toISOString(),
       });
+    if (url.endsWith("/ingest_search_capture"))
+      return Response.json({
+        status: "search_saved",
+        saved_rows: 2,
+        skipped_rows: 0,
+      });
     return Response.json({ status: "created", case_id: "case-a" });
   };
   try {
@@ -135,6 +141,12 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     assert.equal(
       Object.keys(values).filter((k) => k.startsWith("pending:")).length,
       0,
+    );
+    const list = { ...capture(), kind: "search_list", entries: [{}, {}] };
+    delete list.cnr;
+    assert.equal(
+      (await send({ type: "CAPTURE", capture: list })).message,
+      "Search saved · 2 cases listed",
     );
     offline = true;
     const cap = capture();

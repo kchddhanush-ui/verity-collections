@@ -1,7 +1,8 @@
 (() => {
   let timer,
     previous = "",
-    running = false;
+    running = false,
+    rerun = false;
   function notify(message) {
     let node = document.getElementById("verity-sync-notice");
     if (!node) {
@@ -13,8 +14,13 @@
     node.textContent = `Verity · ${message}`;
   }
   async function scan() {
-    if (running || document.visibilityState !== "visible") return;
-    const capture = VerityParser.extract(document);
+    if (document.visibilityState !== "visible") return;
+    if (running) {
+      rerun = true;
+      return;
+    }
+    const capture =
+      VerityParser.extract(document) || VerityParser.extractSearch(document);
     if (!capture) {
       previous = "";
       return;
@@ -37,6 +43,10 @@
       notify("Extension reloaded — refresh this tab to reconnect.");
     } finally {
       running = false;
+      if (rerun) {
+        rerun = false;
+        schedule();
+      }
     }
   }
   function schedule(records) {

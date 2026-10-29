@@ -10,7 +10,7 @@ async function rpc(config, name, body) {
     method: "POST",
     headers: { apikey: config.key, "Content-Type": "application/json" },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(15000),
+    signal: AbortSignal.timeout(25000),
     credentials: "omit",
     referrerPolicy: "no-referrer",
   });
@@ -43,18 +43,26 @@ async function deliver(key, item, config) {
     return { accepted: false, message: "Connection changed; reopen the case." };
   }
   try {
-    const result = await rpc(config, "ingest_case_capture", {
-      p_token: config.token,
-      p_capture: item.capture,
-    });
+    const result = await rpc(
+      config,
+      item.capture.kind === "search_list"
+        ? "ingest_search_capture"
+        : "ingest_case_capture",
+      {
+        p_token: config.token,
+        p_capture: item.capture,
+      },
+    );
     await chrome.storage.local.remove(key);
     const message =
-      {
-        created: "Case saved",
-        updated: "Case updated",
-        unchanged: "Case checked · no changes",
-        stale: "Older capture recorded · current details preserved",
-      }[result.status] || "Case synced";
+      result.status === "search_saved"
+        ? `Search saved · ${result.saved_rows} cases listed${result.skipped_rows ? ` · ${result.skipped_rows} rows skipped` : ""}`
+        : {
+            created: "Case saved",
+            updated: "Case updated",
+            unchanged: "Case checked · no changes",
+            stale: "Older capture recorded · current details preserved",
+          }[result.status] || "Case synced";
     await chrome.storage.local.set({
       lastStatus: message,
       lastSyncedAt: new Date().toISOString(),
@@ -162,11 +170,33 @@ async function handle(message, sender) {
     const capture = message.capture;
     if (
       capture?.source_url !== source ||
-      JSON.stringify(capture).length > 250000 ||
-      !/^[A-Z]{4}\d{12}$/.test(capture.cnr)
+      new TextEncoder().encode(JSON.stringify(capture)).byteLength >
+        (capture.kind === "search_list" ? 1500000 : 250000) ||
+      (capture.kind === "search_list"
+        ? !Array.isArray(capture.entries) || capture.entries.length > 2000
+        : !/^[A-Z]{4}\d{12}$/.test(capture.cnr))
     )
       throw new Error("Invalid case capture");
     const key = `pending:${capture.id}`;
+    // Bound both count and bytes of durable queues to stay within local storage quota.
+    const queued = await chrome.storage.local.get(null);
+    const pendingBytes = Object.entries(queued)
+      .filter(([k]) => k.startsWith("pending:"))
+      .reduce(
+        (n, [, v]) =>
+          n + new TextEncoder().encode(JSON.stringify(v)).byteLength,
+        0,
+      );
+    if (
+      pendingBytes +
+        new TextEncoder().encode(JSON.stringify(capture)).byteLength >
+      4000000
+    )
+      return {
+        accepted: false,
+        message:
+          "Sync queue storage full; check connection before capturing another list",
+      };
     const all = await chrome.storage.local.get(null);
     if (Object.keys(all).filter((k) => k.startsWith("pending:")).length >= 20)
       return {

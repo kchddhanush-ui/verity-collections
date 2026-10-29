@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace.css";
+import { mergePortfolio } from "./lib/portfolio";
 
 const date = (value) => (value ? new Date(value).toLocaleString() : "—");
 const show = (value) =>
@@ -73,6 +74,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     [workspace, setWorkspace] = useState(""),
     [cases, setCases] = useState([]),
     [connections, setConnections] = useState([]);
+  const [searches, setSearches] = useState([]);
+  const [listingAudits, setListingAudits] = useState([]);
   const [selected, setSelected] = useState(null),
     [audits, setAudits] = useState([]),
     [captures, setCaptures] = useState([]),
@@ -109,27 +112,55 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       active = false;
     };
   }, []);
-  async function refresh() {
-    if (!workspace) return;
-    const [cr, conn] = await Promise.all([
+  async function loadPortfolio(target) {
+    const [details, listings, searches, connections] = await Promise.all([
       supabase
         .from("court_cases")
         .select("*")
-        .eq("workspace_id", workspace)
+        .eq("workspace_id", target)
         .order("last_checked_at", { ascending: false })
         .limit(1000),
-      call("list_capture_connections", { p_workspace: workspace }),
+      supabase
+        .from("case_listings")
+        .select("*")
+        .eq("workspace_id", target)
+        .order("last_seen_at", { ascending: false })
+        .limit(1000),
+      supabase
+        .from("court_search_captures")
+        .select(
+          "id,captured_at,received_at,search_context,total_establishments,reported_cases,court_totals,loaded_rows,skipped_rows",
+        )
+        .eq("workspace_id", target)
+        .order("captured_at", { ascending: false })
+        .limit(10),
+      call("list_capture_connections", { p_workspace: target }),
     ]);
-    if (cr.error) throw cr.error;
-    setCases(cr.data);
-    setConnections(conn);
+    if (details.error || listings.error || searches.error)
+      throw new Error(
+        (details.error || listings.error || searches.error).message +
+          ". If the search tables are missing, run migration 202610290002_search_result_capture.sql once.",
+      );
+    return {
+      cases: mergePortfolio(details.data, listings.data),
+      searches: searches.data,
+      connections,
+    };
+  }
+  async function refresh() {
+    if (!workspace) return;
+    const result = await loadPortfolio(workspace);
+    setCases(result.cases);
+    setConnections(result.connections);
+    setSearches(result.searches);
     setSelected((old) =>
-      old ? cr.data.find((c) => c.id === old.id) || null : null,
+      old ? result.cases.find((c) => c.cnr === old.cnr) || null : null,
     );
   }
   useEffect(() => {
     let active = true;
     setCases([]);
+    setSearches([]);
     setSelected(null);
     setSettings("");
     setNotice("");
@@ -138,19 +169,11 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     setBusy(true);
     (async () => {
       try {
-        const [cr, conn] = await Promise.all([
-          supabase
-            .from("court_cases")
-            .select("*")
-            .eq("workspace_id", workspace)
-            .order("last_checked_at", { ascending: false })
-            .limit(1000),
-          call("list_capture_connections", { p_workspace: workspace }),
-        ]);
-        if (cr.error) throw cr.error;
+        const result = await loadPortfolio(workspace);
         if (active) {
-          setCases(cr.data);
-          setConnections(conn);
+          setCases(result.cases);
+          setConnections(result.connections);
+          setSearches(result.searches);
         }
       } catch (e) {
         if (active) setError(e.message);
@@ -166,27 +189,41 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     let active = true;
     setAudits([]);
     setCaptures([]);
+    setListingAudits([]);
     if (!selected) return;
     (async () => {
       try {
-        const [a, c] = await Promise.all([
+        const [a, c, la] = await Promise.all([
+          selected.hasDetails
+            ? supabase
+                .from("case_audit")
+                .select("*")
+                .eq("case_id", selected.id)
+                .order("occurred_at", { ascending: false })
+                .limit(100)
+            : Promise.resolve({ data: [] }),
+          selected.hasDetails
+            ? supabase
+                .from("case_captures")
+                .select(
+                  "id,captured_by,captured_at,received_at,outcome,source_url,snapshot",
+                )
+                .eq("case_id", selected.id)
+                .order("received_at", { ascending: false })
+                .limit(100)
+            : Promise.resolve({ data: [] }),
           supabase
-            .from("case_audit")
+            .from("listing_audit")
             .select("*")
-            .eq("case_id", selected.id)
+            .eq("workspace_id", workspace)
+            .eq("cnr", selected.cnr)
             .order("occurred_at", { ascending: false })
             .limit(100),
-          supabase
-            .from("case_captures")
-            .select(
-              "id,captured_by,captured_at,received_at,outcome,source_url,snapshot",
-            )
-            .eq("case_id", selected.id)
-            .order("received_at", { ascending: false })
-            .limit(100),
         ]);
-        if (a.error || c.error) throw a.error || c.error;
+        if (a.error || c.error || la.error)
+          throw a.error || c.error || la.error;
         if (active) {
+          setListingAudits(la.data);
           setAudits(a.data);
           setCaptures(c.data);
         }
@@ -197,7 +234,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     return () => {
       active = false;
     };
-  }, [selected]);
+  }, [selected, workspace]);
   async function perform(fn) {
     setBusy(true);
     setError("");
@@ -252,7 +289,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     ["EVIDENCES", 0],
     ["FOR STEPS", 0],
   ]);
-  for (const item of cases) {
+  for (const item of cases.filter((c) => c.hasDetails)) {
     const rawStage = item.data.case_stage;
     const stage =
       typeof rawStage === "string"
@@ -263,13 +300,17 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     stageCounts.set(label, (stageCounts.get(label) || 0) + 1);
   }
   const totals = [
-    ["Captured cases", cases.length],
+    ["Saved cases", cases.length],
+    ["Details captured", cases.filter((c) => c.hasDetails).length],
+    ["Awaiting details", cases.filter((c) => !c.hasDetails).length],
     ["Pending", cases.filter((c) => c.data.case_status === "Pending").length],
     ["Disposed", cases.filter((c) => c.data.case_status === "Disposed").length],
     [
       "Status unknown",
-      cases.filter((c) => !["Pending", "Disposed"].includes(c.data.case_status))
-        .length,
+      cases.filter(
+        (c) =>
+          c.hasDetails && !["Pending", "Disposed"].includes(c.data.case_status),
+      ).length,
     ],
   ];
   return (
@@ -365,15 +406,82 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     </article>
                   ))}
                 </div>
+                {searches[0] && (
+                  <section
+                    className="console-panel"
+                    aria-labelledby="search-summary-heading"
+                  >
+                    <h2 id="search-summary-heading">Latest eCourts search</h2>
+                    <p>
+                      This is the total reported for this search and court
+                      selection, not a company-wide or nationwide total.
+                      Searches can overlap; their totals are not added together.
+                    </p>
+                    <div className="search-summary-metrics">
+                      <strong>
+                        Establishments:{" "}
+                        {searches[0].total_establishments ?? "Not reported"}
+                      </strong>
+                      <strong>
+                        Reported cases:{" "}
+                        {searches[0].reported_cases ?? "Not reported"}
+                      </strong>
+                      <strong>
+                        Rows captured:{" "}
+                        {searches[0].loaded_rows - searches[0].skipped_rows}
+                      </strong>
+                    </div>
+                    <p className="muted">
+                      Observed {date(searches[0].captured_at)} ·{" "}
+                      {Object.values(searches[0].search_context)
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    {searches[0].skipped_rows > 0 && (
+                      <p role="status">
+                        {searches[0].skipped_rows} rows could not be identified
+                        safely and were skipped.
+                      </p>
+                    )}
+                    <Table
+                      label="Court totals reported by eCourts"
+                      headers={["Court / establishment", "Reported cases"]}
+                      rows={searches[0].court_totals.map((c) => [
+                        c.court,
+                        c.reported_cases,
+                      ])}
+                    />
+                    <details>
+                      <summary>Previous search captures</summary>
+                      <Table
+                        label="Search capture history"
+                        headers={[
+                          "Observed",
+                          "Selection",
+                          "Reported cases",
+                          "Captured rows",
+                        ]}
+                        rows={searches.map((c) => [
+                          date(c.captured_at),
+                          Object.values(c.search_context)
+                            .filter(Boolean)
+                            .join(" · "),
+                          c.reported_cases,
+                          c.loaded_rows - c.skipped_rows,
+                        ])}
+                      />
+                    </details>
+                  </section>
+                )}
                 <section
                   className="console-panel"
                   aria-labelledby="stage-counts-heading"
                 >
                   <h2 id="stage-counts-heading">Cases by stage</h2>
                   <p className="muted">
-                    Separate counts for the captured case stages across all
-                    loaded cases in this workspace. Cases without a captured
-                    stage appear under “Stage not recorded”.
+                    Counts use detailed cases in this workspace. Listed cases
+                    awaiting details are excluded. Detailed cases without a
+                    captured stage appear under “Stage not recorded”.
                   </p>
                   <dl className="stage-counts">
                     {[...stageCounts].map(([stage, count]) => (
@@ -474,8 +582,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                   </div>
                   <p className="muted">
                     {filtered.length} matching of {cases.length} loaded cases ·
-                    up to 1,000 most recently checked cases. Counts describe
-                    your captured portfolio, not all court cases. Use Refresh
+                    up to 1,000 detail records and 1,000 listing records,
+                    matched by CNR. Counts describe this loaded portfolio.
+                    Status/stage counts use detailed cases only. Use Refresh
                     cases after capture.
                   </p>
                   {filtered.length ? (
@@ -486,7 +595,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         "Parties",
                         "Stage / status",
                         "Next hearing",
-                        "Last checked",
+                        "Capture coverage",
+                        "Last observed",
                       ]}
                       rows={filtered.map((c) => [
                         <button
@@ -496,19 +606,25 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                             setTab("details");
                           }}
                         >
-                          {c.data.registration_number}
+                          {c.data.case_reference || c.data.registration_number}
                           <small>{c.cnr}</small>
                         </button>,
                         <>
-                          {c.data.petitioners?.join("; ")}
+                          {c.data.petitioners?.join("; ") ||
+                            c.data.parties_text}
                           <small>vs {c.data.respondents?.join("; ")}</small>
                         </>,
                         <>
                           {c.data.case_stage || "—"}
-                          <small>{c.data.case_status || "Unknown"}</small>
+                          <small>
+                            {c.hasDetails
+                              ? c.data.case_status || "Unknown"
+                              : "Details not captured"}
+                          </small>
                         </>,
                         c.data.next_hearing_date || "—",
-                        date(c.last_checked_at),
+                        c.hasDetails ? "Details captured" : "Listed only",
+                        date(c.last_checked_at || c.last_listed_at),
                       ])}
                     />
                   ) : (
@@ -518,7 +634,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       </h3>
                       <p>
                         Connect the extension, complete CAPTCHA on eCourts, and
-                        open a case. Then refresh this list.
+                        view search results or open a case. Then refresh this
+                        list.
                       </p>
                     </div>
                   )}
@@ -549,6 +666,14 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         </button>
                       ))}
                     </nav>
+                    {!selected.hasDetails && (
+                      <p className="listing-notice">
+                        This case was saved from search results. Open it on
+                        eCourts to capture status, stage, hearing dates and
+                        history. Those details will be linked automatically by
+                        CNR.
+                      </p>
+                    )}
                     {tab === "details" && (
                       <>
                         <dl className="case-facts">
@@ -603,7 +728,32 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                           preserved; there is no approval workflow. Showing up
                           to 100 latest events.
                         </p>
-                        {!audits.length && <p>No change events found.</p>}
+                        {!audits.length && !listingAudits.length && (
+                          <p>No change events found.</p>
+                        )}
+                        {listingAudits.map((a) => (
+                          <article className="audit-event" key={a.id}>
+                            <h3>
+                              {a.action === "listed"
+                                ? "Case first listed"
+                                : "Listing updated"}{" "}
+                              · {date(a.occurred_at)}
+                            </h3>
+                            <p>
+                              User {a.actor_id} · Search capture{" "}
+                              {a.search_capture_id}
+                            </p>
+                            <Table
+                              label="Listing changes"
+                              headers={["Field", "Previous value", "New value"]}
+                              rows={Object.entries(a.changes).map(([k, v]) => [
+                                k,
+                                show(v.old),
+                                show(v.new),
+                              ])}
+                            />
+                          </article>
+                        ))}
                         {audits.map((a) => (
                           <article className="audit-event" key={a.id}>
                             <h3>
@@ -636,6 +786,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                           captures. Snapshots contain extracted fields, not the
                           full court webpage.
                         </p>
+                        {!selected.hasDetails && (
+                          <p>
+                            No detailed page captured yet. Listing changes are
+                            recorded under Audit history.
+                          </p>
+                        )}
                         {captures.map((c) => (
                           <details className="capture-entry" key={c.id}>
                             <summary>

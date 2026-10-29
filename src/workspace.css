@@ -368,3 +368,23 @@
   font-size: 32px;
   font-weight: 700;
 }
+.search-summary-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-block: 20px;
+}
+.search-summary-metrics strong {
+  padding: 14px;
+  background: #edf3e9;
+  border-radius: 8px;
+}
+.listing-notice {
+  padding: 16px;
+  background: #fff7e6;
+  border: 1px solid #e6d3aa;
+  border-radius: 8px;
+}
+.console-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+}

@@ -132,3 +132,27 @@ npm run build
 Tests run the actual SQL migration/functions in embedded PostgreSQL with pgcrypto, verify tenant policies and atomic rollback, parse a synthetic fixture based on the supplied page, and exercise the extension worker with browser/HTTP mocks. No live credentials or real legal records are committed in fixtures.
 
 After updating extension code: click **Reload** for the extension in `chrome://extensions`, then refresh the eCourts tab.
+
+## Upgrade to search-result capture (extension 1.1.0)
+
+This upgrade adds automatic capture of the visible search-result table as well as opened case pages.
+
+1. Pull the latest `feat/ecourts-auto-capture-audit` branch.
+2. In Supabase SQL Editor, run **only** `supabase/migrations/202610290002_search_result_capture.sql` once. The original migration must already be installed; do not rerun it. This adds separate listing, search snapshot and listing-audit tables without modifying your existing detailed cases.
+3. Restart the website. In `chrome://extensions`, click **Reload** for Verity Case Capture. Refresh the eCourts tab. Existing valid workspace connections are preserved; reconnect only if expired or revoked.
+4. Search normally with CAPTCHA. Once the result table loads, look for **Search saved · N cases listed**. Opening a View link still captures the detailed case automatically.
+5. Refresh Verity to see the combined portfolio and the latest search's establishments, reported total and per-court totals.
+
+**What is saved:** row number, case type/number/year, petitioner/respondent text, court and CNR. The CNR is read from the row's existing View-link attribute; no View links are followed automatically. Only the currently visible result table is processed. Source links/session tokens, CAPTCHA and other form contents are not copied. Selected location labels and party-search criteria are saved as context when available.
+
+**Two levels of coverage:** a listed case has identity and party details only. It is marked **Listed only** until you open its detail page. A detailed record is joined by workspace + CNR. The list never overwrites case status, stage, hearing history or other detailed fields. Existing detailed cases need not be reopened merely to link them to a listing.
+
+Overall/stage counts use detailed records. **Awaiting details** counts listing-only cases, which do not get labelled unknown status. The portfolio counts distinct CNRs, not loans or respondents; separate P.C.R. and C.C. case identities remain separate.
+
+**Court totals are search-scoped:** “563 cases” means the total reported for that court/filter/year search. It is not all cases for the company nationwide. Overlapping searches are retained separately, not summed. New results do not delete cases missing from that search. If only some results are loaded/paginated, only those loaded rows are stored; there is no automatic page navigation or CAPTCHA bypass. Up to 2,000 rows and 1.5 MB per page capture are supported. Larger pages fail visibly rather than being silently truncated.
+
+The dashboard loads up to 1,000 listing records and 1,000 detailed records and combines them by CNR. It shows metadata for the 10 latest search captures. Stored snapshots are retained in Supabase; they are not truncated by dashboard display limits.
+
+**Audit:** every search capture has an immutable, dated snapshot. A new listing or changed listing adds a separate old/new listing audit, visible in the case's Audit history. Unchanged rechecks retain their search snapshot without duplicate change events. Row-number-only changes are not treated as a case-data change. Listing updates, audits and the page snapshot commit in one transaction; stale observations cannot replace newer listing data.
+
+Connections and automatic-capture privacy: enabling the extension now includes visible search results and selected search context. Pause the extension before searches you do not want saved in the receiving workspace. Failed uploads use the existing bounded retry queue, additionally capped at 4 MB of pending data.

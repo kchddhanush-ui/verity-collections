@@ -127,3 +127,7 @@ npm run preview
 - `tests/`: embedded PostgreSQL policy/transaction tests, synthetic parser fixtures and worker tests. Run `npm test`.
 
 Live installation against your Supabase project and an actual eCourts session still needs to be verified. No live court data, extension credentials or private project keys are committed.
+
+### Search listings and court totals
+
+Extension 1.1.0 automatically saves loaded search-result rows and search-scoped court totals. Opening a case enriches its CNR with details; list captures never overwrite detailed status/history. Run the additional `202610290002_search_result_capture.sql` migration once, reload the extension and refresh eCourts. See the upgrade section in [docs/SETUP.md](docs/SETUP.md). Listing-only cases are shown separately from status-unknown detailed cases, with listing audits and immutable search snapshots.
