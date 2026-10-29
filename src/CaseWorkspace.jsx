@@ -293,13 +293,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       accessToken: session.access_token,
     };
   }
-  async function fetchCase(item, force = false) {
+  async function fetchCase(item) {
     setSelected(item);
     setTab("details");
-    if (item.hasDetails && !force) {
-      setFetchStatus(null);
-      return;
-    }
     if (fetching || busy) return;
     setFetching(item.cnr);
     setBusy(true);
@@ -313,7 +309,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         throw new Error("Connect or resume Verity Case Capture first.");
       const result = await extensionRequest("FETCH_CASE", {
         ...dashboardPayload(item.cnr),
-        force,
+        force: true,
       });
       if (result?.error) {
         setFetchStatus({
@@ -741,7 +737,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       <div>
                         <button
                           disabled={busy || Boolean(fetching)}
-                          onClick={() => fetchCase(selected, true)}
+                          onClick={() => fetchCase(selected)}
                         >
                           {fetching === selected.cnr
                             ? "Fetching…"
