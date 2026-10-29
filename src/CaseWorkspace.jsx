@@ -1,10 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace.css";
 import { mergePortfolio } from "./lib/portfolio";
 import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
 import { extensionRequest } from "./lib/extensionBridge";
+
+const AnalyticsDashboard = lazy(() =>
+  import("./components/AnalyticsDashboard").then((module) => ({
+    default: module.AnalyticsDashboard,
+  })),
+);
 
 const date = (value) => (value ? new Date(value).toLocaleString() : "—");
 const show = (value) =>
@@ -498,12 +504,16 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           <span className="console-brand-mark">
             <WorkspaceIcon name="lawcovery" size={28} />
           </span>
-          <span className="brand-wordmark"><span className="brand-law">law</span>covery<span className="brand-period">.</span></span>
+          <span className="brand-wordmark">
+            <span className="brand-law">law</span>covery
+            <span className="brand-period">.</span>
+          </span>
         </a>
         <p className="sidebar-caption">LEGAL COLLECTIONS</p>
         <nav className="sidebar-nav" aria-label="Workspace views">
           {[
             ["overview", "Overview", "overview"],
+            ["analytics", "Analytics", "analytics"],
             ["cases", "Cases", "cases"],
             ["calendar", "Hearing calendar", "calendar"],
             ["connections", "Connections", "connection"],
@@ -584,6 +594,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                 {
                   {
                     overview: "OVERVIEW",
+                    analytics: "ANALYTICS",
                     cases: "CASES",
                     calendar: "COURT DIARY",
                     connections: "CONNECTIONS",
@@ -594,6 +605,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                 {
                   {
                     overview: "Your portfolio, in focus.",
+                    analytics: "Your cases, by the numbers.",
                     cases: "Your case portfolio.",
                     calendar: "Your hearing diary.",
                     connections: "Connected to your workflow.",
@@ -605,6 +617,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                   {
                     overview:
                       "A clear view of your cases, stages and captured court records.",
+                    analytics:
+                      "Explore case progress, hearing workload and the quality of your saved records.",
                     cases:
                       "Find a case, review its progress, and see the latest saved details.",
                     calendar:
@@ -737,6 +751,16 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       cases={cases}
                       onOpenCase={openSavedCase}
                     />
+                  ) : portfolioView === "analytics" ? (
+                    <Suspense
+                      fallback={<p role="status">Loading analytics…</p>}
+                    >
+                      <AnalyticsDashboard
+                        key={workspace}
+                        cases={cases}
+                        onOpenCase={openSavedCase}
+                      />
+                    </Suspense>
                   ) : portfolioView === "overview" ? (
                     <>
                       <div className="console-metrics">

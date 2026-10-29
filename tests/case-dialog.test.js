@@ -97,6 +97,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     const { CaseWorkspace } = await server.ssrLoadModule(
       "/src/CaseWorkspace.jsx",
     );
+    await server.ssrLoadModule("/src/components/AnalyticsDashboard.jsx");
     let simulatedSuccess = false;
     window.postMessage = (message) =>
       queueMicrotask(() => {
@@ -158,6 +159,16 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       null,
       "setup stays out of the overview",
     );
+    await act(async () =>
+      document
+        .querySelector('.sidebar-nav button[aria-label="Analytics"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.ok(
+      document.querySelector(".analytics-dashboard"),
+      "analytics is reachable from the workspace",
+    );
+
     assert.ok(document.querySelector('.skip-link[href="#workspace-content"]'));
     await act(async () =>
       document

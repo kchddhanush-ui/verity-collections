@@ -221,3 +221,11 @@ Pull the feature branch, restart Vite and refresh Lawcovery. The landing view is
 ## Lawcovery name update — extension 1.3.2
 
 After pulling the feature branch, restart Vite, reload **Lawcovery Case Capture** in Chrome and confirm **1.3.2**. Refresh Lawcovery and eCourts. Existing company workspaces and capture connections continue to work; this branding update does not require a migration or a new connection. Keep using the current GitHub repository and local clone paths shown above.
+
+## Analytics dashboard
+
+Pull the feature branch, restart Vite and refresh Lawcovery. Choose **Analytics** from workspace navigation. There is no additional SQL, extension update or package installation for analytics. Previously required capture/Decision Date migrations still apply to acquiring those fields.
+
+Use court/type/status/stage/search filters to define the case cohort. The Trend window selector changes only the monthly filing/Decision Date chart. The dashboard displays counts, percentages, date coverage, source-date trends, hearing workload, pending age, court/judge distribution and capture recency, with explicit denominator and missing-data notes. Follow-up categories below the charts offer a paginated case list; clicking a case opens its saved details. Refresh cases to load recent database changes; the existing automatic capture queue also refreshes the portfolio after confirmed saves.
+
+Analytics covers the currently loaded company portfolio (the same limit as Cases), not unbounded database aggregates or reported search totals. It does not infer recovery amounts, outcomes or missed hearings from status/date fields. Refer to README.md for metric definitions and exclusions.

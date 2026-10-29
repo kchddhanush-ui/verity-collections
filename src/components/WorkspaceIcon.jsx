@@ -8,6 +8,11 @@ export function WorkspaceIcon({ name, size = 20 }) {
         <path d="M6 4v16h13M10 4v12h9" />
       </>
     ),
+    analytics: (
+      <>
+        <path d="M4 3v18h17M8 16v-4m5 4V8m5 8V5" />
+      </>
+    ),
     overview: (
       <>
         <rect x="3" y="3" width="7" height="7" rx="1.5" />
