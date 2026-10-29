@@ -86,7 +86,7 @@ async function deliver(key, item, config) {
     if (e.permanent || attempts >= 3) {
       await chrome.storage.local.remove(key);
       const message = e.auth
-        ? "Connection expired/revoked. Reconnect in Verity."
+        ? "Connection expired/revoked. Reconnect in Lawcovery."
         : `Not saved: ${e.message}. Reopen the case after fixing the connection.`;
       await chrome.storage.local.set({ lastStatus: message });
       await badge("!");
@@ -136,7 +136,7 @@ async function handle(message, sender) {
       !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cfg.app_origin)
     )
       throw new Error(
-        "This release supports local Verity dashboard origins only",
+        "This release supports local Lawcovery dashboard origins only",
       );
     const result = await rpc(cfg, "check_capture_connection", {
       p_token: cfg.token,
@@ -244,13 +244,13 @@ async function dashboard(message, sender) {
     : ["http://127.0.0.1:5173", "http://localhost:5173"];
   if (!allowed.includes(origin))
     throw new Error(
-      "This dashboard origin is not connected. Reconnect from your Verity dashboard.",
+      "This dashboard origin is not connected. Reconnect from your Lawcovery dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.3.1", connected: Boolean(config?.enabled) };
+    return { version: "1.3.2", connected: Boolean(config?.enabled) };
   if (!config?.enabled)
     throw new Error(
-      "Extension is paused or disconnected. Connect or resume Verity Case Capture.",
+      "Extension is paused or disconnected. Connect or resume Lawcovery Case Capture.",
     );
   const p = message.payload;
   if (

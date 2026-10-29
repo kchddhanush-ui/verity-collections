@@ -30,7 +30,7 @@ window.addEventListener("message", (event) => {
           id,
           result: {
             error:
-              "Extension unavailable. Reload the extension and refresh Verity.",
+              "Extension unavailable. Reload the extension and refresh Lawcovery.",
           },
         },
         location.origin,

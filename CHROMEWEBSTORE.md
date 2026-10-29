@@ -1,18 +1,18 @@
-# Chrome Web Store Listing — Verity Case Capture
+# Chrome Web Store Listing — Lawcovery Case Capture
 
 Last updated: 2026-10-29. Development installation only; not submitted or published.
 
 ## Store listing draft
 
-**Name:** Verity Case Capture
+**Name:** Lawcovery Case Capture
 
-**Short description:** Automatically save opened eCourts cases to your connected Verity workspace, with a separate audit history.
+**Short description:** Automatically save opened eCourts cases to your connected Lawcovery workspace, with a separate audit history.
 
-**Detailed description:** Connect your Verity company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Pause capture anytime. You complete court searches and CAPTCHA yourself. Data is sent only to your configured company database.
+**Detailed description:** Connect your Lawcovery company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Pause capture anytime. You complete court searches and CAPTCHA yourself. Data is sent only to your configured company database.
 
 **Category:** Productivity. **Language:** English.
 
-**Single purpose:** Save the details of cases opened on district eCourts to the user's connected Verity workspace.
+**Single purpose:** Save the details of cases opened on district eCourts to the user's connected Lawcovery workspace.
 
 ## Assets
 
@@ -57,9 +57,9 @@ Automatically capture the loaded search-result table, row identities/parties, se
 
 ## Version 1.2.0 — 2026-10-29 (development draft)
 
-View a listed case from the local Verity dashboard to fetch its loaded details through an existing eCourts tab. Each case-number click requests fresh source details; the refresh action can repeat the request from the case view. Show progress, confirmed-save status and action-needed messages, with a user-triggered focus button for CAPTCHA/session issues. No CAPTCHA automation, arbitrary URL navigation or bulk case processing.
+View a listed case from the local Lawcovery dashboard to fetch its loaded details through an existing eCourts tab. Each case-number click requests fresh source details; the refresh action can repeat the request from the case view. Show progress, confirmed-save status and action-needed messages, with a user-triggered focus button for CAPTCHA/session issues. No CAPTCHA automation, arbitrary URL navigation or bulk case processing.
 
-Additional declared content-script access: `http://localhost/*` and `http://127.0.0.1/*`. Purpose: receive explicit View/Refresh requests from the local Verity dashboard and return progress/result statuses. Messages are gated on the configured exact app origin and an authenticated same-account/workspace check against the configured Supabase project. The dashboard's login JWT is transiently transmitted to that same Supabase project for authorization; it is not persisted, included in pending queues, logged or sent to eCourts. The upload token stays inside trusted extension contexts. A last-used court tab ID is retained locally to support Go to eCourts. No new broad browser tabs/history/cookie permission is declared; existing eCourts host access allows targeting its tabs.
+Additional declared content-script access: `http://localhost/*` and `http://127.0.0.1/*`. Purpose: receive explicit View/Refresh requests from the local Lawcovery dashboard and return progress/result statuses. Messages are gated on the configured exact app origin and an authenticated same-account/workspace check against the configured Supabase project. The dashboard's login JWT is transiently transmitted to that same Supabase project for authorization; it is not persisted, included in pending queues, logged or sent to eCourts. The upload token stays inside trusted extension contexts. A last-used court tab ID is retained locally to support Go to eCourts. No new broad browser tabs/history/cookie permission is declared; existing eCourts host access allows targeting its tabs.
 
 Privacy/store disclosure must cover the local dashboard message bridge, transient authentication-token processing and user-requested case navigation. Hosted dashboard origins are not supported by this initial bridge. Store publication remains pending the same required publisher, privacy-policy and asset work.
 
@@ -74,3 +74,7 @@ After a user completes CAPTCHA/search and a result list is saved, automatically 
 ## Version 1.3.1 — 2026-10-29 (development draft)
 
 Capture the explicit Decision Date field on loaded case details, including capitalisation/spacing and a trailing label colon. Save it separately from Disposal Date, show it in current case details, and retain it in snapshots and field-change audit history. No dates are inferred or copied between these fields. Detail payloads use format 1.1.0; search lists retain 1.0.0. Apply migration `202610290003_decision_date_capture.sql` before reloading this extension version. The new detail format causes an older database to reject the save with an upgrade message instead of silently dropping Decision Date. Existing payload format 1.0.0 remains accepted after upgrading. No new browser permissions or storage destinations. The existing legal-record/date collection disclosure includes this field. Previously captured cases require another source capture to add dates that were missed.
+
+## Version 1.3.2 — 2026-10-29 (development draft)
+
+Rename the product and extension to Lawcovery / Lawcovery Case Capture. Update the website and popup wordmarks, page titles, labels, notices, onboarding/help copy and setup documentation. Replace the letter mark with an L. Existing connections, queued captures, stored records, parser formats and audit history remain compatible. No new permissions or data collection. Refresh store screenshots to use the new wordmark before publication.

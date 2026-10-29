@@ -405,7 +405,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       const ping = await extensionRequest("PING");
       if (ping?.error) throw new Error(ping.error);
       if (!ping?.connected)
-        throw new Error("Connect or resume Verity Case Capture first.");
+        throw new Error("Connect or resume Lawcovery Case Capture first.");
       const result = await extensionRequest("FETCH_CASE", {
         ...dashboardPayload(item.cnr),
         force: true,
@@ -494,12 +494,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         Skip to workspace
       </a>
       <aside className="console-sidebar" aria-label="Workspace navigation">
-        <a className="console-brand" href="/" aria-label="Verity home">
+        <a className="console-brand" href="/" aria-label="Lawcovery home">
           <span className="console-brand-mark">
-            <WorkspaceIcon name="verity" size={28} />
+            <WorkspaceIcon name="lawcovery" size={28} />
           </span>
           <span>
-            verity<span className="brand-period">.</span>
+            lawcovery<span className="brand-period">.</span>
           </span>
         </a>
         <p className="sidebar-caption">LEGAL COLLECTIONS</p>
@@ -899,13 +899,13 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         </div>
                         <h2>Connect Chrome for automatic capture</h2>
                         <p>
-                          Connect Verity Case Capture in Chrome to save your
+                          Connect Lawcovery Case Capture in Chrome to save your
                           loaded eCourts cases automatically. Complete CAPTCHA
                           and search in eCourts to start capturing details.
                         </p>
                         <p>
                           Connections stay active until paused, revoked,
-                          expired, or you sign out of Verity. Each upload is
+                          expired, or you sign out of Lawcovery. Each upload is
                           attributed to the account that created the connection.
                         </p>
                         <button disabled={busy} onClick={connect}>

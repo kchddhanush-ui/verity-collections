@@ -13,7 +13,7 @@
       node.setAttribute("role", "status");
       document.body.append(node);
     }
-    node.textContent = `Verity · ${message}`;
+    node.textContent = `Lawcovery · ${message}`;
   }
   async function scan() {
     if (targeted || document.visibilityState !== "visible") return;

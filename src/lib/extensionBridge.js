@@ -7,7 +7,7 @@ export function extensionRequest(action, payload = {}) {
         reject(
           new Error(
             action === "PING"
-              ? "Reload Verity Case Capture 1.3.1 and refresh this page."
+              ? "Reload Lawcovery Case Capture 1.3.2 and refresh this page."
               : "The extension did not finish. Check the eCourts tab and connection status before retrying.",
           ),
         );

@@ -1,6 +1,6 @@
-# Verity — Legal collections portal
+# Lawcovery — Legal collections portal
 
-An independent React + Vite project. “Verity” is a working product name that can be changed. This project is not deployed and has no dependency on ChatGPT Sites hosting.
+Lawcovery is an independent React + Vite project. This project is not deployed and has no dependency on ChatGPT Sites hosting.
 
 ## Run on your computer
 
@@ -132,7 +132,7 @@ Live installation against your Supabase project and an actual eCourts session st
 
 Extension 1.1.0 automatically saves loaded search-result rows and search-scoped court totals. Opening a case enriches its CNR with details; list captures never overwrite detailed status/history. Run the additional `202610290002_search_result_capture.sql` migration once, reload the extension and refresh eCourts. See the upgrade section in [docs/SETUP.md](docs/SETUP.md). Listing-only cases are shown separately from status-unknown detailed cases, with listing audits and immutable search snapshots.
 
-### View a case from Verity
+### View a case from Lawcovery
 
 Extension 1.2.0 connects the local dashboard's View/Refresh buttons to the existing eCourts tab. Complete the source search/CAPTCHA first; thereafter each requested listed case is opened through its live View control, checked by CNR, captured and saved with an audit. The dashboard updates after confirmed saves. Every case-number/View click requests fresh source details, even when already saved. Action-needed messages send you back to the court tab for missing search context, CAPTCHA or session renewal. Reload the extension and refresh both app/court tabs after pulling. No new migration is required. See the 1.2.0 section of [docs/SETUP.md](docs/SETUP.md).
 
@@ -140,7 +140,7 @@ Extension 1.2.1 keeps the court AJAX View handler but prevents default tokenised
 
 ## Automatic sequential details — extension 1.3.0
 
-Pull `feat/ecourts-auto-capture-audit`, restart Vite, reload the unpacked extension in Chrome and refresh both Verity and eCourts. No new SQL is required. After completing CAPTCHA/search, the extension saves the loaded results and queues each valid CNR for a fresh detail fetch. Keep the source tab open. It uses the live View controls, waits for matching fresh case details and confirms the audited database save before advancing. Verity displays saved/remaining/failed counts and refreshes the portfolio automatically. Pause/resume controls are in the dashboard and extension popup; an in-flight case may finish saving after pause.
+Pull `feat/ecourts-auto-capture-audit`, restart Vite, reload the unpacked extension in Chrome and refresh both Lawcovery and eCourts. No new SQL is required. After completing CAPTCHA/search, the extension saves the loaded results and queues each valid CNR for a fresh detail fetch. Keep the source tab open. It uses the live View controls, waits for matching fresh case details and confirms the audited database save before advancing. Lawcovery displays saved/remaining/failed counts and refreshes the portfolio automatically. Pause/resume controls are in the dashboard and extension popup; an in-flight case may finish saving after pause.
 
 There is a minimum five-second gap between cases. Hidden-tab timer throttling can slow processing; a durable 30-second alarm also wakes the queue. On CAPTCHA/session expiry, missing View controls, case mismatch or unconfirmed save, the queue stops and displays the reason. Correct the source/connection issue and choose Resume queue to retry that same case. Pending uploads are still retried by the existing upload queue; they are never counted as a confirmed batch save. Successfully rechecked unchanged cases retain snapshots without creating false field-change audits. Closing a source tab pauses on the next attempt; reopen/refresh and repeat the source search to create a new run.
 
@@ -160,4 +160,8 @@ At narrow table widths, the case register becomes labelled cards with the case i
 
 ## Decision Date — extension 1.3.1
 
-Decision Date is captured as `data.decision_date`, independently of `data.disposal_date`, and appears in case details, snapshots and the separate old/new audit trail. Apply `supabase/migrations/202610290003_decision_date_capture.sql` after the existing migrations, then reload extension **1.3.1** and refresh both Verity and eCourts. Only the explicit source field is saved; no date is inferred from disposal status or hearing history. Reopen a case or repeat a source search to capture dates previously missed. Blank or older captures do not erase a saved date. Detail format 1.1.0 requires the migration; legacy detail format 1.0.0 and search format 1.0.0 remain supported. See the setup guide for the Mac copy command.
+Decision Date is captured as `data.decision_date`, independently of `data.disposal_date`, and appears in case details, snapshots and the separate old/new audit trail. Apply `supabase/migrations/202610290003_decision_date_capture.sql` after the existing migrations, then reload extension **1.3.1** and refresh both Lawcovery and eCourts. Only the explicit source field is saved; no date is inferred from disposal status or hearing history. Reopen a case or repeat a source search to capture dates previously missed. Blank or older captures do not erase a saved date. Detail format 1.1.0 requires the migration; legacy detail format 1.0.0 and search format 1.0.0 remain supported. See the setup guide for the Mac copy command.
+
+## Lawcovery branding — extension 1.3.2
+
+The product, website titles, sign-in/demo screens, workspace, extension popup and capture notices now use **Lawcovery**. Pull the feature branch, restart Vite, reload **Lawcovery Case Capture 1.3.2**, then refresh the website and eCourts tabs. Existing connection credentials, queues, saved cases and audit history continue to work. No new SQL or package installation is needed. GitHub repository URLs and existing local folder paths remain valid; internal message/storage identifiers are retained for compatibility with installed connections.

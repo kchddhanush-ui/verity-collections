@@ -3,9 +3,9 @@ import React from "react";
 // Local SVGs share one stroke/size system and never request external assets.
 export function WorkspaceIcon({ name, size = 20 }) {
   const paths = {
-    verity: (
+    lawcovery: (
       <>
-        <path d="m4 6 8 13 8-13M8 6l4 7 4-7" />
+        <path d="M6 4v16h13M10 4v12h9" />
       </>
     ),
     overview: (

@@ -36,7 +36,7 @@
     if (current?.cnr === cnr && !force) return current;
     if (!link)
       throw new Error(
-        "Action needed on eCourts: repeat the search containing this case, then retry from Verity.",
+        "Action needed on eCourts: repeat the search containing this case, then retry from Lawcovery.",
       );
     const before = [...doc.querySelectorAll(".case_details_table")].find(
         isVisible,
