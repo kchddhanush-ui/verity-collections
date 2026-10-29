@@ -19,7 +19,7 @@ function Icon({name, size=20, ...props}) {
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name] || paths.folder}</svg>;
 }
-function Brand() {return <div className="brand"><span className="brand-icon"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M8 6v20h18M13 6v15h13" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></span><span>lawcovery<span className="brand-dot">.</span></span></div>}
+function Brand() {return <div className="brand"><span className="brand-icon"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M8 6v20h18M13 6v15h13" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></span><span className="brand-wordmark"><span className="brand-law">law</span>covery<span className="brand-dot">.</span></span></div>}
 function Illustration() {return <div className="art" aria-hidden="true">
   <div className="orbit orbit-one"/><div className="orbit orbit-two"/>
   <div className="float-label"><span className="green-dot"/> A clearer perspective</div>

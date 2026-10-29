@@ -247,7 +247,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Lawcovery dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.3.2", connected: Boolean(config?.enabled) };
+    return { version: "1.3.3", connected: Boolean(config?.enabled) };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Lawcovery Case Capture.",

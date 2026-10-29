@@ -10,7 +10,7 @@ h1 {
   font-size: 32px;
   margin: 0;
 }
-h1 span {
+h1 .brand-dot {
   color: #b68b40;
 }
 textarea {
@@ -41,4 +41,21 @@ p {
 }
 label {
   font-weight: 600;
+}
+
+.brand-wordmark { white-space: nowrap; }
+h1 .brand-law {
+  display: inline-block;
+  padding: .03em .18em .08em;
+  margin-inline-end: .06em;
+  border: 1px solid #b49a64;
+  border-radius: .18em;
+  background: #0b241f;
+  color: #f7f6ef;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+@media (forced-colors: active) {
+  h1 .brand-law { color: CanvasText; background: Canvas; border-color: CanvasText; }
 }

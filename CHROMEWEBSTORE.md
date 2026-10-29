@@ -78,3 +78,7 @@ Capture the explicit Decision Date field on loaded case details, including capit
 ## Version 1.3.2 — 2026-10-29 (development draft)
 
 Rename the product and extension to Lawcovery / Lawcovery Case Capture. Update the website and popup wordmarks, page titles, labels, notices, onboarding/help copy and setup documentation. Replace the letter mark with an L. Existing connections, queued captures, stored records, parser formats and audit history remain compatible. No new permissions or data collection. Refresh store screenshots to use the new wordmark before publication.
+
+## Version 1.3.3 — 2026-10-29 (development draft)
+
+Give the “law” part of the Lawcovery wordmark a separate dark background, light text and gold border on login/loading/demo screens, the workspace sidebar and the extension popup. Keep “covery” as the adjoining wordmark text. Size the sidebar brand for the badge and longer name; support forced-colour system settings. No permission, connection, storage, parser or database changes. Refresh listing screenshots before publication.

@@ -498,9 +498,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           <span className="console-brand-mark">
             <WorkspaceIcon name="lawcovery" size={28} />
           </span>
-          <span>
-            lawcovery<span className="brand-period">.</span>
-          </span>
+          <span className="brand-wordmark"><span className="brand-law">law</span>covery<span className="brand-period">.</span></span>
         </a>
         <p className="sidebar-caption">LEGAL COLLECTIONS</p>
         <nav className="sidebar-nav" aria-label="Workspace views">
