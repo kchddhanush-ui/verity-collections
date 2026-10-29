@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
+import './auth-layout.css';
 import { supabase } from './lib/supabase';
 import { useAuth } from './useAuth';
 import { ResetRequest, RecoveryForm } from './PasswordRecovery';

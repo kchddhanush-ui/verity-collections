@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace.css";
 import { mergePortfolio } from "./lib/portfolio";
+import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
 import { extensionRequest } from "./lib/extensionBridge";
 
@@ -38,10 +39,10 @@ async function call(name, args) {
   if (error) throw error;
   return data;
 }
-function Table({ headers, rows, label }) {
+function Table({ headers, rows, label, caseList = false }) {
   return (
     <div
-      className="case-table-wrap"
+      className={`case-table-wrap ${caseList ? "portfolio-table-wrap" : ""}`}
       tabIndex="0"
       role="region"
       aria-label={label}
@@ -60,9 +61,21 @@ function Table({ headers, rows, label }) {
         <tbody>
           {rows.map((r, i) => (
             <tr key={i}>
-              {r.map((v, j) => (
-                <td key={j}>{v}</td>
-              ))}
+              {r.map((v, j) =>
+                caseList && j === 0 ? (
+                  <th scope="row" key={j}>
+                    {v}
+                  </th>
+                ) : (
+                  <td key={j} data-label={headers[j]}>
+                    {caseList ? (
+                      <span className="table-cell-content">{v}</span>
+                    ) : (
+                      v
+                    )}
+                  </td>
+                ),
+              )}
             </tr>
           ))}
         </tbody>
@@ -84,7 +97,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const [batch, setBatch] = useState(null);
   const [batchError, setBatchError] = useState("");
   const [searches, setSearches] = useState([]);
-  const [portfolioView, setPortfolioView] = useState("cases");
+  const [portfolioView, setPortfolioView] = useState("overview");
   const [listingAudits, setListingAudits] = useState([]);
   const [selected, setSelected] = useState(null),
     [audits, setAudits] = useState([]),
@@ -443,6 +456,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const filtered = cases.filter((c) =>
     JSON.stringify([c.cnr, c.data]).toLowerCase().includes(query.toLowerCase()),
   );
+  const detailedCount = cases.filter((c) => c.hasDetails).length;
   const stageCounts = new Map([
     ["NBW", 0],
     ["SUMMONS", 0],
@@ -475,654 +489,833 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   ];
   return (
     <div className="verity-console">
-      <header className="console-header">
-        <a className="console-brand" href="/">
-          verity<span>.</span>
+      <a className="skip-link" href="#workspace-content">
+        Skip to workspace
+      </a>
+      <aside className="console-sidebar" aria-label="Workspace navigation">
+        <a className="console-brand" href="/" aria-label="Verity home">
+          <span className="console-brand-mark">
+            <WorkspaceIcon name="verity" size={28} />
+          </span>
+          <span>
+            verity<span className="brand-period">.</span>
+          </span>
         </a>
-        <span>{session.user.email}</span>
-        <button disabled={pending || busy} onClick={onSignOut}>
-          {pending ? "Signing out…" : "Sign out"}
-        </button>
-      </header>
-      <main className="console-main">
-        <div className="console-title">
-          <div>
-            <p className="console-eyebrow">
-              LEGAL COLLECTIONS · CASE INTELLIGENCE
-            </p>
-            <h1>Your case portfolio.</h1>
-            <p>
-              Latest captured details, with every change recorded separately.
-            </p>
-          </div>
-          <a
-            className="console-link"
-            href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open eCourts ↗
-          </a>
-        </div>
-        {error && (
-          <div className="console-error" role="alert">
-            {error}
-          </div>
-        )}
-        {batch && (
-          <section
-            className="case-fetch-status"
-            aria-label="Automatic case detail capture"
-          >
-            <h2>Automatic detail capture</h2>
-            <progress
-              aria-label="Cases saved"
-              max={batch.total}
-              value={batch.saved}
-            />
-            <p role="status">
-              {batch.saved} of {batch.total} saved · {batch.waiting} remaining ·{" "}
-              {batch.failed} failed · {batch.state}
-            </p>
-            <p>{batch.message}</p>
-            <p>
-              Keep the eCourts tab open. Cases are fetched one at a time, with a
-              delay between requests.
-            </p>
-            {batch.current && <p>Current case: {batch.current}</p>}
+        <p className="sidebar-caption">LEGAL COLLECTIONS</p>
+        <nav className="sidebar-nav" aria-label="Workspace views">
+          {[
+            ["overview", "Overview", "overview"],
+            ["cases", "Cases", "cases"],
+            ["calendar", "Hearing calendar", "calendar"],
+            ["connections", "Connections", "connection"],
+          ].map(([key, label, icon]) => (
             <button
-              disabled={["paused", "attention", "complete"].includes(
-                batch.state,
+              key={key}
+              aria-label={label}
+              aria-pressed={portfolioView === key}
+              onClick={() => setPortfolioView(key)}
+            >
+              <WorkspaceIcon name={icon} />
+              <span>{label}</span>
+              {key === "cases" && (
+                <span className="nav-count" aria-hidden="true">
+                  {cases.length}
+                </span>
               )}
-              onClick={() => batchControl("BATCH_PAUSE")}
-            >
-              Pause queue
-            </button>{" "}
-            <button
-              disabled={!["paused", "attention"].includes(batch.state)}
-              onClick={() => batchControl("BATCH_RESUME")}
-            >
-              Resume queue
             </button>
-            {batchError && <p role="alert">{batchError}</p>}
-          </section>
-        )}
-        {fetchStatus && !selected && (
-          <div className="case-fetch-status" role="status">
-            {fetching && <progress aria-label="Fetching court case details" />}
-            <p>{fetchStatus.message}</p>
-            {fetchStatus.actionNeeded && (
-              <>
-                <p>
-                  Complete any CAPTCHA or repeat the search in eCourts, then use
-                  View or Refresh from eCourts again.
-                </p>
-                <button onClick={focusCourt}>Go to eCourts tab</button>
-              </>
-            )}
-          </div>
-        )}
-        {loading ? (
-          <p role="status">Loading workspaces…</p>
-        ) : (
-          <>
-            <div className="console-toolbar">
-              <label>
-                Company workspace{" "}
-                <select
-                  disabled={busy}
-                  value={workspace}
-                  onChange={(e) => setWorkspace(e.target.value)}
-                >
-                  {!workspace && <option value="">Select a workspace</option>}
-                  {workspaces.map((w) => (
-                    <option value={w.id} key={w.id}>
-                      {w.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                disabled={!workspace || busy}
-                onClick={() => perform(refresh)}
-              >
-                {busy ? "Loading…" : "Refresh cases"}
-              </button>
+          ))}
+        </nav>
+        <div className="sidebar-footnote">
+          <WorkspaceIcon name="shield" size={22} />
+          <strong>A record of every change.</strong>
+          <p>Your case updates and audit history, together in one workspace.</p>
+        </div>
+        <div className="sidebar-bottom">
+          <span className="sidebar-status-dot" />
+          Company workspace
+        </div>
+      </aside>
+      <div className="console-body">
+        <header className="console-header">
+          <label className="workspace-switcher">
+            <span>Company workspace</span>
+            <select
+              disabled={busy || loading}
+              value={workspace}
+              onChange={(e) => setWorkspace(e.target.value)}
+            >
+              {!workspace && <option value="">Select a workspace</option>}
+              {workspaces.map((w) => (
+                <option value={w.id} key={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="console-header-actions">
+            <button
+              className="refresh-button"
+              disabled={!workspace || busy}
+              onClick={() => perform(refresh)}
+            >
+              <WorkspaceIcon name="refresh" size={17} />
+              <span>{busy ? "Loading…" : "Refresh cases"}</span>
+            </button>
+            <div className="console-account">
+              <span className="account-avatar" aria-hidden="true">
+                {session.user.email?.slice(0, 1).toUpperCase() || "V"}
+              </span>
+              <span>{session.user.email}</span>
             </div>
-            <details className="console-panel" open={!workspaces.length}>
-              <summary>Create a company workspace</summary>
-              <form className="inline-form" onSubmit={createWorkspace}>
-                <label>
-                  Company name
-                  <input
-                    name="name"
-                    required
-                    maxLength="120"
-                    placeholder="Your company"
-                  />
-                </label>
-                <button disabled={busy}>Create workspace</button>
-              </form>
-              <p>
-                Only workspace members can see its records. Add teammates using
-                the administrator SQL in the setup guide.
+            <button
+              className="signout-button"
+              disabled={pending || busy}
+              onClick={onSignOut}
+            >
+              <WorkspaceIcon name="logout" size={17} />
+              <span>{pending ? "Signing out…" : "Sign out"}</span>
+            </button>
+          </div>
+        </header>
+        <main className="console-main" id="workspace-content" tabIndex="-1">
+          <div className="console-title">
+            <div>
+              <p className="console-eyebrow">
+                YOUR WORKSPACE /{" "}
+                {
+                  {
+                    overview: "OVERVIEW",
+                    cases: "CASES",
+                    calendar: "COURT DIARY",
+                    connections: "CONNECTIONS",
+                  }[portfolioView]
+                }
               </p>
-            </details>
-            {workspace && (
-              <>
-                <nav
-                  className="case-tabs portfolio-views"
-                  aria-label="Workspace views"
-                >
+              <h1>
+                {
+                  {
+                    overview: "Your portfolio, in focus.",
+                    cases: "Your case portfolio.",
+                    calendar: "Your hearing diary.",
+                    connections: "Connected to your workflow.",
+                  }[portfolioView]
+                }
+              </h1>
+              <p>
+                {
+                  {
+                    overview:
+                      "A clear view of your cases, stages and captured court records.",
+                    cases:
+                      "Find a case, review its progress, and see the latest saved details.",
+                    calendar:
+                      "Plan around your court dates and see what’s coming next.",
+                    connections:
+                      "Manage your company workspace and automatic eCourts capture.",
+                  }[portfolioView]
+                }
+              </p>
+            </div>
+            <a
+              className="console-link button-primary"
+              href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <WorkspaceIcon name="external" size={17} />
+              Open eCourts
+            </a>
+          </div>
+          {error && (
+            <div className="console-error" role="alert">
+              {error}
+            </div>
+          )}
+          {batch && (
+            <section
+              className="case-fetch-status batch-capture-panel"
+              aria-label="Automatic case detail capture"
+            >
+              <div className="batch-heading">
+                <div>
+                  <p className="panel-kicker">COURT SYNC</p>
+                  <h2>Automatic detail capture</h2>
+                </div>
+                <span className="coverage-badge">{batch.state}</span>
+                <div className="batch-actions">
+                  {" "}
                   <button
-                    aria-pressed={portfolioView === "cases"}
-                    onClick={() => setPortfolioView("cases")}
+                    disabled={["paused", "attention", "complete"].includes(
+                      batch.state,
+                    )}
+                    onClick={() => batchControl("BATCH_PAUSE")}
                   >
-                    Cases
-                  </button>
+                    Pause queue
+                  </button>{" "}
                   <button
-                    aria-pressed={portfolioView === "calendar"}
-                    onClick={() => setPortfolioView("calendar")}
+                    disabled={!["paused", "attention"].includes(batch.state)}
+                    onClick={() => batchControl("BATCH_RESUME")}
                   >
-                    Hearing calendar
+                    Resume queue
                   </button>
-                </nav>
-                {portfolioView === "calendar" ? (
-                  <HearingCalendar
-                    key={workspace}
-                    cases={cases}
-                    onOpenCase={openSavedCase}
-                  />
-                ) : (
-                  <>
-                    <div className="console-metrics">
-                      {totals.map(([label, count]) => (
-                        <article key={label}>
-                          <span>{label}</span>
-                          <strong>{count}</strong>
-                          <small>From saved cases in this workspace</small>
-                        </article>
-                      ))}
-                    </div>
-                    {searches[0] && (
+                </div>
+              </div>
+              <progress
+                aria-label="Cases saved"
+                max={batch.total}
+                value={batch.saved}
+              />
+              <div className="batch-summary">
+                <p role="status">
+                  <strong>
+                    {batch.saved} of {batch.total}
+                  </strong>{" "}
+                  saved · {batch.waiting} remaining · {batch.failed} failed
+                </p>
+                {batch.current && <p>Current case: {batch.current}</p>}
+              </div>
+              <p>{batch.message}</p>
+              <details>
+                <summary>Capture guidance</summary>
+                <p>
+                  Keep your eCourts tab open. Cases are fetched one at a time
+                  with a delay between requests. Complete any CAPTCHA there,
+                  then resume if needed.
+                </p>
+              </details>
+              {batchError && <p role="alert">{batchError}</p>}
+            </section>
+          )}
+          {fetchStatus && !selected && (
+            <div className="case-fetch-status" role="status">
+              {fetching && (
+                <progress aria-label="Fetching court case details" />
+              )}
+              <p>{fetchStatus.message}</p>
+              {fetchStatus.actionNeeded && (
+                <>
+                  <p>
+                    Complete any CAPTCHA or repeat the search in eCourts, then
+                    use View or Refresh from eCourts again.
+                  </p>
+                  <button onClick={focusCourt}>Go to eCourts tab</button>
+                </>
+              )}
+            </div>
+          )}
+          {loading ? (
+            <p role="status">Loading workspaces…</p>
+          ) : (
+            <>
+              {(!workspace || portfolioView === "connections") && (
+                <div className="workspace-setup">
+                  <details className="console-panel" open={!workspaces.length}>
+                    <summary>Create a company workspace</summary>
+                    <form className="inline-form" onSubmit={createWorkspace}>
+                      <label>
+                        Company name
+                        <input
+                          name="name"
+                          required
+                          maxLength="120"
+                          placeholder="Your company"
+                        />
+                      </label>
+                      <button disabled={busy}>Create workspace</button>
+                    </form>
+                    <p>
+                      Each company workspace keeps its case records separate.
+                      Only workspace members can access them.
+                    </p>
+                  </details>
+                </div>
+              )}
+              {workspace && (
+                <>
+                  {portfolioView === "calendar" ? (
+                    <HearingCalendar
+                      key={workspace}
+                      cases={cases}
+                      onOpenCase={openSavedCase}
+                    />
+                  ) : portfolioView === "overview" ? (
+                    <>
+                      <div className="console-metrics">
+                        {totals.map(([label, count]) => (
+                          <article key={label}>
+                            <div className="metric-heading">
+                              <span>{label}</span>
+                              <WorkspaceIcon
+                                name={
+                                  label === "Saved cases"
+                                    ? "cases"
+                                    : label === "Pending"
+                                      ? "clock"
+                                      : label === "Disposed"
+                                        ? "check"
+                                        : "capture"
+                                }
+                                size={18}
+                              />
+                            </div>
+                            <strong>{count.toLocaleString("en-IN")}</strong>
+                            <small>
+                              {label === "Saved cases"
+                                ? "In your loaded portfolio"
+                                : label === "Pending" ||
+                                    label === "Disposed" ||
+                                    label === "Status unknown"
+                                  ? "From detailed case records"
+                                  : label === "Details captured"
+                                    ? "Court details available"
+                                    : "Waiting for detailed capture"}
+                            </small>
+                          </article>
+                        ))}
+                      </div>
                       <section
                         className="console-panel"
-                        aria-labelledby="search-summary-heading"
+                        aria-labelledby="stage-counts-heading"
                       >
-                        <h2 id="search-summary-heading">
-                          Latest eCourts search
-                        </h2>
-                        <p>
-                          This is the total reported for this search and court
-                          selection, not a company-wide or nationwide total.
-                          Searches can overlap; their totals are not added
-                          together.
-                        </p>
-                        <div className="search-summary-metrics">
-                          <strong>
-                            Establishments:{" "}
-                            {searches[0].total_establishments ?? "Not reported"}
-                          </strong>
-                          <strong>
-                            Reported cases:{" "}
-                            {searches[0].reported_cases ?? "Not reported"}
-                          </strong>
-                          <strong>
-                            Rows captured:{" "}
-                            {searches[0].loaded_rows - searches[0].skipped_rows}
-                          </strong>
+                        <div className="section-heading">
+                          <div>
+                            <p className="panel-kicker">CASE PROGRESS</p>
+                            <h2 id="stage-counts-heading">Cases by stage</h2>
+                          </div>
+                          <button onClick={() => setPortfolioView("cases")}>
+                            View all cases <span aria-hidden="true">↗</span>
+                          </button>
                         </div>
                         <p className="muted">
-                          Observed {date(searches[0].captured_at)} ·{" "}
-                          {Object.values(searches[0].search_context)
-                            .filter(Boolean)
-                            .join(" · ")}
+                          Counts use detailed cases in this workspace. Listed
+                          cases awaiting details are excluded. Detailed cases
+                          without a captured stage appear under “Stage not
+                          recorded”.
                         </p>
-                        {searches[0].skipped_rows > 0 && (
-                          <p role="status">
-                            {searches[0].skipped_rows} rows could not be
-                            identified safely and were skipped.
-                          </p>
-                        )}
-                        <Table
-                          label="Court totals reported by eCourts"
-                          headers={["Court / establishment", "Reported cases"]}
-                          rows={searches[0].court_totals.map((c) => [
-                            c.court,
-                            c.reported_cases,
-                          ])}
-                        />
-                        <details>
-                          <summary>Previous search captures</summary>
-                          <Table
-                            label="Search capture history"
-                            headers={[
-                              "Observed",
-                              "Selection",
-                              "Reported cases",
-                              "Captured rows",
-                            ]}
-                            rows={searches.map((c) => [
-                              date(c.captured_at),
-                              Object.values(c.search_context)
-                                .filter(Boolean)
-                                .join(" · "),
-                              c.reported_cases,
-                              c.loaded_rows - c.skipped_rows,
-                            ])}
-                          />
-                        </details>
+                        <dl className="stage-counts">
+                          {[...stageCounts].map(([stage, count]) => (
+                            <div key={stage}>
+                              <dt>
+                                <span className="stage-dot" />
+                                {stage}
+                              </dt>
+                              <dd>{count.toLocaleString("en-IN")}</dd>
+                              <span className="stage-track" aria-hidden="true">
+                                <span
+                                  style={{
+                                    inlineSize: `${detailedCount ? (count / detailedCount) * 100 : 0}%`,
+                                  }}
+                                />
+                              </span>
+                            </div>
+                          ))}
+                        </dl>
                       </section>
-                    )}
-                    <section
-                      className="console-panel"
-                      aria-labelledby="stage-counts-heading"
-                    >
-                      <h2 id="stage-counts-heading">Cases by stage</h2>
-                      <p className="muted">
-                        Counts use detailed cases in this workspace. Listed
-                        cases awaiting details are excluded. Detailed cases
-                        without a captured stage appear under “Stage not
-                        recorded”.
-                      </p>
-                      <dl className="stage-counts">
-                        {[...stageCounts].map(([stage, count]) => (
-                          <div key={stage}>
-                            <dt>{stage}</dt>
-                            <dd>{count}</dd>
-                          </div>
-                        ))}
-                      </dl>
-                    </section>
-                    <details className="console-panel">
-                      <summary>Connect Chrome for automatic capture</summary>
-                      <p>
-                        Install the extension from this repository’s{" "}
-                        <code>extension</code> folder, then connect it once.
-                        Opening an eCourts case will save its loaded details
-                        automatically.
-                      </p>
-                      <p>
-                        Connections stay active until paused, revoked, expired,
-                        or you sign out of Verity. Each upload is attributed to
-                        the account that created the connection.
-                      </p>
-                      <button disabled={busy} onClick={connect}>
-                        Create extension connection
-                      </button>
-                      {settings && (
-                        <div>
-                          <p role="status">{notice}</p>
-                          <label>
-                            Private connection settings
-                            <textarea
-                              readOnly
-                              value={settings}
-                              rows="7"
-                              onFocus={(e) => e.target.select()}
-                            />
-                          </label>
-                          <button
-                            onClick={() =>
-                              perform(async () => {
-                                await navigator.clipboard.writeText(settings);
-                                setNotice(
-                                  "Connection settings copied. Paste them in the extension.",
-                                );
-                              })
-                            }
-                          >
-                            Copy settings
-                          </button>
-                          <button onClick={() => setSettings("")}>
-                            Hide secret
-                          </button>
-                        </div>
-                      )}
-                      <ul className="connection-list">
-                        {connections.map((c) => (
-                          <li key={c.id}>
-                            <span>
-                              {c.label} ·{" "}
-                              {c.revoked_at
-                                ? "Revoked"
-                                : new Date(c.expires_at) < new Date()
-                                  ? "Expired"
-                                  : `Expires ${date(c.expires_at)}`}
-                            </span>
-                            {!c.revoked_at && (
-                              <button
-                                disabled={busy}
-                                onClick={() =>
-                                  perform(async () => {
-                                    await call("revoke_capture_connection", {
-                                      p_id: c.id,
-                                    });
-                                    setSettings("");
-                                    await refresh();
-                                  })
-                                }
-                              >
-                                Revoke
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                    <section className="console-panel">
-                      <div className="section-heading">
-                        <h2>Cases</h2>
-                        <label>
-                          Search cases
-                          <input
-                            type="search"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="CNR, party, court or stage"
-                          />
-                        </label>
-                      </div>
-                      <p className="muted">
-                        {filtered.length} matching of {cases.length} loaded
-                        cases · up to 1,000 detail records and 1,000 listing
-                        records, matched by CNR. Counts describe this loaded
-                        portfolio. Status/stage counts use detailed cases only.
-                        Use Refresh cases after capture.
-                      </p>
-                      {filtered.length ? (
-                        <Table
-                          label="Saved court cases"
-                          headers={[
-                            "Case / CNR",
-                            "Parties",
-                            "Stage / status",
-                            "Next hearing",
-                            "Capture coverage",
-                            "Last observed",
-                          ]}
-                          rows={filtered.map((c) => [
-                            <button
-                              className="case-open"
-                              disabled={busy || Boolean(fetching)}
-                              onClick={() => fetchCase(c)}
-                            >
-                              View ·{" "}
-                              {c.data.case_reference ||
-                                c.data.registration_number}
-                              <small>{c.cnr}</small>
-                            </button>,
-                            <>
-                              {c.data.petitioners?.join("; ") ||
-                                c.data.parties_text}
-                              <small>vs {c.data.respondents?.join("; ")}</small>
-                            </>,
-                            <>
-                              {c.data.case_stage || "—"}
-                              <small>
-                                {c.hasDetails
-                                  ? c.data.case_status || "Unknown"
-                                  : "Details not captured"}
-                              </small>
-                            </>,
-                            c.data.next_hearing_date || "—",
-                            c.hasDetails ? "Details captured" : "Listed only",
-                            date(c.last_checked_at || c.last_listed_at),
-                          ])}
-                        />
-                      ) : (
-                        <div className="console-empty">
-                          <h3>
-                            {query
-                              ? "No matching cases"
-                              : "No cases captured yet"}
-                          </h3>
-                          <p>
-                            Connect the extension, complete CAPTCHA on eCourts,
-                            and view search results or open a case. Then refresh
-                            this list.
-                          </p>
-                        </div>
-                      )}
-                    </section>
-                  </>
-                )}
-                {selected && (
-                  <dialog
-                    ref={caseDialog}
-                    className="case-detail-dialog"
-                    aria-labelledby="selected-case-heading"
-                    onClose={() => {
-                      viewOpen.current = false;
-                      setSelected(null);
-                    }}
-                  >
-                    <section
-                      className="console-panel"
-                      aria-label="Selected case"
-                    >
-                      <div className="section-heading">
-                        <div>
-                          <p className="console-eyebrow">{selected.cnr}</p>
-                          <h2 id="selected-case-heading" tabIndex="-1">
-                            {selected.data.case_reference ||
-                              selected.data.registration_number}
+                      {searches[0] && (
+                        <section
+                          className="console-panel"
+                          aria-labelledby="search-summary-heading"
+                        >
+                          <p className="panel-kicker">SOURCE COVERAGE</p>
+                          <h2 id="search-summary-heading">
+                            Latest eCourts search
                           </h2>
-                        </div>
-                        <div>
-                          <button
-                            disabled={busy || Boolean(fetching)}
-                            onClick={() => fetchCase(selected)}
-                          >
-                            {fetching === selected.cnr
-                              ? "Fetching…"
-                              : "Refresh from eCourts"}
-                          </button>
-                          <button onClick={closeCase}>Close details</button>
-                        </div>
-                      </div>
-                      {fetchStatus && (
-                        <div className="case-fetch-status" role="status">
-                          {fetching && (
-                            <progress aria-label="Fetching court case details" />
-                          )}
-                          <p>{fetchStatus.message}</p>
-                          {fetchStatus.actionNeeded && (
-                            <>
-                              <p>
-                                Complete any CAPTCHA or repeat the search in
-                                eCourts, then use View or Refresh from eCourts
-                                again.
-                              </p>
-                              <button onClick={focusCourt}>
-                                Go to eCourts tab
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      )}
-                      <nav className="case-tabs" aria-label="Case views">
-                        {[
-                          ["details", "Current details"],
-                          ["audit", "Audit history"],
-                          ["captures", "Capture checks"],
-                        ].map(([key, label]) => (
-                          <button
-                            aria-pressed={tab === key}
-                            onClick={() => setTab(key)}
-                            key={key}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </nav>
-                      {!selected.hasDetails && (
-                        <p className="listing-notice">
-                          This case was saved from search results. Use View or
-                          Refresh from eCourts to fetch its details through your
-                          existing court tab. If asked, complete CAPTCHA or
-                          repeat the search there, then retry.
-                        </p>
-                      )}
-                      {tab === "details" && (
-                        <>
-                          <dl className="case-facts">
-                            {Object.entries(selected.data)
-                              .filter(([, v]) => !Array.isArray(v))
-                              .map(([k, v]) => (
-                                <div key={k}>
-                                  <dt>{labels[k] || k}</dt>
-                                  <dd>{show(v)}</dd>
-                                </div>
-                              ))}
-                          </dl>
-                          {Object.entries(selected.data)
-                            .filter(([, v]) => Array.isArray(v))
-                            .map(([k, values]) => (
-                              <div key={k}>
-                                <h3>{labels[k] || k}</h3>
-                                {Array.isArray(values[0]) ? (
-                                  <Table
-                                    label={labels[k] || k}
-                                    headers={
-                                      k === "history"
-                                        ? [
-                                            "Judge",
-                                            "Business on",
-                                            "Hearing date",
-                                            "Purpose",
-                                          ]
-                                        : k === "processes"
-                                          ? ["Process ID", "Title", "Date"]
-                                          : k === "acts"
-                                            ? ["Act", "Section"]
-                                            : ["Details"]
-                                    }
-                                    rows={values}
-                                  />
-                                ) : (
-                                  <ul>
-                                    {values.map((v, i) => (
-                                      <li key={i}>{show(v)}</li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </div>
-                            ))}
-                        </>
-                      )}
-                      {tab === "audit" && (
-                        <>
                           <p>
-                            Automatic updates only. Previous and new values are
-                            preserved; there is no approval workflow. Showing up
-                            to 100 latest events.
+                            This is the total reported for this search and court
+                            selection, not a company-wide or nationwide total.
+                            Searches can overlap; their totals are not added
+                            together.
                           </p>
-                          {!audits.length && !listingAudits.length && (
-                            <p>No change events found.</p>
-                          )}
-                          {listingAudits.map((a) => (
-                            <article className="audit-event" key={a.id}>
-                              <h3>
-                                {a.action === "listed"
-                                  ? "Case first listed"
-                                  : "Listing updated"}{" "}
-                                · {date(a.occurred_at)}
-                              </h3>
-                              <p>
-                                User {a.actor_id} · Search capture{" "}
-                                {a.search_capture_id}
-                              </p>
-                              <Table
-                                label="Listing changes"
-                                headers={[
-                                  "Field",
-                                  "Previous value",
-                                  "New value",
-                                ]}
-                                rows={Object.entries(a.changes).map(
-                                  ([k, v]) => [k, show(v.old), show(v.new)],
-                                )}
-                              />
-                            </article>
-                          ))}
-                          {audits.map((a) => (
-                            <article className="audit-event" key={a.id}>
-                              <h3>
-                                {a.action === "created"
-                                  ? "Case created"
-                                  : "Case updated"}{" "}
-                                · {date(a.occurred_at)}
-                              </h3>
-                              <p>
-                                Captured by user {a.actor_id} · Capture{" "}
-                                {a.capture_id}
-                              </p>
-                              <Table
-                                label="Recorded field changes"
-                                headers={[
-                                  "Field",
-                                  "Previous value",
-                                  "New value",
-                                ]}
-                                rows={Object.entries(a.changes).map(
-                                  ([k, v]) => [
-                                    labels[k] || k,
-                                    show(v.old),
-                                    show(v.new),
-                                  ],
-                                )}
-                              />
-                            </article>
-                          ))}
-                        </>
-                      )}
-                      {tab === "captures" && (
-                        <>
-                          <p>
-                            Up to 100 latest checks, including unchanged and
-                            older captures. Snapshots contain extracted fields,
-                            not the full court webpage.
+                          <div className="search-summary-metrics">
+                            <strong>
+                              Establishments:{" "}
+                              {searches[0].total_establishments ??
+                                "Not reported"}
+                            </strong>
+                            <strong>
+                              Reported cases:{" "}
+                              {searches[0].reported_cases ?? "Not reported"}
+                            </strong>
+                            <strong>
+                              Rows captured:{" "}
+                              {searches[0].loaded_rows -
+                                searches[0].skipped_rows}
+                            </strong>
+                          </div>
+                          <p className="muted">
+                            Observed {date(searches[0].captured_at)} ·{" "}
+                            {Object.values(searches[0].search_context)
+                              .filter(Boolean)
+                              .join(" · ")}
                           </p>
-                          {!selected.hasDetails && (
-                            <p>
-                              No detailed page captured yet. Listing changes are
-                              recorded under Audit history.
+                          {searches[0].skipped_rows > 0 && (
+                            <p role="status">
+                              {searches[0].skipped_rows} rows could not be
+                              identified safely and were skipped.
                             </p>
                           )}
-                          {captures.map((c) => (
-                            <details className="capture-entry" key={c.id}>
-                              <summary>
-                                {date(c.received_at)} · {c.outcome}
-                              </summary>
-                              <p>
-                                Observed {date(c.captured_at)} · User{" "}
-                                {c.captured_by}
-                              </p>
-                              <a
-                                href={c.source_url}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Official source ↗
-                              </a>
-                              <pre>{JSON.stringify(c.snapshot, null, 2)}</pre>
-                            </details>
-                          ))}
-                        </>
+                          <Table
+                            label="Court totals reported by eCourts"
+                            headers={[
+                              "Court / establishment",
+                              "Reported cases",
+                            ]}
+                            rows={searches[0].court_totals.map((c) => [
+                              c.court,
+                              c.reported_cases,
+                            ])}
+                          />
+                          <details>
+                            <summary>Previous search captures</summary>
+                            <Table
+                              label="Search capture history"
+                              headers={[
+                                "Observed",
+                                "Selection",
+                                "Reported cases",
+                                "Captured rows",
+                              ]}
+                              rows={searches.map((c) => [
+                                date(c.captured_at),
+                                Object.values(c.search_context)
+                                  .filter(Boolean)
+                                  .join(" · "),
+                                c.reported_cases,
+                                c.loaded_rows - c.skipped_rows,
+                              ])}
+                            />
+                          </details>
+                        </section>
                       )}
-                    </section>
-                  </dialog>
-                )}
-              </>
-            )}
-          </>
-        )}
-        <footer className="console-footer">
-          Source: eCourts Services · Details reflect the last captured page.
-          Verify important information with the court record.
-        </footer>
-      </main>
+                    </>
+                  ) : portfolioView === "connections" ? (
+                    <div className="connections-layout">
+                      {" "}
+                      <section className="console-panel connection-panel">
+                        <div className="panel-kicker">
+                          <WorkspaceIcon name="connection" size={18} />
+                          BROWSER CONNECTION
+                        </div>
+                        <h2>Connect Chrome for automatic capture</h2>
+                        <p>
+                          Connect Verity Case Capture in Chrome to save your
+                          loaded eCourts cases automatically. Complete CAPTCHA
+                          and search in eCourts to start capturing details.
+                        </p>
+                        <p>
+                          Connections stay active until paused, revoked,
+                          expired, or you sign out of Verity. Each upload is
+                          attributed to the account that created the connection.
+                        </p>
+                        <button disabled={busy} onClick={connect}>
+                          Create extension connection
+                        </button>
+                        {settings && (
+                          <div>
+                            <p role="status">{notice}</p>
+                            <label>
+                              Private connection settings
+                              <textarea
+                                readOnly
+                                value={settings}
+                                rows="7"
+                                onFocus={(e) => e.target.select()}
+                              />
+                            </label>
+                            <button
+                              onClick={() =>
+                                perform(async () => {
+                                  await navigator.clipboard.writeText(settings);
+                                  setNotice(
+                                    "Connection settings copied. Paste them in the extension.",
+                                  );
+                                })
+                              }
+                            >
+                              Copy settings
+                            </button>
+                            <button onClick={() => setSettings("")}>
+                              Hide secret
+                            </button>
+                          </div>
+                        )}
+                        <ul className="connection-list">
+                          {connections.map((c) => (
+                            <li key={c.id}>
+                              <span>
+                                {c.label} ·{" "}
+                                {c.revoked_at
+                                  ? "Revoked"
+                                  : new Date(c.expires_at) < new Date()
+                                    ? "Expired"
+                                    : `Expires ${date(c.expires_at)}`}
+                              </span>
+                              {!c.revoked_at && (
+                                <button
+                                  disabled={busy}
+                                  onClick={() =>
+                                    perform(async () => {
+                                      await call("revoke_capture_connection", {
+                                        p_id: c.id,
+                                      });
+                                      setSettings("");
+                                      await refresh();
+                                    })
+                                  }
+                                >
+                                  Revoke
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                      <aside className="connection-help console-panel">
+                        <WorkspaceIcon name="shield" size={26} />
+                        <h3>Automatic updates. Clear history.</h3>
+                        <p>
+                          Complete CAPTCHA and search in eCourts. The connected
+                          extension captures loaded cases one at a time.
+                        </p>
+                        <ul>
+                          <li>
+                            Keep your eCourts tab open while the queue runs.
+                          </li>
+                          <li>Pause and resume from the progress panel.</li>
+                          <li>Every saved update keeps its own audit trail.</li>
+                        </ul>
+                      </aside>
+                    </div>
+                  ) : (
+                    <>
+                      <section className="console-panel">
+                        <div className="section-heading">
+                          <h2>Cases</h2>
+                          <label>
+                            Search cases
+                            <input
+                              type="search"
+                              value={query}
+                              onChange={(e) => setQuery(e.target.value)}
+                              placeholder="CNR, party, court or stage"
+                            />
+                          </label>
+                        </div>
+                        <p className="muted">
+                          {filtered.length} matching of {cases.length} loaded
+                          cases · up to 1,000 detail records and 1,000 listing
+                          records, matched by CNR. Counts describe this loaded
+                          portfolio. Status/stage counts use detailed cases
+                          only. Use Refresh cases after capture.
+                        </p>
+                        {filtered.length ? (
+                          <Table
+                            caseList
+                            label="Saved court cases"
+                            headers={[
+                              "Case / CNR",
+                              "Parties",
+                              "Stage / status",
+                              "Next hearing",
+                              "Capture coverage",
+                              "Last observed",
+                            ]}
+                            rows={filtered.map((c) => [
+                              <button
+                                className="case-open"
+                                disabled={busy || Boolean(fetching)}
+                                onClick={() => fetchCase(c)}
+                              >
+                                View ·{" "}
+                                {c.data.case_reference ||
+                                  c.data.registration_number}
+                                <small>{c.cnr}</small>
+                              </button>,
+                              <>
+                                {c.data.petitioners?.join("; ") ||
+                                  c.data.parties_text}
+                                <small>
+                                  vs {c.data.respondents?.join("; ")}
+                                </small>
+                              </>,
+                              <>
+                                {c.data.case_stage || "—"}
+                                <small
+                                  className={`status-badge status-${c.data.case_status === "Disposed" ? "disposed" : c.data.case_status === "Pending" ? "pending" : "unknown"}`}
+                                >
+                                  {c.hasDetails
+                                    ? c.data.case_status || "Unknown"
+                                    : "Details not captured"}
+                                </small>
+                              </>,
+                              c.data.next_hearing_date || "—",
+                              <span
+                                className={`coverage-badge ${c.hasDetails ? "coverage-complete" : ""}`}
+                              >
+                                {c.hasDetails
+                                  ? "Details captured"
+                                  : "Listed only"}
+                              </span>,
+                              date(c.last_checked_at || c.last_listed_at),
+                            ])}
+                          />
+                        ) : (
+                          <div className="console-empty">
+                            <h3>
+                              {query
+                                ? "No matching cases"
+                                : "No cases captured yet"}
+                            </h3>
+                            <p>
+                              Connect the extension, complete CAPTCHA on
+                              eCourts, and view search results or open a case.
+                              Then refresh this list.
+                            </p>
+                          </div>
+                        )}
+                      </section>
+                    </>
+                  )}
+                  {selected && (
+                    <dialog
+                      ref={caseDialog}
+                      className="case-detail-dialog"
+                      aria-labelledby="selected-case-heading"
+                      onClose={() => {
+                        viewOpen.current = false;
+                        setSelected(null);
+                      }}
+                    >
+                      <section
+                        className="console-panel"
+                        aria-label="Selected case"
+                      >
+                        <div className="section-heading case-dialog-heading">
+                          <div>
+                            <p className="console-eyebrow">{selected.cnr}</p>
+                            <h2 id="selected-case-heading" tabIndex="-1">
+                              {selected.data.case_reference ||
+                                selected.data.registration_number}
+                            </h2>
+                          </div>
+                          <div>
+                            <button
+                              disabled={busy || Boolean(fetching)}
+                              onClick={() => fetchCase(selected)}
+                            >
+                              {fetching === selected.cnr
+                                ? "Fetching…"
+                                : "Refresh from eCourts"}
+                            </button>
+                            <button onClick={closeCase}>Close details</button>
+                          </div>
+                        </div>
+                        {fetchStatus && (
+                          <div className="case-fetch-status" role="status">
+                            {fetching && (
+                              <progress aria-label="Fetching court case details" />
+                            )}
+                            <p>{fetchStatus.message}</p>
+                            {fetchStatus.actionNeeded && (
+                              <>
+                                <p>
+                                  Complete any CAPTCHA or repeat the search in
+                                  eCourts, then use View or Refresh from eCourts
+                                  again.
+                                </p>
+                                <button onClick={focusCourt}>
+                                  Go to eCourts tab
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        <nav className="case-tabs" aria-label="Case views">
+                          {[
+                            ["details", "Current details"],
+                            ["audit", "Audit history"],
+                            ["captures", "Capture checks"],
+                          ].map(([key, label]) => (
+                            <button
+                              aria-pressed={tab === key}
+                              onClick={() => setTab(key)}
+                              key={key}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </nav>
+                        {!selected.hasDetails && (
+                          <p className="listing-notice">
+                            This case was saved from search results. Use View or
+                            Refresh from eCourts to fetch its details through
+                            your existing court tab. If asked, complete CAPTCHA
+                            or repeat the search there, then retry.
+                          </p>
+                        )}
+                        {tab === "details" && (
+                          <>
+                            <dl className="case-facts">
+                              {Object.entries(selected.data)
+                                .filter(([, v]) => !Array.isArray(v))
+                                .map(([k, v]) => (
+                                  <div key={k}>
+                                    <dt>{labels[k] || k}</dt>
+                                    <dd>{show(v)}</dd>
+                                  </div>
+                                ))}
+                            </dl>
+                            {Object.entries(selected.data)
+                              .filter(([, v]) => Array.isArray(v))
+                              .map(([k, values]) => (
+                                <div key={k}>
+                                  <h3>{labels[k] || k}</h3>
+                                  {Array.isArray(values[0]) ? (
+                                    <Table
+                                      label={labels[k] || k}
+                                      headers={
+                                        k === "history"
+                                          ? [
+                                              "Judge",
+                                              "Business on",
+                                              "Hearing date",
+                                              "Purpose",
+                                            ]
+                                          : k === "processes"
+                                            ? ["Process ID", "Title", "Date"]
+                                            : k === "acts"
+                                              ? ["Act", "Section"]
+                                              : ["Details"]
+                                      }
+                                      rows={values}
+                                    />
+                                  ) : (
+                                    <ul>
+                                      {values.map((v, i) => (
+                                        <li key={i}>{show(v)}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                </div>
+                              ))}
+                          </>
+                        )}
+                        {tab === "audit" && (
+                          <>
+                            <p>
+                              Automatic updates only. Previous and new values
+                              are preserved; there is no approval workflow.
+                              Showing up to 100 latest events.
+                            </p>
+                            {!audits.length && !listingAudits.length && (
+                              <p>No change events found.</p>
+                            )}
+                            {listingAudits.map((a) => (
+                              <article className="audit-event" key={a.id}>
+                                <h3>
+                                  {a.action === "listed"
+                                    ? "Case first listed"
+                                    : "Listing updated"}{" "}
+                                  · {date(a.occurred_at)}
+                                </h3>
+                                <p>
+                                  User {a.actor_id} · Search capture{" "}
+                                  {a.search_capture_id}
+                                </p>
+                                <Table
+                                  label="Listing changes"
+                                  headers={[
+                                    "Field",
+                                    "Previous value",
+                                    "New value",
+                                  ]}
+                                  rows={Object.entries(a.changes).map(
+                                    ([k, v]) => [k, show(v.old), show(v.new)],
+                                  )}
+                                />
+                              </article>
+                            ))}
+                            {audits.map((a) => (
+                              <article className="audit-event" key={a.id}>
+                                <h3>
+                                  {a.action === "created"
+                                    ? "Case created"
+                                    : "Case updated"}{" "}
+                                  · {date(a.occurred_at)}
+                                </h3>
+                                <p>
+                                  Captured by user {a.actor_id} · Capture{" "}
+                                  {a.capture_id}
+                                </p>
+                                <Table
+                                  label="Recorded field changes"
+                                  headers={[
+                                    "Field",
+                                    "Previous value",
+                                    "New value",
+                                  ]}
+                                  rows={Object.entries(a.changes).map(
+                                    ([k, v]) => [
+                                      labels[k] || k,
+                                      show(v.old),
+                                      show(v.new),
+                                    ],
+                                  )}
+                                />
+                              </article>
+                            ))}
+                          </>
+                        )}
+                        {tab === "captures" && (
+                          <>
+                            <p>
+                              Up to 100 latest checks, including unchanged and
+                              older captures. Snapshots contain extracted
+                              fields, not the full court webpage.
+                            </p>
+                            {!selected.hasDetails && (
+                              <p>
+                                No detailed page captured yet. Listing changes
+                                are recorded under Audit history.
+                              </p>
+                            )}
+                            {captures.map((c) => (
+                              <details className="capture-entry" key={c.id}>
+                                <summary>
+                                  {date(c.received_at)} · {c.outcome}
+                                </summary>
+                                <p>
+                                  Observed {date(c.captured_at)} · User{" "}
+                                  {c.captured_by}
+                                </p>
+                                <a
+                                  href={c.source_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  Official source ↗
+                                </a>
+                                <pre>{JSON.stringify(c.snapshot, null, 2)}</pre>
+                              </details>
+                            ))}
+                          </>
+                        )}
+                      </section>
+                    </dialog>
+                  )}
+                </>
+              )}
+            </>
+          )}
+          <footer className="console-footer">
+            <WorkspaceIcon name="shield" size={15} />
+            <span>
+              Source: eCourts Services · Details reflect the last captured page.
+              Verify important information with the court record.
+            </span>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }

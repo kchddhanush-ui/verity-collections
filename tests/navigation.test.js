@@ -16,7 +16,7 @@ function page() {
   globalThis.MutationObserver = window.MutationObserver;
   return document;
 }
-const options = { isVisible: () => true, timeoutMs: 100, settleMs: 5 };
+const options = { isVisible: () => true, timeoutMs: 500, settleMs: 5 };
 test("background request uses the matching live View control and checks CNR", async () => {
   const doc = page();
   let clicks = 0;

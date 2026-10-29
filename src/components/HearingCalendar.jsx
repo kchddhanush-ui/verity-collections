@@ -161,6 +161,16 @@ export function HearingCalendar({ cases, onOpenCase, today = indiaToday() }) {
                           {Number(day.slice(-2))}
                           {day === today && <span>Today</span>}
                         </button>
+                        {entries.length > 0 && (
+                          <button
+                            className="hearing-mobile-count"
+                            aria-label={`Show ${entries.length} cases on ${formatHearingDate(day)}`}
+                            onClick={() => setSelectedDay(day)}
+                          >
+                            {entries.length} case
+                            {entries.length === 1 ? "" : "s"}
+                          </button>
+                        )}
                         <ul className="hearing-day-cases">
                           {entries.slice(0, 3).map((event) => (
                             <li key={event.key}>

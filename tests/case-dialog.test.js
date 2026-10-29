@@ -148,6 +148,46 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
         }),
       ),
     );
+    assert.ok(
+      document.querySelector(".console-metrics"),
+      "overview opens first",
+    );
+    assert.equal(
+      document.querySelector(".connection-panel"),
+      null,
+      "setup stays out of the overview",
+    );
+    assert.ok(document.querySelector('.skip-link[href="#workspace-content"]'));
+    await act(async () =>
+      document
+        .querySelector('.sidebar-nav button[aria-label="Connections"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.ok(
+      document.querySelector(".connection-panel"),
+      "connections has its own view",
+    );
+    assert.ok(
+      [...document.querySelectorAll("button")].some(
+        (b) => b.textContent === "Create extension connection",
+      ),
+    );
+    await act(async () =>
+      document
+        .querySelector('.sidebar-nav button[aria-label="Hearing calendar"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.ok(
+      document.querySelector(".hearing-calendar"),
+      "calendar remains reachable from navigation",
+    );
+    const caseNav = document.querySelector(
+      '.sidebar-nav button[aria-label="Cases"]',
+    );
+    assert.ok(caseNav, "workspace navigation exposes the case register");
+    await act(async () =>
+      caseNav.dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
     const view = [...document.querySelectorAll("button")].find((b) =>
       b.textContent.includes("View ·"),
     );
