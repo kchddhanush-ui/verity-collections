@@ -1,8 +1,9 @@
 const $ = (id) => document.getElementById(id);
 async function render() {
-  const { config, lastStatus } = await chrome.storage.local.get([
+  const { config, lastStatus, batch } = await chrome.storage.local.get([
     "config",
     "lastStatus",
+    "batch",
   ]);
   $("connection").hidden = !config;
   $("setup").hidden = Boolean(config);
@@ -16,6 +17,14 @@ async function render() {
       : "Resume capture";
     $("expiry").textContent =
       `Connection expires ${new Date(config.expiresAt).toLocaleDateString()}`;
+  }
+  $("batch").hidden = !batch || !config;
+  if (batch && config) {
+    $("batch-progress").max = batch.cnrs.length;
+    $("batch-progress").value = batch.index;
+    $("batch-status").textContent = `${batch.index}/${batch.cnrs.length} saved · ${batch.failed.length} failed · ${batch.message}`;
+    $("batch-pause").disabled = ["paused", "attention", "complete"].includes(batch.state) || !config.enabled;
+    $("batch-resume").disabled = !["paused", "attention"].includes(batch.state) || !config.enabled;
   }
   $("status").textContent = lastStatus || "";
 }
@@ -48,6 +57,8 @@ $("setup").addEventListener("submit", async (e) => {
 for (const [id, type] of [
   ["toggle", "TOGGLE"],
   ["disconnect", "DISCONNECT"],
+  ["batch-pause", "BATCH_PAUSE"],
+  ["batch-resume", "BATCH_RESUME"],
 ])
   $(id).addEventListener("click", async () => {
     try {
@@ -61,3 +72,5 @@ for (const [id, type] of [
 render().catch((e) => {
   $("status").textContent = e.message;
 });
+
+chrome.storage.onChanged.addListener(() => { render().catch(() => {}); });

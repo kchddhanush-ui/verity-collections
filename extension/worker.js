@@ -71,6 +71,8 @@ async function deliver(key, item, config) {
       lastStatus: message,
       lastSyncedAt: new Date().toISOString(),
     });
+    if (item.capture.kind === "search_list" && item.searchSession)
+      await enqueueBatch(item.capture, item.tabId, config, item.searchSession);
     await badge("OK");
     return { accepted: true, saved: true, status: result.status, message };
   } catch (e) {
@@ -137,7 +139,7 @@ async function handle(message, sender) {
     });
     const all = await chrome.storage.local.get(null);
     await chrome.storage.local.remove(
-      Object.keys(all).filter((k) => k.startsWith("pending:")),
+      Object.keys(all).filter((k) => k.startsWith("pending:") || k === "batch"),
     );
     await chrome.storage.local.set({
       config: {
@@ -153,6 +155,8 @@ async function handle(message, sender) {
     await wakePages();
     return { ok: true };
   }
+  if (["BATCH_PAUSE", "BATCH_RESUME"].includes(message.type) && internal)
+    return await controlBatch(message.type);
   if (message.type === "TOGGLE" && internal) {
     const { config } = await chrome.storage.local.get("config");
     if (!config) throw new Error("Connect first");
@@ -167,7 +171,7 @@ async function handle(message, sender) {
     const all = await chrome.storage.local.get(null);
     await chrome.storage.local.remove(
       Object.keys(all).filter(
-        (k) => k.startsWith("pending:") || k === "config",
+        (k) => k.startsWith("pending:") || k === "config" || k === "batch",
       ),
     );
     await badge("OFF");
@@ -218,7 +222,8 @@ async function handle(message, sender) {
         accepted: false,
         message: "Sync queue full; check your connection",
       };
-    const item = { capture, connectionId: config.connectionId, attempts: 0 };
+    const item = { capture, connectionId: config.connectionId, attempts: 0,
+      ...(capture.kind === "search_list" ? { tabId: sender.tab.id, searchSession: message.searchSession } : {}) };
     await chrome.storage.local.set({ [key]: item });
     return await deliver(key, item, config);
   }
@@ -238,7 +243,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Verity dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.2.1", connected: Boolean(config?.enabled) };
+    return { version: "1.3.0", connected: Boolean(config?.enabled) };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Verity Case Capture.",
@@ -249,7 +254,7 @@ async function dashboard(message, sender) {
     p.projectUrl?.replace(/\/$/, "") !== config.url ||
     typeof p.accessToken !== "string" ||
     p.accessToken.length > 12000 ||
-    !/^[A-Z]{4}\d{12}$/.test(p.cnr) ||
+    (!["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME"].includes(message.action) && !/^[A-Z]{4}\d{12}$/.test(p.cnr)) ||
     !/^[a-f0-9-]{36}$/i.test(p.workspace)
   )
     throw new Error("Invalid dashboard case request");
@@ -276,6 +281,12 @@ async function dashboard(message, sender) {
   });
   if (verified.id !== config.connectionId)
     throw new Error("Connection identity changed. Reconnect the extension.");
+  if (["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME"].includes(message.action)) {
+    if (message.action !== "BATCH_STATUS")
+      await navigator.locks.request("verity-sync", () => controlBatch(message.action));
+    const { batch } = await chrome.storage.local.get("batch");
+    return { batch: batch?.connectionId === config.connectionId ? batchSummary(batch) : null };
+  }
   const tabs = await chrome.tabs.query({
     url: "https://services.ecourts.gov.in/ecourtindia_v6/*",
   });
@@ -365,7 +376,10 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   (async () => {
     try {
       const result =
-        message.type === "DASHBOARD"
+        message.type === "BATCH_TICK" && sender.id === chrome.runtime.id &&
+        sender.tab && sender.url?.startsWith("https://services.ecourts.gov.in/ecourtindia_v6/")
+          ? await runBatch(sender.tab.id)
+          : message.type === "DASHBOARD"
           ? await dashboard(message, sender)
           : await navigator.locks.request("verity-sync", () =>
               handle(message, sender),
@@ -378,6 +392,10 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   return true;
 });
 chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === "batch") {
+    runBatch().catch(() => {});
+    return;
+  }
   if (alarm.name !== "retry") return;
   (async () => {
     await navigator.locks.request("verity-sync", async () => {
@@ -400,3 +418,92 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 chrome.runtime.onInstalled.addListener(() => {
   protectStorage().catch(() => {});
 });
+
+// Only identifiers/progress persist here; all snapshots still use the audited ingest RPC.
+function batchSummary(batch) {
+  return {
+    id: batch.id, state: batch.state, total: batch.cnrs.length,
+    saved: batch.index, waiting: batch.cnrs.length - batch.index,
+    failed: batch.failed.length, current: batch.cnrs[batch.index] || "",
+    message: batch.message, updatedAt: batch.updatedAt,
+  };
+}
+async function enqueueBatch(capture, tabId, config, searchSession) {
+  const cnrs = [...new Set(capture.entries.map(e => e.cnr))]
+    .filter(cnr => /^[A-Z]{4}\d{12}$/.test(cnr));
+  if (!cnrs.length || typeof searchSession !== "string" || searchSession.length > 100) return;
+  // The same retained table must not start another loop after each opened case.
+  const fingerprint = Array.from(new Uint8Array(await crypto.subtle.digest(
+    "SHA-256", new TextEncoder().encode(JSON.stringify([searchSession, capture.entries, capture.search_context])),
+  )), b => b.toString(16).padStart(2, "0")).join("");
+  const { batch: old } = await chrome.storage.local.get("batch");
+  if (old?.fingerprint === fingerprint && old.connectionId === config.connectionId) return;
+  const batch = {
+    id: crypto.randomUUID(), fingerprint, tabId, connectionId: config.connectionId,
+    cnrs, index: 0, failed: [], state: "waiting", nextAt: Date.now() + 5000,
+    message: "Search saved. Automatic detail capture starts shortly.",
+    updatedAt: new Date().toISOString(),
+  };
+  await chrome.storage.local.set({ batch });
+  // Fallback when the source tab's heartbeat is throttled or the worker restarts.
+  await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
+}
+async function controlBatch(action) {
+  const { batch, config } = await chrome.storage.local.get(["batch", "config"]);
+  if (!batch || !config?.enabled || batch.connectionId !== config.connectionId)
+    throw new Error("No active batch. Connect/resume capture and load an eCourts search first.");
+  if (batch.state === "complete") return { batch: batchSummary(batch) };
+  const paused = action === "BATCH_PAUSE";
+  const next = { ...batch, state: paused ? "paused" : "waiting", nextAt: Date.now(),
+    message: paused ? "Paused. An already opened case may finish saving." : "Resuming remaining cases…",
+    updatedAt: new Date().toISOString() };
+  await chrome.storage.local.set({ batch: next });
+  if (!paused) await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
+  return { batch: batchSummary(next) };
+}
+async function runBatch(tabId) {
+  return await navigator.locks.request("verity-case-navigation", { ifAvailable: true }, async lock => {
+    if (!lock) return {};
+    const { config, batch } = await chrome.storage.local.get(["config", "batch"]);
+    if (!batch || !config?.enabled || batch.connectionId !== config.connectionId ||
+        (tabId !== undefined && batch.tabId !== tabId)) return {};
+    if (["paused", "complete", "attention"].includes(batch.state) || Date.now() < batch.nextAt)
+      return { batch: batchSummary(batch) };
+    const cnr = batch.cnrs[batch.index];
+    if (!cnr) return {};
+    // Updates to the same queue are serialised with config changes and pause controls.
+    async function update(fields) {
+      return await navigator.locks.request("verity-sync", async () => {
+        const { batch: latest, config: now } = await chrome.storage.local.get(["batch", "config"]);
+        if (latest?.id !== batch.id || now?.connectionId !== batch.connectionId) return null;
+        const next = { ...latest, ...fields, updatedAt: new Date().toISOString() };
+        if (latest.state === "paused" && fields.state !== "attention") next.state = "paused";
+        await chrome.storage.local.set({ batch: next });
+        return next;
+      });
+    }
+    await update({ state: "fetching", message: `Fetching ${cnr}…` });
+    try {
+      const response = await chrome.tabs.sendMessage(batch.tabId, { type: "LOAD_CASE", cnr, force: true });
+      if (response?.error) throw new Error(response.error);
+      if (response?.capture?.cnr !== cnr) throw new Error("Case identity mismatch. Nothing was saved.");
+      const result = await navigator.locks.request("verity-sync", async () => {
+        const { config: now, batch: latest } = await chrome.storage.local.get(["config", "batch"]);
+        if (!now?.enabled || now.connectionId !== batch.connectionId || latest?.id !== batch.id)
+          throw new Error("Capture paused or connection/search changed. Resume to retry this case.");
+        return await handle({ type: "CAPTURE", capture: response.capture },
+          { id: chrome.runtime.id, url: source, tab: { id: batch.tabId } });
+      });
+      if (!result.saved) throw new Error(result.message || "Save not confirmed. Check the connection before resuming.");
+      const index = batch.index + 1;
+      const next = await update({ index, failed: batch.failed.filter(c => c !== cnr),
+        state: index === batch.cnrs.length ? "complete" : "waiting", nextAt: Date.now() + 5000,
+        message: index === batch.cnrs.length ? "All loaded cases saved. Audit history retained." : `${index} of ${batch.cnrs.length} saved. Next case shortly.` });
+      return { batch: next ? batchSummary(next) : null };
+    } catch (e) {
+      const next = await update({ state: "attention", failed: [...new Set([...batch.failed, cnr])],
+        message: `${e.message} Check eCourts/CAPTCHA and the connection, then resume.`, nextAt: 0 });
+      return { batch: next ? batchSummary(next) : null };
+    }
+  });
+}

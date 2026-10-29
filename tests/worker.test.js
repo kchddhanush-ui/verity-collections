@@ -255,6 +255,30 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         .actionNeeded,
       true,
     );
+    // Automatic list capture queues unique CNRs and advances only on confirmed saves.
+    const batchList = { ...list, entries: [{ cnr: payload.cnr }, { cnr: payload.cnr }] };
+    await send({ type: "CAPTURE", capture: batchList, searchSession: "page-a" });
+    assert.equal(values.batch.cnrs.length, 1);
+    values.batch.nextAt = 0;
+    loadResponse = { error: "CAPTCHA required" };
+    await send({ type: "BATCH_TICK" });
+    assert.equal(values.batch.state, "attention");
+    assert.equal(values.batch.index, 0);
+    assert.equal(values.batch.failed.length, 1);
+    await send({ type: "BATCH_RESUME" }, popup);
+    loadResponse = { capture: capture() };
+    await send({ type: "BATCH_TICK" });
+    assert.equal(values.batch.state, "complete");
+    assert.equal(values.batch.index, 1);
+    assert.equal(values.batch.failed.length, 0);
+    const completedId = values.batch.id;
+    await send({ type: "CAPTURE", capture: batchList, searchSession: "page-a" });
+    assert.equal(values.batch.id, completedId, "retained result table cannot loop");
+    await send({ type: "CAPTURE", capture: batchList, searchSession: "page-b" });
+    await send({ type: "BATCH_PAUSE" }, popup);
+    values.batch.nextAt = 0;
+    await send({ type: "BATCH_TICK" });
+    assert.equal(values.batch.index, 0, "paused queue cannot advance");
     courtTabs = [];
     offline = true;
     const cap = capture();
@@ -263,7 +287,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       "Sync pending · automatic retry",
     );
     assert.equal(values[`pending:${cap.id}`].attempts, 1);
-    assert.equal(alarms.length, 1);
+    assert.ok(alarms.some(([name]) => name === "retry"));
     await send({ type: "TOGGLE" }, popup);
     assert.equal(
       (await send({ type: "CAPTURE", capture: capture() })).accepted,

@@ -80,6 +80,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const requestedCnr = useRef("");
   const [fetching, setFetching] = useState("");
   const [fetchStatus, setFetchStatus] = useState(null);
+  const [batch, setBatch] = useState(null);
+  const [batchError, setBatchError] = useState("");
   const [searches, setSearches] = useState([]);
   const [listingAudits, setListingAudits] = useState([]);
   const [selected, setSelected] = useState(null),
@@ -297,6 +299,45 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     };
   }
   useEffect(() => {
+    let active = true, timer, lastProgress = "";
+    setBatch(null);
+    setBatchError("");
+    if (!workspace || !session.access_token) return;
+    async function poll() {
+      try {
+        const ping = await extensionRequest("PING");
+        if (ping?.connected) {
+          const result = await extensionRequest("BATCH_STATUS", dashboardPayload());
+          if (active && !result.error) {
+            setBatch(result.batch || null);
+            const progress = result.batch ? `${result.batch.id}:${result.batch.saved}` : "";
+            if (progress && progress !== lastProgress) {
+              const portfolio = await loadPortfolio(workspace);
+              if (active) {
+                setCases(portfolio.cases);
+                setSearches(portfolio.searches);
+                setConnections(portfolio.connections);
+                setSelected(old => old ? portfolio.cases.find(c => c.cnr === old.cnr) || old : null);
+                lastProgress = progress;
+              }
+            }
+          } else if (active) setBatch(null);
+        } else if (active) setBatch(null);
+      } catch { /* An uninstalled/disconnected extension does not block saved cases. */ }
+      finally { if (active) timer = setTimeout(poll, 6000); }
+    }
+    poll();
+    return () => { active = false; clearTimeout(timer); };
+  }, [workspace, session.access_token]);
+  async function batchControl(action) {
+    setBatchError("");
+    try {
+      const result = await extensionRequest(action, dashboardPayload());
+      if (result.error) throw new Error(result.error);
+      setBatch(result.batch || null);
+    } catch (e) { setBatchError(e.message); }
+  }
+  useEffect(() => {
     if (selected && caseDialog.current && !caseDialog.current.open) {
       caseDialog.current.showModal();
       caseDialog.current.querySelector("#selected-case-heading")?.focus();
@@ -439,6 +480,19 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           <div className="console-error" role="alert">
             {error}
           </div>
+        )}
+        {batch && (
+          <section className="case-fetch-status" aria-label="Automatic case detail capture">
+            <h2>Automatic detail capture</h2>
+            <progress aria-label="Cases saved" max={batch.total} value={batch.saved} />
+            <p role="status">{batch.saved} of {batch.total} saved · {batch.waiting} remaining · {batch.failed} failed · {batch.state}</p>
+            <p>{batch.message}</p>
+            <p>Keep the eCourts tab open. Cases are fetched one at a time, with a delay between requests.</p>
+            {batch.current && <p>Current case: {batch.current}</p>}
+            <button disabled={["paused", "attention", "complete"].includes(batch.state)} onClick={() => batchControl("BATCH_PAUSE")}>Pause queue</button>{" "}
+            <button disabled={!["paused", "attention"].includes(batch.state)} onClick={() => batchControl("BATCH_RESUME")}>Resume queue</button>
+            {batchError && <p role="alert">{batchError}</p>}
+          </section>
         )}
         {fetchStatus && !selected && (
           <div className="case-fetch-status" role="status">

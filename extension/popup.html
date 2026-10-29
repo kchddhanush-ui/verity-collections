@@ -15,6 +15,13 @@
       <p id="expiry"></p>
       <button id="toggle">Pause capture</button>
       <button id="disconnect">Disconnect</button>
+      <section id="batch" hidden>
+        <h2>Automatic detail capture</h2>
+        <progress id="batch-progress" aria-label="Cases saved"></progress>
+        <p id="batch-status" role="status"></p>
+        <button id="batch-pause">Pause queue</button>
+        <button id="batch-resume">Resume queue</button>
+      </section>
       <p>
         Disconnect clears this browser. Revoke the connection in Verity to
         invalidate its credential.
@@ -31,7 +38,7 @@
       ></textarea>
       <p>
         Connect once. When enabled, search results and court totals are saved
-        automatically. Opening a case adds its loaded details. Separate audit
+        automatically. Case details are then fetched one at a time while the court tab stays open. Separate audit
         histories preserve listing and case changes.
       </p>
       <button type="submit">Connect and enable auto-save</button>

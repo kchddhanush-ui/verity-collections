@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Verity Case Capture
 
-Last updated: 2026-10-28. Development installation only; not submitted or published.
+Last updated: 2026-10-29. Development installation only; not submitted or published.
 
 ## Store listing draft
 
@@ -23,7 +23,7 @@ Store icon and screenshots have not been created. No icon paths are declared in 
 | Permission | Purpose |
 |---|---|
 | storage | Keep the workspace connection locally and preserve bounded pending uploads across browser worker restarts. Secrets are restricted to trusted extension contexts. |
-| alarms | Retry failed uploads up to three attempts without polling court websites. |
+| alarms | Retry failed uploads up to three attempts and resume sequential case capture when the court tab heartbeat is throttled. |
 | https://services.ecourts.gov.in/* | Read supported opened case pages and show capture status; never solve CAPTCHA. |
 | Optional https://*.supabase.co/* | Allows asking for the user's exact Supabase project origin when connecting; sends captures to that project. |
 
@@ -66,3 +66,7 @@ Privacy/store disclosure must cover the local dashboard message bridge, transien
 ## Version 1.2.1 — 2026-10-29 (development draft)
 
 Prevent default session-link navigation during a targeted AJAX case load while preserving the existing court View handler. Show the selected case, progress and errors together in a dashboard dialog. Closing the dialog keeps an authorised save running without reopening the view on completion. No permission or data-collection changes from 1.2.0. No new SQL.
+
+## Version 1.3.0 — 2026-10-29 (development draft)
+
+After a user completes CAPTCHA/search and a result list is saved, automatically open each identified case through that list’s live View controls, one at a time. Keep a durable bounded queue of up to 2,000 CNRs, source tab ID, search fingerprint and progress locally. A five-second minimum gap and a 30-second alarm fallback pace requests. Pause on missing case/session, navigation or upload failure; require the user to complete any CAPTCHA and resume. User pause/resume is available in the extension popup and authenticated dashboard, which displays progress and reloads after confirmed saves. No additional permissions. Existing case snapshots and field-change audits remain transactional. No automatic pagination, filter changes, guessed endpoints or CAPTCHA solving. A refreshed source page/new result list starts a fresh run; the same retained table does not loop after completion. Queue data is cleared on disconnect or connection replacement. Refresh screenshots and privacy disclosures for automatic sequential access and queue progress before publication. Live eCourts validation remains required.

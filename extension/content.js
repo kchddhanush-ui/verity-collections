@@ -1,4 +1,5 @@
 (() => {
+  const searchSession = crypto.randomUUID();
   let timer,
     previous = "",
     running = false,
@@ -32,6 +33,7 @@
     try {
       const result = await chrome.runtime.sendMessage({
         type: "CAPTURE",
+        searchSession,
         capture: {
           ...capture,
           id: crypto.randomUUID(),
@@ -110,5 +112,15 @@
       schedule();
     }
   });
+  // A content heartbeat drives the next item after a short delay. Durable alarms
+  // provide a slower fallback when Chrome throttles hidden tabs.
+  async function tickBatch() {
+    try {
+      const result = await chrome.runtime.sendMessage({ type: "BATCH_TICK" });
+      if (result?.batch) notify(`${result.batch.saved}/${result.batch.total} saved · ${result.batch.message}`);
+    } catch { return; } // Reloading the extension requires refreshing this tab.
+    setTimeout(tickBatch, 5000);
+  }
+  setTimeout(tickBatch, 5000);
   schedule();
 })();
