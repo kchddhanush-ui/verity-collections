@@ -156,3 +156,23 @@ The dashboard loads up to 1,000 listing records and 1,000 detailed records and c
 **Audit:** every search capture has an immutable, dated snapshot. A new listing or changed listing adds a separate old/new listing audit, visible in the case's Audit history. Unchanged rechecks retain their search snapshot without duplicate change events. Row-number-only changes are not treated as a case-data change. Listing updates, audits and the page snapshot commit in one transaction; stale observations cannot replace newer listing data.
 
 Connections and automatic-capture privacy: enabling the extension now includes visible search results and selected search context. Pause the extension before searches you do not want saved in the receiving workspace. Failed uploads use the existing bounded retry queue, additionally capped at 4 MB of pending data.
+
+## Upgrade to View from Verity (extension 1.2.0)
+
+No new database SQL is needed if both earlier migrations are already installed.
+
+1. Pull this branch and restart `npm run dev`.
+2. In `chrome://extensions`, reload Verity Case Capture and confirm **1.2.0**. Chrome may ask you to allow the additional localhost dashboard access.
+3. Refresh **both** the Verity page and the eCourts tab so their updated scripts load.
+4. Keep your existing valid extension connection. This release supports the local dashboard at `http://127.0.0.1:5173` or `http://localhost:5173`. For a different local port, create a new connection from that page; its settings include `app_origin`.
+5. On eCourts, complete CAPTCHA and run a search. Leave that tab open, then return to Verity and refresh the listings once if needed.
+6. Click **View** on a listed-only case in Verity. The extension uses the matching live View control in the existing eCourts tab. The dashboard displays fetching progress, saves the loaded details with the existing audit transaction, and reloads that case without a manual dashboard refresh after a confirmed save.
+7. For an already detailed case, View opens the stored record immediately. Use **Refresh from eCourts** to request a fresh load.
+
+This is single-case, user-triggered processing, not a bulk crawler. It never solves CAPTCHA, follows guessed/private endpoints, stores court session URLs, or automatically changes court/search filters. Live View controls must still be present in an open eCourts tab for a fresh fetch. The portal normally retains the current search rows while showing a case; if your desired case is no longer in that live search, repeat its search on eCourts and retry. If a case is already open, an initial View can capture those loaded details; an explicit Refresh requires a new page update and will not treat old content as fresh.
+
+**When action is needed:** if the tab/session has closed, the source needs CAPTCHA, the case cannot be matched, or it does not load within the content-script wait, Verity shows the failure rather than claiming it saved. Click **Go to eCourts tab**, complete the necessary action, then retry View/Refresh. Some Chrome background-tab throttling or court-site behaviour may require bringing the source tab to the foreground. Only one case-navigation request can run at a time. Uploads that enter the retry queue show pending, not success; refresh the portfolio after the extension reports they synced.
+
+**Account isolation:** the dashboard request carries its current Supabase login token through the local extension bridge to the configured Supabase project. The extension uses the existing authenticated connection-list function to verify that this is the account and workspace that own its active upload connection, then checks that the connection is still valid. A mismatched account, project, origin or workspace is rejected. The dashboard never receives the extension's upload credential or raw court page. Its login token is used transiently and not saved by the extension. Connection changes during navigation cancel the save instead of sending it to another workspace.
+
+The bridge runs only on localhost/127.0.0.1 pages and checks the exact configured dashboard origin. The initial dashboard integration is local-only; hosted Verity domains need an explicit extension origin configuration in a later release. Existing connections created before 1.2.0 default to the two port-5173 origins above. Keep the source tab open and sign into the same workspace account that created the connection.

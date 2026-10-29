@@ -2,7 +2,8 @@
   let timer,
     previous = "",
     running = false,
-    rerun = false;
+    rerun = false,
+    targeted = false;
   function notify(message) {
     let node = document.getElementById("verity-sync-notice");
     if (!node) {
@@ -14,7 +15,7 @@
     node.textContent = `Verity · ${message}`;
   }
   async function scan() {
-    if (document.visibilityState !== "visible") return;
+    if (targeted || document.visibilityState !== "visible") return;
     if (running) {
       rerun = true;
       return;
@@ -69,6 +70,40 @@
     attributeFilter: ["class", "style", "hidden", "aria-hidden"],
   });
   document.addEventListener("visibilitychange", schedule);
+  chrome.runtime.onMessage.addListener((message, sender, respond) => {
+    if (sender.id !== chrome.runtime.id) return;
+    if (message.type === "PROBE_CASE") {
+      respond(VerityNavigation.probe(document, message.cnr));
+      return;
+    }
+    if (message.type === "LOAD_CASE") {
+      if (targeted) {
+        respond({ error: "Another case is loading in this court tab." });
+        return;
+      }
+      targeted = true;
+      (async () => {
+        try {
+          const capture = await VerityNavigation.load(document, message.cnr, {
+            force: Boolean(message.force),
+          });
+          previous = JSON.stringify(capture);
+          respond({
+            capture: {
+              ...capture,
+              id: crypto.randomUUID(),
+              captured_at: new Date().toISOString(),
+            },
+          });
+        } catch (e) {
+          respond({ error: e.message });
+        } finally {
+          targeted = false;
+        }
+      })();
+      return true;
+    }
+  });
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "CONNECTION_CHANGED") {
       previous = "";

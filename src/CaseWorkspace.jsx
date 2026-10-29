@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace.css";
 import { mergePortfolio } from "./lib/portfolio";
+import { extensionRequest } from "./lib/extensionBridge";
 
 const date = (value) => (value ? new Date(value).toLocaleString() : "—");
 const show = (value) =>
@@ -74,6 +75,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     [workspace, setWorkspace] = useState(""),
     [cases, setCases] = useState([]),
     [connections, setConnections] = useState([]);
+  const [fetching, setFetching] = useState("");
+  const [fetchStatus, setFetchStatus] = useState(null);
   const [searches, setSearches] = useState([]);
   const [listingAudits, setListingAudits] = useState([]);
   const [selected, setSelected] = useState(null),
@@ -161,6 +164,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     let active = true;
     setCases([]);
     setSearches([]);
+    setFetchStatus(null);
     setSelected(null);
     setSettings("");
     setNotice("");
@@ -269,6 +273,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
               import.meta.env.VITE_SUPABASE_ANON_KEY,
             token: result.token,
+            app_origin: window.location.origin,
           },
           null,
           2,
@@ -279,6 +284,78 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       );
       await refresh();
     });
+  }
+  function dashboardPayload(cnr) {
+    return {
+      cnr,
+      workspace,
+      projectUrl: import.meta.env.VITE_SUPABASE_URL?.trim(),
+      accessToken: session.access_token,
+    };
+  }
+  async function fetchCase(item, force = false) {
+    setSelected(item);
+    setTab("details");
+    if (item.hasDetails && !force) {
+      setFetchStatus(null);
+      return;
+    }
+    if (fetching || busy) return;
+    setFetching(item.cnr);
+    setBusy(true);
+    setFetchStatus({
+      message: `Fetching details for ${item.cnr} through your eCourts tab…`,
+    });
+    try {
+      const ping = await extensionRequest("PING");
+      if (ping?.error) throw new Error(ping.error);
+      if (!ping?.connected)
+        throw new Error("Connect or resume Verity Case Capture first.");
+      const result = await extensionRequest("FETCH_CASE", {
+        ...dashboardPayload(item.cnr),
+        force,
+      });
+      if (result?.error) {
+        setFetchStatus({
+          message: result.error,
+          actionNeeded: result.actionNeeded,
+        });
+        return;
+      }
+      if (!result?.saved) {
+        setFetchStatus({
+          message:
+            result?.message ||
+            "Upload pending. Check the extension status, then refresh cases after it syncs.",
+        });
+        return;
+      }
+      const portfolio = await loadPortfolio(workspace);
+      setCases(portfolio.cases);
+      setSearches(portfolio.searches);
+      setConnections(portfolio.connections);
+      setSelected(portfolio.cases.find((c) => c.cnr === item.cnr) || item);
+      setFetchStatus({
+        message: `${result.message}. Details and audit history refreshed.`,
+      });
+    } catch (e) {
+      setFetchStatus({ message: e.message, actionNeeded: true });
+    } finally {
+      setFetching("");
+      setBusy(false);
+    }
+  }
+  async function focusCourt() {
+    if (!selected) return;
+    try {
+      const result = await extensionRequest(
+        "FOCUS_COURT",
+        dashboardPayload(selected.cnr),
+      );
+      if (result?.error) throw new Error(result.error);
+    } catch (e) {
+      setFetchStatus({ message: e.message, actionNeeded: true });
+    }
   }
   const filtered = cases.filter((c) =>
     JSON.stringify([c.cnr, c.data]).toLowerCase().includes(query.toLowerCase()),
@@ -347,6 +424,21 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         {error && (
           <div className="console-error" role="alert">
             {error}
+          </div>
+        )}
+        {fetchStatus && (
+          <div className="case-fetch-status" role="status">
+            {fetching && <progress aria-label="Fetching court case details" />}
+            <p>{fetchStatus.message}</p>
+            {fetchStatus.actionNeeded && (
+              <>
+                <p>
+                  Complete any CAPTCHA or repeat the search in eCourts, then use
+                  View or Refresh from eCourts again.
+                </p>
+                <button onClick={focusCourt}>Go to eCourts tab</button>
+              </>
+            )}
           </div>
         )}
         {loading ? (
@@ -601,11 +693,10 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       rows={filtered.map((c) => [
                         <button
                           className="case-open"
-                          onClick={() => {
-                            setSelected(c);
-                            setTab("details");
-                          }}
+                          disabled={busy || Boolean(fetching)}
+                          onClick={() => fetchCase(c)}
                         >
+                          View ·{" "}
                           {c.data.case_reference || c.data.registration_number}
                           <small>{c.cnr}</small>
                         </button>,
@@ -647,9 +738,22 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         <p className="console-eyebrow">{selected.cnr}</p>
                         <h2>{selected.data.registration_number}</h2>
                       </div>
-                      <button onClick={() => setSelected(null)}>
-                        Close details
-                      </button>
+                      <div>
+                        <button
+                          disabled={busy || Boolean(fetching)}
+                          onClick={() => fetchCase(selected, true)}
+                        >
+                          {fetching === selected.cnr
+                            ? "Fetching…"
+                            : "Refresh from eCourts"}
+                        </button>
+                        <button
+                          disabled={Boolean(fetching)}
+                          onClick={() => setSelected(null)}
+                        >
+                          Close details
+                        </button>
+                      </div>
                     </div>
                     <nav className="case-tabs" aria-label="Case views">
                       {[
@@ -668,10 +772,10 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     </nav>
                     {!selected.hasDetails && (
                       <p className="listing-notice">
-                        This case was saved from search results. Open it on
-                        eCourts to capture status, stage, hearing dates and
-                        history. Those details will be linked automatically by
-                        CNR.
+                        This case was saved from search results. Use View or
+                        Refresh from eCourts to fetch its details through your
+                        existing court tab. If asked, complete CAPTCHA or repeat
+                        the search there, then retry.
                       </p>
                     )}
                     {tab === "details" && (

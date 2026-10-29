@@ -131,3 +131,7 @@ Live installation against your Supabase project and an actual eCourts session st
 ### Search listings and court totals
 
 Extension 1.1.0 automatically saves loaded search-result rows and search-scoped court totals. Opening a case enriches its CNR with details; list captures never overwrite detailed status/history. Run the additional `202610290002_search_result_capture.sql` migration once, reload the extension and refresh eCourts. See the upgrade section in [docs/SETUP.md](docs/SETUP.md). Listing-only cases are shown separately from status-unknown detailed cases, with listing audits and immutable search snapshots.
+
+### View a case from Verity
+
+Extension 1.2.0 connects the local dashboard's View/Refresh buttons to the existing eCourts tab. Complete the source search/CAPTCHA first; thereafter each requested listed case is opened through its live View control, checked by CNR, captured and saved with an audit. The dashboard updates after confirmed saves. Already-saved details open immediately. Action-needed messages send you back to the court tab for missing search context, CAPTCHA or session renewal. Reload the extension and refresh both app/court tabs after pulling. No new migration is required. See the 1.2.0 section of [docs/SETUP.md](docs/SETUP.md).

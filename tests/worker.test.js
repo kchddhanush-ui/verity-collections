@@ -8,7 +8,10 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     alarms = [],
     badges = [];
   let offline = false,
-    revoked = false;
+    revoked = false,
+    courtTabs = [],
+    loadResponse = null,
+    uploads = 0;
   const originalChrome = globalThis.chrome,
     originalFetch = globalThis.fetch;
   const savedNavigator = Object.getOwnPropertyDescriptor(
@@ -17,7 +20,11 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
   );
   Object.defineProperty(globalThis, "navigator", {
     configurable: true,
-    value: { locks: { request: async (_name, fn) => fn() } },
+    value: {
+      locks: {
+        request: async (_name, ...args) => args.at(-1)({ name: _name }),
+      },
+    },
   });
   globalThis.chrome = {
     runtime: {
@@ -54,7 +61,15 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         badges.push(x.text);
       },
     },
-    tabs: { query: async () => [], sendMessage: async () => {} },
+    tabs: {
+      query: async () => courtTabs,
+      update: async () => {},
+      create: async () => {},
+      sendMessage: async (_id, message) =>
+        message.type === "PROBE_CASE"
+          ? { available: true, hasLink: true }
+          : loadResponse,
+    },
     alarms: {
       create: async (...args) => {
         alarms.push(args);
@@ -87,6 +102,21 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         saved_rows: 2,
         skipped_rows: 0,
       });
+    if (url.endsWith("/list_capture_connections"))
+      return Response.json(
+        options.headers.Authorization === "Bearer dashboard-token" &&
+          JSON.parse(options.body).p_workspace ===
+            "00000000-0000-4000-8000-000000000010"
+          ? [
+              {
+                id: "connection-a",
+                expires_at: new Date(Date.now() + 86400000).toISOString(),
+                revoked_at: null,
+              },
+            ]
+          : [],
+      );
+    uploads++;
     return Response.json({ status: "created", case_id: "case-a" });
   };
   try {
@@ -148,6 +178,84 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       (await send({ type: "CAPTURE", capture: list })).message,
       "Search saved · 2 cases listed",
     );
+    const app = { id: "verity", url: "http://127.0.0.1:5173/", tab: { id: 4 } };
+    const payload = {
+      cnr: "KAAA010000012025",
+      workspace: "00000000-0000-4000-8000-000000000010",
+      projectUrl: config.url,
+      accessToken: "dashboard-token",
+    };
+    assert.equal(
+      (await send({ type: "DASHBOARD", action: "PING" }, app)).connected,
+      true,
+    );
+    assert.ok(
+      (
+        await send(
+          { type: "DASHBOARD", action: "PING" },
+          { ...app, url: "https://evil.example/" },
+        )
+      ).error,
+    );
+    assert.ok(
+      (
+        await send(
+          {
+            type: "DASHBOARD",
+            action: "FETCH_CASE",
+            payload: {
+              ...payload,
+              workspace: "00000000-0000-4000-8000-000000000099",
+            },
+          },
+          app,
+        )
+      ).error,
+    );
+    assert.ok(
+      (
+        await send(
+          {
+            type: "DASHBOARD",
+            action: "FETCH_CASE",
+            payload: { ...payload, accessToken: "wrong-user" },
+          },
+          app,
+        )
+      ).error,
+    );
+    assert.equal(
+      (await send({ type: "DASHBOARD", action: "FETCH_CASE", payload }, app))
+        .actionNeeded,
+      true,
+      "missing court tab requires user action",
+    );
+    courtTabs = [{ id: 9 }];
+    loadResponse = { capture: capture() };
+    const fetched = await send(
+      { type: "DASHBOARD", action: "FETCH_CASE", payload },
+      app,
+    );
+    assert.equal(fetched.saved, true);
+    assert.ok(
+      !JSON.stringify(values).includes("dashboard-token"),
+      "dashboard login token is not persisted",
+    );
+    const before = uploads;
+    loadResponse = { capture: { ...capture(), cnr: "KAAA010000992025" } };
+    assert.equal(
+      (await send({ type: "DASHBOARD", action: "FETCH_CASE", payload }, app))
+        .actionNeeded,
+      true,
+    );
+    assert.equal(uploads, before, "identity mismatch never uploads");
+    loadResponse = { error: "CAPTCHA required" };
+    assert.equal(
+      (await send({ type: "DASHBOARD", action: "FETCH_CASE", payload }, app))
+        .actionNeeded,
+      true,
+    );
+    courtTabs = [];
     offline = true;
     const cap = capture();
     assert.equal(

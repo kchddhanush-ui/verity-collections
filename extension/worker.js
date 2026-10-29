@@ -5,10 +5,14 @@ async function protectStorage() {
     accessLevel: "TRUSTED_CONTEXTS",
   });
 }
-async function rpc(config, name, body) {
+async function rpc(config, name, body, accessToken) {
   const response = await fetch(`${config.url}/rest/v1/rpc/${name}`, {
     method: "POST",
-    headers: { apikey: config.key, "Content-Type": "application/json" },
+    headers: {
+      apikey: config.key,
+      "Content-Type": "application/json",
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(25000),
     credentials: "omit",
@@ -68,7 +72,7 @@ async function deliver(key, item, config) {
       lastSyncedAt: new Date().toISOString(),
     });
     await badge("OK");
-    return { accepted: true, message };
+    return { accepted: true, saved: true, status: result.status, message };
   } catch (e) {
     if (e.auth)
       await chrome.storage.local.set({ config: { ...config, enabled: false } });
@@ -88,7 +92,11 @@ async function deliver(key, item, config) {
     });
     await chrome.alarms.create("retry", { delayInMinutes: 1 });
     await badge("…");
-    return { accepted: true, message: "Sync pending · automatic retry" };
+    return {
+      accepted: true,
+      pending: true,
+      message: "Sync pending · automatic retry",
+    };
   }
 }
 async function handle(message, sender) {
@@ -117,6 +125,13 @@ async function handle(message, sender) {
         throw new Error("Use only a Supabase publishable/anon key");
       }
     }
+    if (
+      cfg.app_origin &&
+      !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cfg.app_origin)
+    )
+      throw new Error(
+        "This release supports local Verity dashboard origins only",
+      );
     const result = await rpc(cfg, "check_capture_connection", {
       p_token: cfg.token,
     });
@@ -209,12 +224,152 @@ async function handle(message, sender) {
   }
   throw new Error("Unsupported request");
 }
+async function dashboard(message, sender) {
+  await protectStorage();
+  if (sender.id !== chrome.runtime.id || !sender.tab || !sender.url)
+    throw new Error("Invalid dashboard sender");
+  const { config } = await chrome.storage.local.get("config");
+  const origin = new URL(sender.url).origin;
+  const allowed = config?.app_origin
+    ? [config.app_origin]
+    : ["http://127.0.0.1:5173", "http://localhost:5173"];
+  if (!allowed.includes(origin))
+    throw new Error(
+      "This dashboard origin is not connected. Reconnect from your Verity dashboard.",
+    );
+  if (message.action === "PING")
+    return { version: "1.2.0", connected: Boolean(config?.enabled) };
+  if (!config?.enabled)
+    throw new Error(
+      "Extension is paused or disconnected. Connect or resume Verity Case Capture.",
+    );
+  const p = message.payload;
+  if (
+    !p ||
+    p.projectUrl?.replace(/\/$/, "") !== config.url ||
+    typeof p.accessToken !== "string" ||
+    p.accessToken.length > 12000 ||
+    !/^[A-Z]{4}\d{12}$/.test(p.cnr) ||
+    !/^[a-f0-9-]{36}$/i.test(p.workspace)
+  )
+    throw new Error("Invalid dashboard case request");
+  // The existing authenticated RPC returns only the caller's connections in this workspace.
+  // No upload credential is exposed to the website, and no login token is persisted.
+  const connections = await rpc(
+    config,
+    "list_capture_connections",
+    { p_workspace: p.workspace },
+    p.accessToken,
+  );
+  const connection = connections.find(
+    (c) =>
+      c.id === config.connectionId &&
+      !c.revoked_at &&
+      new Date(c.expires_at) > new Date(),
+  );
+  if (!connection)
+    throw new Error(
+      "Your dashboard account/workspace does not match the extension connection. Reconnect it to this workspace.",
+    );
+  const verified = await rpc(config, "check_capture_connection", {
+    p_token: config.token,
+  });
+  if (verified.id !== config.connectionId)
+    throw new Error("Connection identity changed. Reconnect the extension.");
+  const tabs = await chrome.tabs.query({
+    url: "https://services.ecourts.gov.in/ecourtindia_v6/*",
+  });
+  if (message.action === "FOCUS_COURT") {
+    const { lastCourtTab } = await chrome.storage.local.get("lastCourtTab");
+    const tab = tabs.find((t) => t.id === lastCourtTab) || tabs[0];
+    if (tab) {
+      await chrome.tabs.update(tab.id, { active: true });
+      if (tab.windowId !== undefined)
+        await chrome.windows.update(tab.windowId, { focused: true });
+    } else await chrome.tabs.create({ url: source, active: true });
+    return { focused: true };
+  }
+  if (message.action !== "FETCH_CASE")
+    throw new Error("Unsupported dashboard action");
+  return await navigator.locks.request(
+    "verity-case-navigation",
+    { ifAvailable: true },
+    async (lock) => {
+      if (!lock)
+        return {
+          error: "Another case is loading. Wait for it to finish, then retry.",
+        };
+      if (!tabs.length)
+        return {
+          error:
+            "Action needed on eCourts: open the official portal, complete CAPTCHA and search for this case first.",
+          actionNeeded: true,
+        };
+      const candidates = [];
+      for (const tab of tabs) {
+        try {
+          const probe = await chrome.tabs.sendMessage(tab.id, {
+            type: "PROBE_CASE",
+            cnr: p.cnr,
+          });
+          if (probe?.available) candidates.push({ tab, probe });
+        } catch {
+          /* Tab may need a refresh after extension update. */
+        }
+      }
+      const chosen = candidates.find((c) => c.probe.hasLink) || candidates[0];
+      await chrome.storage.local.set({
+        lastCourtTab: chosen?.tab.id || tabs[0].id,
+      });
+      if (!chosen)
+        return {
+          error:
+            "Action needed on eCourts: repeat the search containing this case. If the extension was updated, refresh that tab first.",
+          actionNeeded: true,
+        };
+      let response;
+      try {
+        response = await chrome.tabs.sendMessage(chosen.tab.id, {
+          type: "LOAD_CASE",
+          cnr: p.cnr,
+          force: Boolean(p.force),
+        });
+      } catch {
+        return {
+          error:
+            "eCourts tab disconnected. Refresh it, complete any CAPTCHA and retry.",
+          actionNeeded: true,
+        };
+      }
+      if (response?.error) return { error: response.error, actionNeeded: true };
+      if (response?.capture?.cnr !== p.cnr)
+        return {
+          error: "Case identity mismatch. Nothing was saved.",
+          actionNeeded: true,
+        };
+      return await navigator.locks.request("verity-sync", async () => {
+        const { config: now } = await chrome.storage.local.get("config");
+        if (!now?.enabled || now.connectionId !== config.connectionId)
+          throw new Error(
+            "Connection changed while the case loaded. Nothing was saved; retry with the correct workspace.",
+          );
+        return await handle(
+          { type: "CAPTURE", capture: response.capture },
+          { id: chrome.runtime.id, url: source, tab: { id: chosen.tab.id } },
+        );
+      });
+    },
+  );
+}
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   (async () => {
     try {
-      const result = await navigator.locks.request("verity-sync", () =>
-        handle(message, sender),
-      );
+      const result =
+        message.type === "DASHBOARD"
+          ? await dashboard(message, sender)
+          : await navigator.locks.request("verity-sync", () =>
+              handle(message, sender),
+            );
       respond(result);
     } catch (e) {
       respond({ accepted: false, message: e.message, error: e.message });

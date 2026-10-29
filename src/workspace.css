@@ -388,3 +388,16 @@
 .console-metrics {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
 }
+.case-fetch-status {
+  margin-block: 20px;
+  padding: 16px 20px;
+  background: #edf3e9;
+  border: 1px solid #c9d9c6;
+  border-radius: 10px;
+  color: #214c3e;
+  overflow-wrap: anywhere;
+}
+.case-fetch-status p {
+  margin: 4px 0 12px;
+  line-height: 1.6;
+}
