@@ -246,6 +246,22 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const filtered = cases.filter((c) =>
     JSON.stringify([c.cnr, c.data]).toLowerCase().includes(query.toLowerCase()),
   );
+  const stageCounts = new Map([
+    ["NBW", 0],
+    ["SUMMONS", 0],
+    ["EVIDENCES", 0],
+    ["FOR STEPS", 0],
+  ]);
+  for (const item of cases) {
+    const rawStage = item.data.case_stage;
+    const stage =
+      typeof rawStage === "string"
+        ? rawStage.trim().replace(/\s+/g, " ").toUpperCase()
+        : "";
+    const label =
+      !stage || stage === "-" || stage === "—" ? "Stage not recorded" : stage;
+    stageCounts.set(label, (stageCounts.get(label) || 0) + 1);
+  }
   const totals = [
     ["Captured cases", cases.length],
     ["Pending", cases.filter((c) => c.data.case_status === "Pending").length],
@@ -349,6 +365,25 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     </article>
                   ))}
                 </div>
+                <section
+                  className="console-panel"
+                  aria-labelledby="stage-counts-heading"
+                >
+                  <h2 id="stage-counts-heading">Cases by stage</h2>
+                  <p className="muted">
+                    Separate counts for the captured case stages across all
+                    loaded cases in this workspace. Cases without a captured
+                    stage appear under “Stage not recorded”.
+                  </p>
+                  <dl className="stage-counts">
+                    {[...stageCounts].map(([stage, count]) => (
+                      <div key={stage}>
+                        <dt>{stage}</dt>
+                        <dd>{count}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
                 <details className="console-panel">
                   <summary>Connect Chrome for automatic capture</summary>
                   <p>
