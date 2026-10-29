@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace.css";
 import { mergePortfolio } from "./lib/portfolio";
@@ -75,6 +75,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     [workspace, setWorkspace] = useState(""),
     [cases, setCases] = useState([]),
     [connections, setConnections] = useState([]);
+  const caseDialog = useRef(null);
+  const viewOpen = useRef(false);
+  const requestedCnr = useRef("");
   const [fetching, setFetching] = useState("");
   const [fetchStatus, setFetchStatus] = useState(null);
   const [searches, setSearches] = useState([]);
@@ -293,7 +296,20 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       accessToken: session.access_token,
     };
   }
+  useEffect(() => {
+    if (selected && caseDialog.current && !caseDialog.current.open) {
+      caseDialog.current.showModal();
+      caseDialog.current.querySelector("#selected-case-heading")?.focus();
+    }
+  }, [selected?.cnr]);
+  function closeCase() {
+    viewOpen.current = false;
+    caseDialog.current?.close();
+    setSelected(null);
+  }
   async function fetchCase(item) {
+    viewOpen.current = true;
+    requestedCnr.current = item.cnr;
     setSelected(item);
     setTab("details");
     if (fetching || busy) return;
@@ -330,7 +346,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       setCases(portfolio.cases);
       setSearches(portfolio.searches);
       setConnections(portfolio.connections);
-      setSelected(portfolio.cases.find((c) => c.cnr === item.cnr) || item);
+      if (viewOpen.current)
+        setSelected(portfolio.cases.find((c) => c.cnr === item.cnr) || item);
       setFetchStatus({
         message: `${result.message}. Details and audit history refreshed.`,
       });
@@ -342,11 +359,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     }
   }
   async function focusCourt() {
-    if (!selected) return;
+    const cnr = selected?.cnr || requestedCnr.current;
+    if (!cnr) return;
     try {
       const result = await extensionRequest(
         "FOCUS_COURT",
-        dashboardPayload(selected.cnr),
+        dashboardPayload(cnr),
       );
       if (result?.error) throw new Error(result.error);
     } catch (e) {
@@ -422,7 +440,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
             {error}
           </div>
         )}
-        {fetchStatus && (
+        {fetchStatus && !selected && (
           <div className="case-fetch-status" role="status">
             {fetching && <progress aria-label="Fetching court case details" />}
             <p>{fetchStatus.message}</p>
@@ -728,192 +746,231 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                   )}
                 </section>
                 {selected && (
-                  <section className="console-panel" aria-label="Selected case">
-                    <div className="section-heading">
-                      <div>
-                        <p className="console-eyebrow">{selected.cnr}</p>
-                        <h2>{selected.data.registration_number}</h2>
+                  <dialog
+                    ref={caseDialog}
+                    className="case-detail-dialog"
+                    aria-labelledby="selected-case-heading"
+                    onClose={() => {
+                      viewOpen.current = false;
+                      setSelected(null);
+                    }}
+                  >
+                    <section
+                      className="console-panel"
+                      aria-label="Selected case"
+                    >
+                      <div className="section-heading">
+                        <div>
+                          <p className="console-eyebrow">{selected.cnr}</p>
+                          <h2 id="selected-case-heading" tabIndex="-1">
+                            {selected.data.case_reference ||
+                              selected.data.registration_number}
+                          </h2>
+                        </div>
+                        <div>
+                          <button
+                            disabled={busy || Boolean(fetching)}
+                            onClick={() => fetchCase(selected)}
+                          >
+                            {fetching === selected.cnr
+                              ? "Fetching…"
+                              : "Refresh from eCourts"}
+                          </button>
+                          <button onClick={closeCase}>Close details</button>
+                        </div>
                       </div>
-                      <div>
-                        <button
-                          disabled={busy || Boolean(fetching)}
-                          onClick={() => fetchCase(selected)}
-                        >
-                          {fetching === selected.cnr
-                            ? "Fetching…"
-                            : "Refresh from eCourts"}
-                        </button>
-                        <button
-                          disabled={Boolean(fetching)}
-                          onClick={() => setSelected(null)}
-                        >
-                          Close details
-                        </button>
-                      </div>
-                    </div>
-                    <nav className="case-tabs" aria-label="Case views">
-                      {[
-                        ["details", "Current details"],
-                        ["audit", "Audit history"],
-                        ["captures", "Capture checks"],
-                      ].map(([key, label]) => (
-                        <button
-                          aria-pressed={tab === key}
-                          onClick={() => setTab(key)}
-                          key={key}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </nav>
-                    {!selected.hasDetails && (
-                      <p className="listing-notice">
-                        This case was saved from search results. Use View or
-                        Refresh from eCourts to fetch its details through your
-                        existing court tab. If asked, complete CAPTCHA or repeat
-                        the search there, then retry.
-                      </p>
-                    )}
-                    {tab === "details" && (
-                      <>
-                        <dl className="case-facts">
+                      {fetchStatus && (
+                        <div className="case-fetch-status" role="status">
+                          {fetching && (
+                            <progress aria-label="Fetching court case details" />
+                          )}
+                          <p>{fetchStatus.message}</p>
+                          {fetchStatus.actionNeeded && (
+                            <>
+                              <p>
+                                Complete any CAPTCHA or repeat the search in
+                                eCourts, then use View or Refresh from eCourts
+                                again.
+                              </p>
+                              <button onClick={focusCourt}>
+                                Go to eCourts tab
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                      <nav className="case-tabs" aria-label="Case views">
+                        {[
+                          ["details", "Current details"],
+                          ["audit", "Audit history"],
+                          ["captures", "Capture checks"],
+                        ].map(([key, label]) => (
+                          <button
+                            aria-pressed={tab === key}
+                            onClick={() => setTab(key)}
+                            key={key}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </nav>
+                      {!selected.hasDetails && (
+                        <p className="listing-notice">
+                          This case was saved from search results. Use View or
+                          Refresh from eCourts to fetch its details through your
+                          existing court tab. If asked, complete CAPTCHA or
+                          repeat the search there, then retry.
+                        </p>
+                      )}
+                      {tab === "details" && (
+                        <>
+                          <dl className="case-facts">
+                            {Object.entries(selected.data)
+                              .filter(([, v]) => !Array.isArray(v))
+                              .map(([k, v]) => (
+                                <div key={k}>
+                                  <dt>{labels[k] || k}</dt>
+                                  <dd>{show(v)}</dd>
+                                </div>
+                              ))}
+                          </dl>
                           {Object.entries(selected.data)
-                            .filter(([, v]) => !Array.isArray(v))
-                            .map(([k, v]) => (
+                            .filter(([, v]) => Array.isArray(v))
+                            .map(([k, values]) => (
                               <div key={k}>
-                                <dt>{labels[k] || k}</dt>
-                                <dd>{show(v)}</dd>
+                                <h3>{labels[k] || k}</h3>
+                                {Array.isArray(values[0]) ? (
+                                  <Table
+                                    label={labels[k] || k}
+                                    headers={
+                                      k === "history"
+                                        ? [
+                                            "Judge",
+                                            "Business on",
+                                            "Hearing date",
+                                            "Purpose",
+                                          ]
+                                        : k === "processes"
+                                          ? ["Process ID", "Title", "Date"]
+                                          : k === "acts"
+                                            ? ["Act", "Section"]
+                                            : ["Details"]
+                                    }
+                                    rows={values}
+                                  />
+                                ) : (
+                                  <ul>
+                                    {values.map((v, i) => (
+                                      <li key={i}>{show(v)}</li>
+                                    ))}
+                                  </ul>
+                                )}
                               </div>
                             ))}
-                        </dl>
-                        {Object.entries(selected.data)
-                          .filter(([, v]) => Array.isArray(v))
-                          .map(([k, values]) => (
-                            <div key={k}>
-                              <h3>{labels[k] || k}</h3>
-                              {Array.isArray(values[0]) ? (
-                                <Table
-                                  label={labels[k] || k}
-                                  headers={
-                                    k === "history"
-                                      ? [
-                                          "Judge",
-                                          "Business on",
-                                          "Hearing date",
-                                          "Purpose",
-                                        ]
-                                      : k === "processes"
-                                        ? ["Process ID", "Title", "Date"]
-                                        : k === "acts"
-                                          ? ["Act", "Section"]
-                                          : ["Details"]
-                                  }
-                                  rows={values}
-                                />
-                              ) : (
-                                <ul>
-                                  {values.map((v, i) => (
-                                    <li key={i}>{show(v)}</li>
-                                  ))}
-                                </ul>
-                              )}
-                            </div>
-                          ))}
-                      </>
-                    )}
-                    {tab === "audit" && (
-                      <>
-                        <p>
-                          Automatic updates only. Previous and new values are
-                          preserved; there is no approval workflow. Showing up
-                          to 100 latest events.
-                        </p>
-                        {!audits.length && !listingAudits.length && (
-                          <p>No change events found.</p>
-                        )}
-                        {listingAudits.map((a) => (
-                          <article className="audit-event" key={a.id}>
-                            <h3>
-                              {a.action === "listed"
-                                ? "Case first listed"
-                                : "Listing updated"}{" "}
-                              · {date(a.occurred_at)}
-                            </h3>
-                            <p>
-                              User {a.actor_id} · Search capture{" "}
-                              {a.search_capture_id}
-                            </p>
-                            <Table
-                              label="Listing changes"
-                              headers={["Field", "Previous value", "New value"]}
-                              rows={Object.entries(a.changes).map(([k, v]) => [
-                                k,
-                                show(v.old),
-                                show(v.new),
-                              ])}
-                            />
-                          </article>
-                        ))}
-                        {audits.map((a) => (
-                          <article className="audit-event" key={a.id}>
-                            <h3>
-                              {a.action === "created"
-                                ? "Case created"
-                                : "Case updated"}{" "}
-                              · {date(a.occurred_at)}
-                            </h3>
-                            <p>
-                              Captured by user {a.actor_id} · Capture{" "}
-                              {a.capture_id}
-                            </p>
-                            <Table
-                              label="Recorded field changes"
-                              headers={["Field", "Previous value", "New value"]}
-                              rows={Object.entries(a.changes).map(([k, v]) => [
-                                labels[k] || k,
-                                show(v.old),
-                                show(v.new),
-                              ])}
-                            />
-                          </article>
-                        ))}
-                      </>
-                    )}
-                    {tab === "captures" && (
-                      <>
-                        <p>
-                          Up to 100 latest checks, including unchanged and older
-                          captures. Snapshots contain extracted fields, not the
-                          full court webpage.
-                        </p>
-                        {!selected.hasDetails && (
+                        </>
+                      )}
+                      {tab === "audit" && (
+                        <>
                           <p>
-                            No detailed page captured yet. Listing changes are
-                            recorded under Audit history.
+                            Automatic updates only. Previous and new values are
+                            preserved; there is no approval workflow. Showing up
+                            to 100 latest events.
                           </p>
-                        )}
-                        {captures.map((c) => (
-                          <details className="capture-entry" key={c.id}>
-                            <summary>
-                              {date(c.received_at)} · {c.outcome}
-                            </summary>
+                          {!audits.length && !listingAudits.length && (
+                            <p>No change events found.</p>
+                          )}
+                          {listingAudits.map((a) => (
+                            <article className="audit-event" key={a.id}>
+                              <h3>
+                                {a.action === "listed"
+                                  ? "Case first listed"
+                                  : "Listing updated"}{" "}
+                                · {date(a.occurred_at)}
+                              </h3>
+                              <p>
+                                User {a.actor_id} · Search capture{" "}
+                                {a.search_capture_id}
+                              </p>
+                              <Table
+                                label="Listing changes"
+                                headers={[
+                                  "Field",
+                                  "Previous value",
+                                  "New value",
+                                ]}
+                                rows={Object.entries(a.changes).map(
+                                  ([k, v]) => [k, show(v.old), show(v.new)],
+                                )}
+                              />
+                            </article>
+                          ))}
+                          {audits.map((a) => (
+                            <article className="audit-event" key={a.id}>
+                              <h3>
+                                {a.action === "created"
+                                  ? "Case created"
+                                  : "Case updated"}{" "}
+                                · {date(a.occurred_at)}
+                              </h3>
+                              <p>
+                                Captured by user {a.actor_id} · Capture{" "}
+                                {a.capture_id}
+                              </p>
+                              <Table
+                                label="Recorded field changes"
+                                headers={[
+                                  "Field",
+                                  "Previous value",
+                                  "New value",
+                                ]}
+                                rows={Object.entries(a.changes).map(
+                                  ([k, v]) => [
+                                    labels[k] || k,
+                                    show(v.old),
+                                    show(v.new),
+                                  ],
+                                )}
+                              />
+                            </article>
+                          ))}
+                        </>
+                      )}
+                      {tab === "captures" && (
+                        <>
+                          <p>
+                            Up to 100 latest checks, including unchanged and
+                            older captures. Snapshots contain extracted fields,
+                            not the full court webpage.
+                          </p>
+                          {!selected.hasDetails && (
                             <p>
-                              Observed {date(c.captured_at)} · User{" "}
-                              {c.captured_by}
+                              No detailed page captured yet. Listing changes are
+                              recorded under Audit history.
                             </p>
-                            <a
-                              href={c.source_url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              Official source ↗
-                            </a>
-                            <pre>{JSON.stringify(c.snapshot, null, 2)}</pre>
-                          </details>
-                        ))}
-                      </>
-                    )}
-                  </section>
+                          )}
+                          {captures.map((c) => (
+                            <details className="capture-entry" key={c.id}>
+                              <summary>
+                                {date(c.received_at)} · {c.outcome}
+                              </summary>
+                              <p>
+                                Observed {date(c.captured_at)} · User{" "}
+                                {c.captured_by}
+                              </p>
+                              <a
+                                href={c.source_url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                Official source ↗
+                              </a>
+                              <pre>{JSON.stringify(c.snapshot, null, 2)}</pre>
+                            </details>
+                          ))}
+                        </>
+                      )}
+                    </section>
+                  </dialog>
                 )}
               </>
             )}

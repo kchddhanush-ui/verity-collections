@@ -65,3 +65,24 @@ test("explicit refresh never treats unchanged old DOM as a fresh response", asyn
     /did not finish loading/,
   );
 });
+
+test("targeted View prevents tokenised href navigation while running its case handler", async () => {
+  const doc = page();
+  const link = doc.querySelector("a");
+  let prevented = false;
+  link.click = () => {
+    const event = new doc.defaultView.Event("click", {
+      bubbles: true,
+      cancelable: true,
+    });
+    link.dispatchEvent(event);
+    prevented = event.defaultPrevented;
+  };
+  link.addEventListener("click", () => {
+    doc.getElementById("details").innerHTML =
+      parseHTML(fixture).document.body.innerHTML;
+  });
+  const result = await VerityNavigation.load(doc, cnr, options);
+  assert.equal(result.cnr, cnr);
+  assert.equal(prevented, true);
+});

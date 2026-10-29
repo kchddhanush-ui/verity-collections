@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Verity Case Capture",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "minimum_chrome_version": "120",
   "description": "Automatically save eCourts search results, court totals and opened case details to your Verity workspace with audit history.",
   "permissions": ["storage", "alarms"],

@@ -401,3 +401,55 @@
   margin: 4px 0 12px;
   line-height: 1.6;
 }
+
+.case-detail-dialog {
+  inline-size: min(1100px, calc(100% - 32px));
+  max-inline-size: none;
+  max-block-size: 90dvh;
+  margin: auto;
+  padding: 0;
+  border: 1px solid #c6d5c7;
+  border-radius: 14px;
+  background: #fff;
+  color: #193f36;
+  overflow: auto;
+  box-shadow: 0 20px 80px #102d3440;
+  font:
+    14px/1.5 Arial,
+    sans-serif;
+}
+.case-detail-dialog::backdrop {
+  background: #102c26aa;
+}
+.case-detail-dialog > .console-panel {
+  margin: 0;
+  border: 0;
+  overflow: visible;
+}
+.case-detail-dialog button {
+  padding: 10px 16px;
+  border: 1px solid #bdcdbf;
+  border-radius: 8px;
+  background: white;
+  color: #214c3e;
+  cursor: pointer;
+  font:
+    13px Arial,
+    sans-serif;
+}
+.case-detail-dialog button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.case-detail-dialog :focus-visible {
+  outline: 3px solid #b68b40;
+  outline-offset: 3px;
+}
+
+.case-detail-dialog:modal {
+  overscroll-behavior: contain;
+}
+.case-detail-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}

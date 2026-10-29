@@ -84,6 +84,12 @@
         timeoutMs,
       );
       try {
+        // viewHistory handles the AJAX load. Do not also follow the tokenised href,
+        // which can reload the document and disconnect the extension response.
+        link.addEventListener("click", (event) => event.preventDefault(), {
+          once: true,
+          capture: true,
+        });
         link.click();
         check();
       } catch {

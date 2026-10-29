@@ -135,3 +135,5 @@ Extension 1.1.0 automatically saves loaded search-result rows and search-scoped 
 ### View a case from Verity
 
 Extension 1.2.0 connects the local dashboard's View/Refresh buttons to the existing eCourts tab. Complete the source search/CAPTCHA first; thereafter each requested listed case is opened through its live View control, checked by CNR, captured and saved with an audit. The dashboard updates after confirmed saves. Every case-number/View click requests fresh source details, even when already saved. Action-needed messages send you back to the court tab for missing search context, CAPTCHA or session renewal. Reload the extension and refresh both app/court tabs after pulling. No new migration is required. See the 1.2.0 section of [docs/SETUP.md](docs/SETUP.md).
+
+Extension 1.2.1 keeps the court AJAX View handler but prevents default tokenised-link navigation. Clicking a case number opens an immediate dialog with loading status, details and any error, so feedback cannot be hidden above/below the results table. Reload the extension and refresh both pages after pulling this fix.

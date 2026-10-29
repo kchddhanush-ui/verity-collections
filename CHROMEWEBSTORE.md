@@ -57,8 +57,12 @@ Automatically capture the loaded search-result table, row identities/parties, se
 
 ## Version 1.2.0 — 2026-10-29 (development draft)
 
-View a listed case from the local Verity dashboard to fetch its loaded details through an existing eCourts tab. Stored cases open immediately; a separate refresh action requests fresh source details. Show progress, confirmed-save status and action-needed messages, with a user-triggered focus button for CAPTCHA/session issues. No CAPTCHA automation, arbitrary URL navigation or bulk case processing.
+View a listed case from the local Verity dashboard to fetch its loaded details through an existing eCourts tab. Each case-number click requests fresh source details; the refresh action can repeat the request from the case view. Show progress, confirmed-save status and action-needed messages, with a user-triggered focus button for CAPTCHA/session issues. No CAPTCHA automation, arbitrary URL navigation or bulk case processing.
 
 Additional declared content-script access: `http://localhost/*` and `http://127.0.0.1/*`. Purpose: receive explicit View/Refresh requests from the local Verity dashboard and return progress/result statuses. Messages are gated on the configured exact app origin and an authenticated same-account/workspace check against the configured Supabase project. The dashboard's login JWT is transiently transmitted to that same Supabase project for authorization; it is not persisted, included in pending queues, logged or sent to eCourts. The upload token stays inside trusted extension contexts. A last-used court tab ID is retained locally to support Go to eCourts. No new broad browser tabs/history/cookie permission is declared; existing eCourts host access allows targeting its tabs.
 
 Privacy/store disclosure must cover the local dashboard message bridge, transient authentication-token processing and user-requested case navigation. Hosted dashboard origins are not supported by this initial bridge. Store publication remains pending the same required publisher, privacy-policy and asset work.
+
+## Version 1.2.1 — 2026-10-29 (development draft)
+
+Prevent default session-link navigation during a targeted AJAX case load while preserving the existing court View handler. Show the selected case, progress and errors together in a dashboard dialog. Closing the dialog keeps an authorised save running without reopening the view on completion. No permission or data-collection changes from 1.2.0. No new SQL.

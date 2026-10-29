@@ -238,7 +238,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Verity dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.2.0", connected: Boolean(config?.enabled) };
+    return { version: "1.2.1", connected: Boolean(config?.enabled) };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Verity Case Capture.",
