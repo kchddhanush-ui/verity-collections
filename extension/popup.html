@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Lawcovery connection</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1 class="brand-wordmark"><span class="brand-law">law</span>covery<span class="brand-dot">.</span></h1>
+    <p>Automatic case capture</p>
+    <section id="connection" hidden>
+      <strong id="workspace"></strong>
+      <p id="state"></p>
+      <p id="expiry"></p>
+      <button id="toggle">Pause capture</button>
+      <button id="disconnect">Disconnect</button>
+      <section id="batch" hidden>
+        <h2>Automatic detail capture</h2>
+        <fieldset id="fetch-modes">
+          <legend>Choose what to fetch</legend>
+          <button id="fetch-missing" aria-pressed="false">Fetch missing details</button>
+          <button id="fetch-existing" aria-pressed="false">Refresh existing details</button>
+          <p>Search rows without saved case details count as missing. Each option starts a new queue for the loaded search; the selected mode applies to future searches too.</p>
+        </fieldset>
+        <p id="batch-mode"></p>
+        <progress id="batch-progress" aria-label="Selected cases processed"></progress>
+        <p id="batch-status" role="status"></p>
+        <button id="batch-pause">Pause queue</button>
+        <button id="batch-resume">Resume queue</button>
+      </section>
+      <p>
+        Disconnect clears this browser. Revoke the connection in Lawcovery to
+        invalidate its credential.
+      </p>
+    </section>
+    <form id="setup">
+      <label for="settings">Connection settings from Lawcovery</label
+      ><textarea
+        id="settings"
+        rows="6"
+        required
+        spellcheck="false"
+        placeholder="Paste the connection JSON from your Lawcovery workspace"
+      ></textarea>
+      <p>
+        Connect once. When enabled, search results and court totals are saved
+        automatically. Missing case details are then fetched one at a time while the court tab stays open. Choose Refresh existing details to recheck saved cases. Separate audit
+        histories preserve listing and case changes.
+      </p>
+      <button type="submit">Connect and enable auto-save</button>
+    </form>
+    <p id="status" role="status"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>

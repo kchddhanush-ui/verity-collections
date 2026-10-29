@@ -1,0 +1,278 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import React, { act } from "react";
+import { parseHTML } from "linkedom";
+import { createServer } from "vite";
+import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import path from "node:path";
+
+test("clicking a listed case opens a dialog with fetching errors next to its details", async () => {
+  const { window, document } = parseHTML(
+    '<html><body><div id="test-root"></div></body></html>',
+  );
+  const originals = new Map(
+    [
+      "window",
+      "document",
+      "navigator",
+      "HTMLElement",
+      "Node",
+      "IS_REACT_ACT_ENVIRONMENT",
+      "__testSupabase",
+    ].map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]),
+  );
+  const set = (k, value) =>
+    Object.defineProperty(globalThis, k, {
+      configurable: true,
+      writable: true,
+      value,
+    });
+  const temp = await mkdtemp(
+    path.join(process.cwd(), "node_modules/.verity-dialog-test-"),
+  );
+  let server, root;
+  try {
+    set("window", window);
+    set("document", document);
+    set("navigator", { userAgent: "test" });
+    set("HTMLElement", window.HTMLElement);
+    set("Node", window.Node);
+    set("IS_REACT_ACT_ENVIRONMENT", true);
+    window.location = { origin: "http://127.0.0.1:5173" };
+    window.HTMLElement.prototype.showModal = function () {
+      this.setAttribute("open", "");
+    };
+    window.HTMLElement.prototype.close = function () {
+      this.removeAttribute("open");
+    };
+    const cnr = "KAAA010000012025";
+    const tables = {
+      workspaces: [{ id: "workspace-a", name: "Example" }],
+      court_cases: [],
+      case_listings: [
+        {
+          id: "listing-a",
+          cnr,
+          data: {
+            registration_number: "1/2025",
+            case_reference: "C.C./1/2025",
+            petitioners: ["Example"],
+            respondents: ["Respondent"],
+          },
+          last_seen_at: new Date().toISOString(),
+        },
+      ],
+      court_search_captures: [],
+      case_audit: [],
+      case_captures: [],
+      listing_audit: [],
+    };
+    const builder = (table) => {
+      const x = {
+        select: () => x,
+        eq: () => x,
+        order: () => x,
+        limit: () => x,
+        then: (yes, no) =>
+          Promise.resolve({ data: tables[table] || [], error: null }).then(
+            yes,
+            no,
+          ),
+      };
+      return x;
+    };
+    set("__testSupabase", {
+      from: builder,
+      rpc: async () => ({ data: [], error: null }),
+    });
+    const mock = path.join(temp, "supabase.mjs");
+    await writeFile(mock, "export const supabase=globalThis.__testSupabase;");
+    server = await createServer({
+      configFile: false,
+      root: process.cwd(),
+      server: { middlewareMode: true },
+      optimizeDeps: { noDiscovery: true, include: [] },
+      resolve: { alias: [{ find: "./lib/supabase", replacement: mock }] },
+    });
+    const { CaseWorkspace } = await server.ssrLoadModule(
+      "/src/CaseWorkspace.jsx",
+    );
+    await server.ssrLoadModule("/src/components/AnalyticsDashboard.jsx");
+    let simulatedSuccess = false;
+    const batchRequests = [];
+    let simulatedBatch = { id: "queue-a", mode: "missing", state: "waiting", total: 1, sourceTotal: 1,
+      processed: 0, saved: 0, skipped: 0, waiting: 1, failed: 0, current: cnr, message: "Missing details selected" };
+    window.postMessage = (message) =>
+      queueMicrotask(() => {
+        batchRequests.push(message);
+        if (message.action === "BATCH_START") simulatedBatch = { ...simulatedBatch, id: crypto.randomUUID(), mode: message.payload.mode,
+          total: 0, waiting: 0, current: "", state: "complete", message: "No matching cases" };
+        if (message.action === "FETCH_CASE" && simulatedSuccess)
+          tables.court_cases = [
+            {
+              id: "case-a",
+              cnr,
+              data: {
+                registration_number: "1/2025",
+                court: "Example Court",
+                case_stage: "NBW",
+                case_status: "Pending",
+                decision_date: "07-10-2026",
+              },
+              last_checked_at: new Date().toISOString(),
+            },
+          ];
+        const event = new window.Event("message");
+        Object.assign(event, {
+          source: window,
+          origin: window.location.origin,
+          data: {
+            channel: "VERITY_DASHBOARD_RESPONSE",
+            id: message.id,
+            result:
+              message.action === "PING"
+                ? { connected: true }
+                : ["BATCH_STATUS", "BATCH_START"].includes(message.action)
+                  ? { batch: simulatedBatch }
+                : simulatedSuccess
+                  ? { saved: true, message: "Case saved" }
+                  : {
+                      error: "Action needed on eCourts: complete CAPTCHA",
+                      actionNeeded: true,
+                    },
+          },
+        });
+        window.dispatchEvent(event);
+      });
+    const { createRoot } = await import("react-dom/client");
+    root = createRoot(document.getElementById("test-root"));
+    await act(async () =>
+      root.render(
+        React.createElement(CaseWorkspace, {
+          session: {
+            user: { id: "user-a", email: "example@example.com" },
+            access_token: "not-a-real-token",
+          },
+          onSignOut: () => {},
+          pending: false,
+        }),
+      ),
+    );
+    const missingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Fetch missing details");
+    const existingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Refresh existing details");
+    assert.ok(missingButton && existingButton, "workspace exposes both fetch modes");
+    assert.equal(missingButton.getAttribute("aria-pressed"), "true");
+    await act(async () => existingButton.dispatchEvent(new window.Event("click", { bubbles: true })));
+    assert.equal(existingButton.getAttribute("aria-pressed"), "true");
+    const modeRequest = batchRequests.find(m => m.action === "BATCH_START");
+    assert.equal(modeRequest.payload.mode, "existing");
+    assert.equal(modeRequest.payload.workspace, "workspace-a");
+    assert.ok(document.querySelector('.batch-capture-panel progress').hasAttribute("hidden"), "zero matching cases do not show an indeterminate bar");
+    assert.equal(batchRequests.filter(m => m.action === "FETCH_CASE").length, 0);
+    assert.ok(
+      document.querySelector(".console-metrics"),
+      "overview opens first",
+    );
+    assert.equal(
+      document.querySelector(".connection-panel"),
+      null,
+      "setup stays out of the overview",
+    );
+    await act(async () =>
+      document
+        .querySelector('.sidebar-nav button[aria-label="Analytics"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.ok(
+      document.querySelector(".analytics-dashboard"),
+      "analytics is reachable from the workspace",
+    );
+
+    assert.ok(document.querySelector('.skip-link[href="#workspace-content"]'));
+    await act(async () =>
+      document
+        .querySelector('.sidebar-nav button[aria-label="Connections"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.ok(
+      document.querySelector(".connection-panel"),
+      "connections has its own view",
+    );
+    assert.ok(
+      [...document.querySelectorAll("button")].some(
+        (b) => b.textContent === "Create extension connection",
+      ),
+    );
+    await act(async () =>
+      document
+        .querySelector('.sidebar-nav button[aria-label="Hearing calendar"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.ok(
+      document.querySelector(".hearing-calendar"),
+      "calendar remains reachable from navigation",
+    );
+    const caseNav = document.querySelector(
+      '.sidebar-nav button[aria-label="Cases"]',
+    );
+    assert.ok(caseNav, "workspace navigation exposes the case register");
+    await act(async () =>
+      caseNav.dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    const view = [...document.querySelectorAll("button")].find((b) =>
+      b.textContent.includes("View ·"),
+    );
+    assert.ok(view, "listed case has a View control");
+    await act(async () =>
+      view.dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    const dialog = document.querySelector("dialog[open]");
+    assert.ok(dialog, "case opens immediately in modal");
+    assert.ok(dialog.textContent.includes("C.C./1/2025"));
+    assert.ok(
+      dialog
+        .querySelector('[role="status"]')
+        .textContent.includes("complete CAPTCHA"),
+    );
+    assert.ok(
+      [...dialog.querySelectorAll("button")].some(
+        (b) => b.textContent === "Go to eCourts tab",
+      ),
+    );
+    const close = [...dialog.querySelectorAll("button")].find(
+      (b) => b.textContent === "Close details",
+    );
+    await act(async () =>
+      close.dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.equal(document.querySelector("dialog"), null);
+    simulatedSuccess = true;
+    await act(async () =>
+      view.dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    const updated = document.querySelector("dialog[open]");
+    assert.ok(updated, "successful fetch also opens the case dialog");
+    assert.ok(updated.querySelector(".case-facts").textContent.includes("NBW"));
+    assert.ok(
+      updated
+        .querySelector(".case-facts")
+        .textContent.includes("Decision Date"),
+    );
+    assert.ok(
+      updated.querySelector(".case-facts").textContent.includes("07-10-2026"),
+    );
+    assert.ok(
+      updated
+        .querySelector('[role="status"]')
+        .textContent.includes("Case saved"),
+    );
+  } finally {
+    if (root) await act(async () => root.unmount());
+    if (server) await server.close();
+    await rm(temp, { recursive: true, force: true });
+    for (const [k, d] of originals) {
+      if (d) Object.defineProperty(globalThis, k, d);
+      else delete globalThis[k];
+    }
+  }
+});

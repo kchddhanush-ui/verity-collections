@@ -1,6 +1,6 @@
-# Verity — Legal collections portal
+# Lawcovery — Legal collections portal
 
-An independent React + Vite project. “Verity” is a working product name that can be changed. This project is not deployed and has no dependency on ChatGPT Sites hosting.
+Lawcovery is an independent React + Vite project. This project is not deployed and has no dependency on ChatGPT Sites hosting.
 
 ## Run on your computer
 
@@ -49,9 +49,11 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_KEY
 
 ## Current scope and verification
 
+See [automatic capture setup](docs/SETUP.md) for database activation and Chrome extension installation. Source access is limited to opened district eCourts cases. Case changes update automatically, with old/new values stored in a separate audit trail.
+
 The production build has been checked. A live sign-in and email recovery test require your own configured Supabase project and account; these cannot be verified without them. No project keys or user credentials are included in this download.
 
-Company membership, roles, case records and eCourts integration are not implemented yet. This release handles authentication only. When adding company data, enforce access using database Row Level Security and verified membership on the backend. A frontend session check is not database authorization. Demo mode must never be used to query private records.
+Company workspaces, case records, automatic opened-case capture and a separate audit trail are now included. Activate them using [docs/SETUP.md](docs/SETUP.md). The SQL migration enforces workspace membership with Row Level Security; only the ingestion function writes cases and audits. Demo mode never queries private records. No approval or rejection workflow is used.
 
 Google Fonts is optional: without internet, the page uses local fallback fonts.
 
@@ -115,3 +117,70 @@ npm run preview
 - https://supabase.com/docs/reference/javascript/auth-resetpasswordforemail
 - https://supabase.com/docs/guides/auth/redirect-urls
 - https://supabase.com/docs/guides/getting-started/api-keys
+
+## Automatic capture and audit
+
+- `extension/`: Manifest V3 extension, visible-case parser, connection popup and retry worker.
+- `supabase/migrations/202610280001_case_capture_audit.sql`: workspace isolation and atomic capture/update/audit functions.
+- `src/CaseWorkspace.jsx`: case list, connection setup, current details, separate audit and captured snapshots.
+- `docs/SETUP.md`: activation, teammate membership, local Chrome installation and limitations.
+- `tests/`: embedded PostgreSQL policy/transaction tests, synthetic parser fixtures and worker tests. Run `npm test`.
+
+Live installation against your Supabase project and an actual eCourts session still needs to be verified. No live court data, extension credentials or private project keys are committed.
+
+### Search listings and court totals
+
+Extension 1.1.0 automatically saves loaded search-result rows and search-scoped court totals. Opening a case enriches its CNR with details; list captures never overwrite detailed status/history. Run the additional `202610290002_search_result_capture.sql` migration once, reload the extension and refresh eCourts. See the upgrade section in [docs/SETUP.md](docs/SETUP.md). Listing-only cases are shown separately from status-unknown detailed cases, with listing audits and immutable search snapshots.
+
+### View a case from Lawcovery
+
+Extension 1.2.0 connects the local dashboard's View/Refresh buttons to the existing eCourts tab. Complete the source search/CAPTCHA first; thereafter each requested listed case is opened through its live View control, checked by CNR, captured and saved with an audit. The dashboard updates after confirmed saves. Every case-number/View click requests fresh source details, even when already saved. Action-needed messages send you back to the court tab for missing search context, CAPTCHA or session renewal. Reload the extension and refresh both app/court tabs after pulling. No new migration is required. See the 1.2.0 section of [docs/SETUP.md](docs/SETUP.md).
+
+Extension 1.2.1 keeps the court AJAX View handler but prevents default tokenised-link navigation. Clicking a case number opens an immediate dialog with loading status, details and any error, so feedback cannot be hidden above/below the results table. Reload the extension and refresh both pages after pulling this fix.
+
+## Automatic sequential details — extension 1.3.0
+
+Pull `feat/ecourts-auto-capture-audit`, restart Vite, reload the unpacked extension in Chrome and refresh both Lawcovery and eCourts. No new SQL is required. After completing CAPTCHA/search, the extension saves the loaded results and queues each valid CNR for a fresh detail fetch. Keep the source tab open. It uses the live View controls, waits for matching fresh case details and confirms the audited database save before advancing. Lawcovery displays saved/remaining/failed counts and refreshes the portfolio automatically. Pause/resume controls are in the dashboard and extension popup; an in-flight case may finish saving after pause.
+
+There is a minimum five-second gap between cases. Hidden-tab timer throttling can slow processing; a durable 30-second alarm also wakes the queue. On CAPTCHA/session expiry, missing View controls, case mismatch or unconfirmed save, the queue stops and displays the reason. Correct the source/connection issue and choose Resume queue to retry that same case. Pending uploads are still retried by the existing upload queue; they are never counted as a confirmed batch save. Successfully rechecked unchanged cases retain snapshots without creating false field-change audits. Closing a source tab pauses on the next attempt; reopen/refresh and repeat the source search to create a new run.
+
+Only the loaded result list is processed, up to the existing 2,000-row bound. No automatic pagination or search-filter changes. A refreshed source page or changed result list starts a new run, replacing the previous queue; retained identical rows within the same page do not restart a completed run. The queue is tied to the configured workspace connection and is cleared on disconnect/reconnect. The user still handles CAPTCHA. Live session validation is required after upgrading.
+
+## Hearing calendar
+
+Choose **Hearing calendar** beside **Cases** in a company workspace. The month view places case numbers on saved first/next hearing dates and the **Hearing Date** column of hearing history (not Business on Date). Entries for the same CNR/day are combined. Current next dates are marked **Next hearing**; other entries are **Recorded date**, not confirmation that a hearing actually occurred. Disposed cases retain history without a current next-date marker.
+
+Navigate months, jump to Today or Next scheduled hearing, and search by case/CNR, party, court or purpose. Select a day to see all its cases, including those hidden behind the calendar's +more button. Click any case to open its saved details; Refresh from eCourts remains available separately. Automatic confirmed saves refresh the calendar alongside the portfolio. Dates remain calendar days across timezones, and Today follows India time. Only the loaded workspace portfolio is included; listed-only cases appear after detailed hearing dates are captured. No new SQL, extension update or package installation is needed for this calendar addition.
+
+## Workspace layout
+
+The workspace opens on **Overview**, with aligned case totals, stage counts and the latest search coverage. Desktop navigation stays in the sidebar; it becomes a compact navigation area on smaller screens. **Cases** contains the searchable case register, **Hearing calendar** contains court dates, and **Connections** contains company creation and browser connection settings. The selected company and refresh action stay in the workspace header.
+
+At narrow table widths, the case register becomes labelled cards with the case identity first. Other data tables retain keyboard-accessible scrolling and sticky headers. The mobile calendar shows case counts on each day and the full case list below. Native case dialogs, visible keyboard focus and a skip-to-content link support keyboard use. Typography, forms, buttons, spacing and status colours are shared across the workspace, with sign-in/recovery alignment refinements. No new dependencies, SQL migrations or extension permissions are needed for this UI update.
+
+## Decision Date — extension 1.3.1
+
+Decision Date is captured as `data.decision_date`, independently of `data.disposal_date`, and appears in case details, snapshots and the separate old/new audit trail. Apply `supabase/migrations/202610290003_decision_date_capture.sql` after the existing migrations, then reload extension **1.3.1** and refresh both Lawcovery and eCourts. Only the explicit source field is saved; no date is inferred from disposal status or hearing history. Reopen a case or repeat a source search to capture dates previously missed. Blank or older captures do not erase a saved date. Detail format 1.1.0 requires the migration; legacy detail format 1.0.0 and search format 1.0.0 remain supported. See the setup guide for the Mac copy command.
+
+## Lawcovery branding — extension 1.3.2
+
+The product, website titles, sign-in/demo screens, workspace, extension popup and capture notices now use **Lawcovery**. Pull the feature branch, restart Vite, reload **Lawcovery Case Capture 1.3.2**, then refresh the website and eCourts tabs. Existing connection credentials, queues, saved cases and audit history continue to work. No new SQL or package installation is needed. GitHub repository URLs and existing local folder paths remain valid; internal message/storage identifiers are retained for compatibility with installed connections.
+
+## Portfolio analytics
+
+Select **Analytics** in the workspace navigation. It uses the same saved, CNR-merged portfolio as Cases, updates when that portfolio refreshes, and adds no new database writes or SQL migration. The analytics view loads separately from the main app.
+
+Filter by court, case type, current status, stage or search text. Summary cards show case counts, confirmed pending/disposed records, disposed share among known statuses, detail coverage, hearings within seven days, past saved next-hearing dates, and median time to decision. Charts cover status/stages, case types, monthly filing and Decision Dates, pending case age, next-30-day hearing workload, disposal descriptions, judge/courtroom labels, check recency and date completeness. Court counts describe the filtered portfolio, not court-wide source totals.
+
+**Definitions:** listed-only records are separate from unknown detailed statuses. Disposed share excludes both groups and does not indicate recovery or success. Case age and duration use filing date, falling back to registration date. Decision Date is never inferred from Disposal Date. Duration excludes missing, future or reversed dates and shows its sample size. Filing-date completeness uses detailed cases; Decision Date completeness uses disposed cases. Trend windows use the actual dates of the current filtered cohort and do not reconstruct historical case states. Saved next-hearing dates before today indicate records to recheck, not proof of a missed hearing. Today and all calendar cutoffs use India time.
+
+The follow-up section provides paginated lists for upcoming hearings, past next-hearing dates, pending cases missing a next date, disposed cases missing/invalid Decision Dates, checks at least 30 days old, and cases awaiting details. Categories overlap and are not additive. Click a case to open saved details without a new court fetch. Missing values and no-data states are shown explicitly. Scope is stated at the top: up to 1,000 detailed cases and 1,000 listings loaded for the selected company, merged by CNR; figures are not an unrestricted database-wide aggregate.
+
+
+## Missing details and existing-case refresh — extension 1.4.0
+
+The court-sync panel and extension popup now offer **Fetch missing details** and **Refresh existing details**. Missing means the CNR has no detailed `court_cases` record in the connected company; a saved search row alone is not a detail record. New connections default to missing details. The selected mode persists for future searches. Clicking either option rechecks the original loaded search (up to 2,000 CNRs) against the database and starts a fresh queue for matching cases, including after the preceding queue completes. This uses server coverage rather than the dashboard's limited loaded portfolio.
+
+Apply `supabase/migrations/202610300004_case_fetch_modes.sql`, reload extension **1.4.0**, and refresh both tabs. This read-only function returns only supplied CNRs and detail-presence flags for the active connection's workspace, validating membership, expiry/revocation, identities and request bounds. It grants no case/audit table access. Search saves succeed even when coverage fails; the detail queue stops visibly until the migration/connection is fixed and Resume queue succeeds. No fallback fetch-all behavior is used.
+
+Before each selected case opens, coverage is checked again. Cases no longer matching the mode are skipped; confirmed saves, skips and processed totals are separate. Missing does not mean a particular field is blank: use Refresh existing details to acquire Decision Date or other new fields on an already-saved detail record. Existing cases update through the same transactional snapshot/old-new audit mechanism with no approval step. Unchanged refreshes create a check snapshot without a false field-change audit. Keep the live source search tab open and complete any required CAPTCHA; only those loaded results are processed. Manual case-number/View and explicit case Refresh requests still fetch the selected case regardless of bulk mode.
