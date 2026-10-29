@@ -9,7 +9,7 @@ window.addEventListener("message", (event) => {
   const { id, action, payload } = event.data;
   if (
     typeof id !== "string" ||
-    !["PING", "FETCH_CASE", "FOCUS_COURT", "BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME"].includes(action)
+    !["PING", "FETCH_CASE", "FOCUS_COURT", "BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME", "BATCH_START"].includes(action)
   )
     return;
   (async () => {

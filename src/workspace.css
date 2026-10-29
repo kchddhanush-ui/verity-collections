@@ -1524,6 +1524,34 @@
   gap: 8px;
   margin-inline-start: auto;
 }
+.batch-fetch-modes {
+  min-inline-size: 0;
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid #c9d7c1;
+  border-radius: 8px;
+}
+.batch-fetch-modes legend {
+  padding-inline: 5px;
+  font-weight: 700;
+}
+.batch-mode-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.batch-mode-options button {
+  white-space: normal;
+}
+.batch-mode-options button[aria-pressed="true"] {
+  background: #193e35;
+  border-color: #193e35;
+  color: #fff;
+}
+.batch-fetch-modes p {
+  margin-block-end: 0;
+  max-inline-size: 90ch;
+}
 .batch-summary {
   display: flex;
   flex-wrap: wrap;

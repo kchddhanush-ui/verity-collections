@@ -229,3 +229,27 @@ Pull the feature branch, restart Vite and refresh Lawcovery. Choose **Analytics*
 Use court/type/status/stage/search filters to define the case cohort. The Trend window selector changes only the monthly filing/Decision Date chart. The dashboard displays counts, percentages, date coverage, source-date trends, hearing workload, pending age, court/judge distribution and capture recency, with explicit denominator and missing-data notes. Follow-up categories below the charts offer a paginated case list; clicking a case opens its saved details. Refresh cases to load recent database changes; the existing automatic capture queue also refreshes the portfolio after confirmed saves.
 
 Analytics covers the currently loaded company portfolio (the same limit as Cases), not unbounded database aggregates or reported search totals. It does not infer recovery amounts, outcomes or missed hearings from status/date fields. Refer to README.md for metric definitions and exclusions.
+
+
+## Fetch missing details or refresh existing cases — extension 1.4.0
+
+1. Pull the feature branch, then copy the new query on your Mac:
+
+   ```bash
+   cd /Users/nc25034-dhanush/verity-collections-github
+   git pull origin feat/ecourts-auto-capture-audit
+   pbcopy < supabase/migrations/202610300004_case_fetch_modes.sql
+   ```
+
+2. In the existing Supabase project, choose **SQL Editor → New query**, paste with **Cmd+V** and click **Run**. Copying in Terminal alone does not execute it. Run this after the existing capture migrations; it is safe to rerun and does not rewrite cases or audit history. Decision Date still requires the preceding `202610290003_decision_date_capture.sql` migration.
+3. Restart `npm run dev`. In `chrome://extensions`, click Reload on **Lawcovery Case Capture** and confirm **1.4.0**. Refresh both Lawcovery and the eCourts tab.
+4. Complete your eCourts search/CAPTCHA. Search rows and totals save automatically. Missing details are fetched by default on new connections.
+5. In the **Court sync** panel or extension popup, choose:
+   - **Fetch missing details:** only CNRs without a saved detail record. A listed/search-only row qualifies.
+   - **Refresh existing details:** only CNRs that already have a detail record; fetch current details and update them with separate snapshots and field-change audits.
+
+Each option restarts the queue for the original loaded source search, even after completion. The selected mode is remembered for subsequent searches on that connection. It is not tied to the dashboard's search/filter/portfolio limits. Wait for an in-flight case to finish before changing modes. Repeated retained result tables do not automatically restart the run. A new source document/search starts a run in the selected mode. The existing five-second minimum gap, pause/resume, session/CAPTCHA handling and loaded-source limit remain.
+
+Progress separates **processed**, **saved**, **skipped**, **remaining** and **failed**. A case saved elsewhere after selection is skipped in missing mode. A zero-match queue completes without opening a court case. Coverage errors stop the queue; fix the database/connection and Resume queue to recheck. Missing refers to the whole case detail record, not a blank field: choose Refresh existing details when adding previously missed fields such as Decision Date. Manual View/Refresh actions on a specific case remain available in either mode.
+
+The new connection-authorized SQL function returns only existence flags for supplied CNRs in the connection's workspace (maximum 2,000), not case content or audits. The dashboard account/origin checks remain in place and no new Chrome permissions or packages are required. Existing connections do not need to be replaced.

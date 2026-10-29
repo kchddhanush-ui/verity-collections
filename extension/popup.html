@@ -17,7 +17,14 @@
       <button id="disconnect">Disconnect</button>
       <section id="batch" hidden>
         <h2>Automatic detail capture</h2>
-        <progress id="batch-progress" aria-label="Cases saved"></progress>
+        <fieldset id="fetch-modes">
+          <legend>Choose what to fetch</legend>
+          <button id="fetch-missing" aria-pressed="false">Fetch missing details</button>
+          <button id="fetch-existing" aria-pressed="false">Refresh existing details</button>
+          <p>Search rows without saved case details count as missing. Each option starts a new queue for the loaded search; the selected mode applies to future searches too.</p>
+        </fieldset>
+        <p id="batch-mode"></p>
+        <progress id="batch-progress" aria-label="Selected cases processed"></progress>
         <p id="batch-status" role="status"></p>
         <button id="batch-pause">Pause queue</button>
         <button id="batch-resume">Resume queue</button>
@@ -38,7 +45,7 @@
       ></textarea>
       <p>
         Connect once. When enabled, search results and court totals are saved
-        automatically. Case details are then fetched one at a time while the court tab stays open. Separate audit
+        automatically. Missing case details are then fetched one at a time while the court tab stays open. Choose Refresh existing details to recheck saved cases. Separate audit
         histories preserve listing and case changes.
       </p>
       <button type="submit">Connect and enable auto-save</button>

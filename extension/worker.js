@@ -23,7 +23,10 @@ async function rpc(config, name, body, accessToken) {
     const e = new Error(
       data.message === "Unsupported parser version"
         ? "Database update required: run 202610290003_decision_date_capture.sql in Supabase, then resume the queue or reopen the case"
-        : data.message || `Server returned ${response.status}`,
+        : name === "get_case_capture_coverage" &&
+            (response.status === 404 || data.code === "PGRST202" || data.code === "42883")
+          ? "Database update required: run 202610300004_case_fetch_modes.sql in Supabase, then resume the queue"
+          : data.message || `Server returned ${response.status}`,
     );
     e.permanent = response.status >= 400 && response.status < 500;
     e.auth = /Connection invalid or expired/.test(e.message);
@@ -148,6 +151,7 @@ async function handle(message, sender) {
     await chrome.storage.local.set({
       config: {
         ...cfg,
+        fetchMode: cfg.fetchMode === "existing" ? "existing" : "missing",
         connectionId: result.id,
         workspace: result.workspace,
         enabled: true,
@@ -159,6 +163,8 @@ async function handle(message, sender) {
     await wakePages();
     return { ok: true };
   }
+  if (message.type === "BATCH_START" && internal)
+    return await startBatch(message.mode);
   if (["BATCH_PAUSE", "BATCH_RESUME"].includes(message.type) && internal)
     return await controlBatch(message.type);
   if (message.type === "TOGGLE" && internal) {
@@ -247,7 +253,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Lawcovery dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.3.3", connected: Boolean(config?.enabled) };
+    return { version: "1.4.0", connected: Boolean(config?.enabled) };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Lawcovery Case Capture.",
@@ -258,7 +264,7 @@ async function dashboard(message, sender) {
     p.projectUrl?.replace(/\/$/, "") !== config.url ||
     typeof p.accessToken !== "string" ||
     p.accessToken.length > 12000 ||
-    (!["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME"].includes(message.action) && !/^[A-Z]{4}\d{12}$/.test(p.cnr)) ||
+    (!["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME", "BATCH_START"].includes(message.action) && !/^[A-Z]{4}\d{12}$/.test(p.cnr)) ||
     !/^[a-f0-9-]{36}$/i.test(p.workspace)
   )
     throw new Error("Invalid dashboard case request");
@@ -285,9 +291,16 @@ async function dashboard(message, sender) {
   });
   if (verified.id !== config.connectionId)
     throw new Error("Connection identity changed. Reconnect the extension.");
-  if (["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME"].includes(message.action)) {
+  if (["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME", "BATCH_START"].includes(message.action)) {
     if (message.action !== "BATCH_STATUS")
-      await navigator.locks.request("verity-sync", () => controlBatch(message.action));
+      await navigator.locks.request("verity-sync", async () => {
+        const { config: now } = await chrome.storage.local.get("config");
+        if (!now?.enabled || now.connectionId !== config.connectionId)
+          throw new Error("Connection changed. Retry from the connected workspace.");
+        return message.action === "BATCH_START"
+          ? await startBatch(p.mode)
+          : await controlBatch(message.action);
+      });
     const { batch } = await chrome.storage.local.get("batch");
     return { batch: batch?.connectionId === config.connectionId ? batchSummary(batch) : null };
   }
@@ -423,39 +436,88 @@ chrome.runtime.onInstalled.addListener(() => {
   protectStorage().catch(() => {});
 });
 
-// Only identifiers/progress persist here; all snapshots still use the audited ingest RPC.
+// Only identifiers, fetch mode and progress persist; audited ingest stores snapshots.
 function batchSummary(batch) {
   return {
-    id: batch.id, state: batch.state, total: batch.cnrs.length,
-    saved: batch.index, waiting: batch.cnrs.length - batch.index,
+    id: batch.id, state: batch.state, mode: batch.mode || "missing",
+    sourceTotal: (batch.sourceCnrs || batch.cnrs).length,
+    total: batch.cnrs.length, processed: batch.index,
+    saved: batch.saved ?? batch.index, skipped: batch.skipped || 0,
+    waiting: batch.cnrs.length - batch.index,
     failed: batch.failed.length, current: batch.cnrs[batch.index] || "",
     message: batch.message, updatedAt: batch.updatedAt,
   };
 }
+function fetchMode(mode) {
+  if (!["missing", "existing"].includes(mode)) throw new Error("Choose missing or existing case details");
+  return mode;
+}
+async function detailCoverage(config, cnrs) {
+  const rows = await rpc(config, "get_case_capture_coverage", { p_token: config.token, p_cnrs: cnrs });
+  // Fail closed: an unavailable or incomplete response must never fetch all cases.
+  if (!Array.isArray(rows) || rows.length !== cnrs.length ||
+      rows.some(row => !cnrs.includes(row.cnr) || typeof row.has_details !== "boolean") ||
+      new Set(rows.map(row => row.cnr)).size !== cnrs.length)
+    throw new Error("Could not verify saved case details. Nothing was fetched; retry the coverage check.");
+  return new Map(rows.map(row => [row.cnr, row.has_details]));
+}
+async function prepareBatch(previous, config, mode) {
+  fetchMode(mode);
+  const sourceCnrs = previous.sourceCnrs || previous.cnrs;
+  const batch = {
+    id: crypto.randomUUID(), fingerprint: previous.fingerprint, tabId: previous.tabId,
+    connectionId: config.connectionId, sourceCnrs, mode,
+    cnrs: [], index: 0, saved: 0, skipped: 0, failed: [],
+    state: "attention", needsClassification: true, nextAt: 0,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    const coverage = await detailCoverage(config, sourceCnrs);
+    batch.cnrs = sourceCnrs.filter(cnr => coverage.get(cnr) === (mode === "existing"));
+    batch.needsClassification = false;
+    batch.state = batch.cnrs.length ? "waiting" : "complete";
+    batch.nextAt = Date.now() + 5000;
+    batch.message = batch.cnrs.length
+      ? `${batch.cnrs.length} ${mode === "missing" ? "cases without saved details" : "cases with saved details"} selected. Fetch starts shortly.`
+      : `No ${mode === "missing" ? "missing" : "existing"} case details in this loaded search.`;
+  } catch (e) {
+    if (e.auth) config = { ...config, enabled: false };
+    batch.message = `${e.message}. Resume queue to retry the coverage check.`;
+  }
+  // The selected mode also applies to subsequent source searches on this connection.
+  await chrome.storage.local.set({ batch, config: { ...config, fetchMode: mode } });
+  await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
+  return { batch: batchSummary(batch) };
+}
 async function enqueueBatch(capture, tabId, config, searchSession) {
-  const cnrs = [...new Set(capture.entries.map(e => e.cnr))]
+  const sourceCnrs = [...new Set(capture.entries.map(e => e.cnr))]
     .filter(cnr => /^[A-Z]{4}\d{12}$/.test(cnr));
-  if (!cnrs.length || typeof searchSession !== "string" || searchSession.length > 100) return;
-  // The same retained table must not start another loop after each opened case.
+  if (!sourceCnrs.length || typeof searchSession !== "string" || searchSession.length > 100) return;
   const fingerprint = Array.from(new Uint8Array(await crypto.subtle.digest(
     "SHA-256", new TextEncoder().encode(JSON.stringify([searchSession, capture.entries, capture.search_context])),
   )), b => b.toString(16).padStart(2, "0")).join("");
   const { batch: old } = await chrome.storage.local.get("batch");
   if (old?.fingerprint === fingerprint && old.connectionId === config.connectionId) return;
-  const batch = {
-    id: crypto.randomUUID(), fingerprint, tabId, connectionId: config.connectionId,
-    cnrs, index: 0, failed: [], state: "waiting", nextAt: Date.now() + 5000,
-    message: "Search saved. Automatic detail capture starts shortly.",
-    updatedAt: new Date().toISOString(),
-  };
-  await chrome.storage.local.set({ batch });
-  // Fallback when the source tab's heartbeat is throttled or the worker restarts.
-  await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
+  await prepareBatch({ sourceCnrs, fingerprint, tabId }, config, config.fetchMode || "missing");
+}
+// Called under the save/config lock. A non-blocking navigation lock avoids
+// replacing a queue halfway through another authorised case load.
+async function startBatch(mode) {
+  fetchMode(mode);
+  return await navigator.locks.request("verity-case-navigation", { ifAvailable: true }, async lock => {
+    if (!lock) throw new Error("A case is loading. Wait for it to finish, then choose a fetch mode again.");
+    const { batch, config } = await chrome.storage.local.get(["batch", "config"]);
+    if (!batch || !config?.enabled || batch.connectionId !== config.connectionId)
+      throw new Error("Connect/resume capture and load an eCourts search first.");
+    return await prepareBatch(batch, config, mode);
+  });
 }
 async function controlBatch(action) {
   const { batch, config } = await chrome.storage.local.get(["batch", "config"]);
   if (!batch || !config?.enabled || batch.connectionId !== config.connectionId)
     throw new Error("No active batch. Connect/resume capture and load an eCourts search first.");
+  if (action === "BATCH_RESUME" && (batch.needsClassification || !batch.mode))
+    return await startBatch(batch.mode || "missing");
   if (batch.state === "complete") return { batch: batchSummary(batch) };
   const paused = action === "BATCH_PAUSE";
   const next = { ...batch, state: paused ? "paused" : "waiting", nextAt: Date.now(),
@@ -471,6 +533,14 @@ async function runBatch(tabId) {
     const { config, batch } = await chrome.storage.local.get(["config", "batch"]);
     if (!batch || !config?.enabled || batch.connectionId !== config.connectionId ||
         (tabId !== undefined && batch.tabId !== tabId)) return {};
+    if (!batch.mode) {
+      return await navigator.locks.request("verity-sync", async () => {
+        const { batch: latest, config: now } = await chrome.storage.local.get(["batch", "config"]);
+        if (!now?.enabled || latest?.id !== batch.id || now.connectionId !== batch.connectionId) return {};
+        if (["paused", "attention"].includes(latest.state)) return { batch: batchSummary(latest) };
+        return await prepareBatch(latest, now, "missing");
+      });
+    }
     if (["paused", "complete", "attention"].includes(batch.state) || Date.now() < batch.nextAt)
       return { batch: batchSummary(batch) };
     const cnr = batch.cnrs[batch.index];
@@ -480,14 +550,27 @@ async function runBatch(tabId) {
       return await navigator.locks.request("verity-sync", async () => {
         const { batch: latest, config: now } = await chrome.storage.local.get(["batch", "config"]);
         if (latest?.id !== batch.id || now?.connectionId !== batch.connectionId) return null;
+        if (fields.state === "fetching" && (!now.enabled || ["paused", "attention", "complete"].includes(latest.state))) return null;
         const next = { ...latest, ...fields, updatedAt: new Date().toISOString() };
         if (latest.state === "paused" && fields.state !== "attention") next.state = "paused";
         await chrome.storage.local.set({ batch: next });
         return next;
       });
     }
-    await update({ state: "fetching", message: `Fetching ${cnr}…` });
     try {
+      // Another user/manual capture may have saved this CNR since selection.
+      const coverage = await detailCoverage(config, [cnr]);
+      if (coverage.get(cnr) !== (batch.mode === "existing")) {
+        const index = batch.index + 1;
+        const next = await update({ index, skipped: (batch.skipped || 0) + 1,
+          failed: batch.failed.filter(c => c !== cnr),
+          state: index === batch.cnrs.length ? "complete" : "waiting", nextAt: Date.now() + 5000,
+          message: `${cnr} skipped: it no longer matches the selected fetch mode.` });
+        return { batch: next ? batchSummary(next) : null };
+      }
+      // A pause, replaced search or revoked connection during coverage lookup
+      // must not open another source case.
+      if (!await update({ state: "fetching", message: `Fetching ${cnr}…` })) return {};
       const response = await chrome.tabs.sendMessage(batch.tabId, { type: "LOAD_CASE", cnr, force: true });
       if (response?.error) throw new Error(response.error);
       if (response?.capture?.cnr !== cnr) throw new Error("Case identity mismatch. Nothing was saved.");
@@ -500,9 +583,10 @@ async function runBatch(tabId) {
       });
       if (!result.saved) throw new Error(result.message || "Save not confirmed. Check the connection before resuming.");
       const index = batch.index + 1;
-      const next = await update({ index, failed: batch.failed.filter(c => c !== cnr),
+      const next = await update({ index, saved: (batch.saved ?? batch.index) + 1,
+        failed: batch.failed.filter(c => c !== cnr),
         state: index === batch.cnrs.length ? "complete" : "waiting", nextAt: Date.now() + 5000,
-        message: index === batch.cnrs.length ? "All loaded cases saved. Audit history retained." : `${index} of ${batch.cnrs.length} saved. Next case shortly.` });
+        message: index === batch.cnrs.length ? "Selected cases processed. Saved checks and audit history retained." : `${index} of ${batch.cnrs.length} processed. Next case shortly.` });
       return { batch: next ? batchSummary(next) : null };
     } catch (e) {
       const next = await update({ state: "attention", failed: [...new Set([...batch.failed, cnr])],

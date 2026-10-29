@@ -20,9 +20,14 @@ async function render() {
   }
   $("batch").hidden = !batch || !config;
   if (batch && config) {
-    $("batch-progress").max = batch.cnrs.length;
+    $("batch-progress").hidden = !batch.cnrs.length;
+    $("batch-progress").max = batch.cnrs.length || 1;
     $("batch-progress").value = batch.index;
-    $("batch-status").textContent = `${batch.index}/${batch.cnrs.length} saved · ${batch.failed.length} failed · ${batch.message}`;
+    $("batch-mode").textContent = `Mode: ${batch.mode === "existing" ? "Refresh existing details" : "Fetch missing details"}`;
+    $("batch-status").textContent = `${batch.index}/${batch.cnrs.length} processed · ${batch.saved ?? batch.index} saved · ${batch.skipped || 0} skipped · ${batch.failed.length} failed · ${batch.message}`;
+    $("fetch-missing").setAttribute("aria-pressed", String(batch.mode === "missing"));
+    $("fetch-existing").setAttribute("aria-pressed", String(batch.mode === "existing"));
+    $("fetch-modes").disabled = batch.state === "fetching" || !config.enabled;
     $("batch-pause").disabled = ["paused", "attention", "complete"].includes(batch.state) || !config.enabled;
     $("batch-resume").disabled = !["paused", "attention"].includes(batch.state) || !config.enabled;
   }
@@ -68,6 +73,22 @@ for (const [id, type] of [
     } catch (e) {
       $("status").textContent = e.message;
     }
+  });
+for (const [id, mode] of [["fetch-missing", "missing"], ["fetch-existing", "existing"]])
+  $(id).addEventListener("click", async () => {
+    $("fetch-modes").disabled = true;
+    try {
+      const result = await chrome.runtime.sendMessage({ type: "BATCH_START", mode });
+      if (result.error) throw new Error(result.error);
+    } catch (e) {
+      $("status").textContent = e.message;
+      return;
+    } finally {
+      // Restore controls even if the requested mode was rejected.
+      const { config, batch } = await chrome.storage.local.get(["config", "batch"]);
+      $("fetch-modes").disabled = !config?.enabled || batch?.state === "fetching";
+    }
+    await render();
   });
 render().catch((e) => {
   $("status").textContent = e.message;

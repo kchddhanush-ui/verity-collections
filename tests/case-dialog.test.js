@@ -99,8 +99,14 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     );
     await server.ssrLoadModule("/src/components/AnalyticsDashboard.jsx");
     let simulatedSuccess = false;
+    const batchRequests = [];
+    let simulatedBatch = { id: "queue-a", mode: "missing", state: "waiting", total: 1, sourceTotal: 1,
+      processed: 0, saved: 0, skipped: 0, waiting: 1, failed: 0, current: cnr, message: "Missing details selected" };
     window.postMessage = (message) =>
       queueMicrotask(() => {
+        batchRequests.push(message);
+        if (message.action === "BATCH_START") simulatedBatch = { ...simulatedBatch, id: crypto.randomUUID(), mode: message.payload.mode,
+          total: 0, waiting: 0, current: "", state: "complete", message: "No matching cases" };
         if (message.action === "FETCH_CASE" && simulatedSuccess)
           tables.court_cases = [
             {
@@ -126,6 +132,8 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
             result:
               message.action === "PING"
                 ? { connected: true }
+                : ["BATCH_STATUS", "BATCH_START"].includes(message.action)
+                  ? { batch: simulatedBatch }
                 : simulatedSuccess
                   ? { saved: true, message: "Case saved" }
                   : {
@@ -150,6 +158,17 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
         }),
       ),
     );
+    const missingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Fetch missing details");
+    const existingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Refresh existing details");
+    assert.ok(missingButton && existingButton, "workspace exposes both fetch modes");
+    assert.equal(missingButton.getAttribute("aria-pressed"), "true");
+    await act(async () => existingButton.dispatchEvent(new window.Event("click", { bubbles: true })));
+    assert.equal(existingButton.getAttribute("aria-pressed"), "true");
+    const modeRequest = batchRequests.find(m => m.action === "BATCH_START");
+    assert.equal(modeRequest.payload.mode, "existing");
+    assert.equal(modeRequest.payload.workspace, "workspace-a");
+    assert.ok(document.querySelector('.batch-capture-panel progress').hasAttribute("hidden"), "zero matching cases do not show an indeterminate bar");
+    assert.equal(batchRequests.filter(m => m.action === "FETCH_CASE").length, 0);
     assert.ok(
       document.querySelector(".console-metrics"),
       "overview opens first",

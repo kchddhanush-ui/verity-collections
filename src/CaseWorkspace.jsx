@@ -103,6 +103,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const [fetchStatus, setFetchStatus] = useState(null);
   const [batch, setBatch] = useState(null);
   const [batchError, setBatchError] = useState("");
+  const [batchBusy, setBatchBusy] = useState(false);
   const [searches, setSearches] = useState([]);
   const [portfolioView, setPortfolioView] = useState("overview");
   const [listingAudits, setListingAudits] = useState([]);
@@ -338,7 +339,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           if (active && !result.error) {
             setBatch(result.batch || null);
             const progress = result.batch
-              ? `${result.batch.id}:${result.batch.saved}`
+              ? `${result.batch.id}:${result.batch.saved}:${result.batch.processed ?? result.batch.saved}:${result.batch.skipped || 0}`
               : "";
             if (progress && progress !== lastProgress) {
               const portfolio = await loadPortfolio(workspace);
@@ -368,14 +369,17 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       clearTimeout(timer);
     };
   }, [workspace, session.access_token]);
-  async function batchControl(action) {
+  async function batchControl(action, mode) {
     setBatchError("");
+    setBatchBusy(true);
     try {
-      const result = await extensionRequest(action, dashboardPayload());
+      const result = await extensionRequest(action, { ...dashboardPayload(), ...(mode ? { mode } : {}) });
       if (result.error) throw new Error(result.error);
       setBatch(result.batch || null);
     } catch (e) {
       setBatchError(e.message);
+    } finally {
+      setBatchBusy(false);
     }
   }
   useEffect(() => {
@@ -658,7 +662,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                 <div className="batch-actions">
                   {" "}
                   <button
-                    disabled={["paused", "attention", "complete"].includes(
+                    disabled={batchBusy || ["paused", "attention", "complete"].includes(
                       batch.state,
                     )}
                     onClick={() => batchControl("BATCH_PAUSE")}
@@ -666,24 +670,53 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     Pause queue
                   </button>{" "}
                   <button
-                    disabled={!["paused", "attention"].includes(batch.state)}
+                    disabled={batchBusy || !["paused", "attention"].includes(batch.state)}
                     onClick={() => batchControl("BATCH_RESUME")}
                   >
                     Resume queue
                   </button>
                 </div>
               </div>
+              <fieldset className="batch-fetch-modes" disabled={batchBusy}>
+                <legend>Choose what to fetch</legend>
+                <div className="batch-mode-options">
+                  <button
+                    aria-pressed={batch.mode === "missing"}
+                    disabled={batch.state === "fetching"}
+                    onClick={() => batchControl("BATCH_START", "missing")}
+                  >
+                    Fetch missing details
+                  </button>
+                  <button
+                    aria-pressed={batch.mode === "existing"}
+                    disabled={batch.state === "fetching"}
+                    onClick={() => batchControl("BATCH_START", "existing")}
+                  >
+                    Refresh existing details
+                  </button>
+                </div>
+                <p>
+                  Missing means no saved case detail record; a search row alone
+                  does not count. Each option starts a new queue for the loaded
+                  eCourts search and applies to future searches on this connection.
+                </p>
+              </fieldset>
+              <p>
+                <strong>Mode: {batch.mode === "existing" ? "Refresh existing details" : "Fetch missing details"}</strong>
+                {batch.sourceTotal != null && ` · ${batch.sourceTotal} cases in the loaded source search`}
+              </p>
               <progress
-                aria-label="Cases saved"
-                max={batch.total}
-                value={batch.saved}
+                aria-label="Selected cases processed"
+                hidden={!batch.total}
+                max={batch.total || 1}
+                value={batch.processed ?? batch.saved}
               />
               <div className="batch-summary">
                 <p role="status">
                   <strong>
-                    {batch.saved} of {batch.total}
+                    {batch.processed ?? batch.saved} of {batch.total}
                   </strong>{" "}
-                  saved · {batch.waiting} remaining · {batch.failed} failed
+                  processed · {batch.saved} saved · {batch.skipped || 0} skipped · {batch.waiting} remaining · {batch.failed} failed
                 </p>
                 {batch.current && <p>Current case: {batch.current}</p>}
               </div>
@@ -998,7 +1031,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         <h3>Automatic updates. Clear history.</h3>
                         <p>
                           Complete CAPTCHA and search in eCourts. The connected
-                          extension captures loaded cases one at a time.
+                          extension fetches missing case details one at a time. Choose
+                          Refresh existing details to update already-saved cases.
                         </p>
                         <ul>
                           <li>

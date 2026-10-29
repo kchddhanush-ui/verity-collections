@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Lawcovery Case Capture
 
-Last updated: 2026-10-29. Development installation only; not submitted or published.
+Last updated: 2026-10-30. Development installation only; not submitted or published.
 
 ## Store listing draft
 
@@ -8,7 +8,7 @@ Last updated: 2026-10-29. Development installation only; not submitted or publis
 
 **Short description:** Automatically save opened eCourts cases to your connected Lawcovery workspace, with a separate audit history.
 
-**Detailed description:** Connect your Lawcovery company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Pause capture anytime. You complete court searches and CAPTCHA yourself. Data is sent only to your configured company database.
+**Detailed description:** Connect your Lawcovery company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Fetch missing case details or refresh already-saved details from your loaded search. Pause capture anytime. You complete court searches and CAPTCHA yourself. Data is sent only to your configured company database.
 
 **Category:** Productivity. **Language:** English.
 
@@ -25,7 +25,7 @@ Store icon and screenshots have not been created. No icon paths are declared in 
 | storage | Keep the workspace connection locally and preserve bounded pending uploads across browser worker restarts. Secrets are restricted to trusted extension contexts. |
 | alarms | Retry failed uploads up to three attempts and resume sequential case capture when the court tab heartbeat is throttled. |
 | https://services.ecourts.gov.in/* | Read supported opened case pages and show capture status; never solve CAPTCHA. |
-| Optional https://*.supabase.co/* | Allows asking for the user's exact Supabase project origin when connecting; sends captures to that project. |
+| Optional https://*.supabase.co/* | Allows asking for the user's exact Supabase project origin when connecting; sends captures and checks which supplied CNRs have saved details in the connected workspace. |
 
 No all-sites, cookies, downloads, browsing-history or remote-code execution permission is requested.
 
@@ -33,7 +33,7 @@ No all-sites, cookies, downloads, browsing-history or remote-code execution perm
 
 Collected and transmitted: loaded case text including party/advocate names, court identifiers, status, dates, Acts, processes and hearing-history rows. User activity consists of capture timestamps and the fact a case was opened. Full browsing history, CAPTCHA contents, court session tokens and unrelated page forms are not collected. Financial/legal information may be present in court text; only extract fields needed by this feature.
 
-Authentication credential: a scoped 30-day upload token is stored locally, not synced across browsers. It is transmitted to the configured Supabase project only. Project URL and browser-safe key are also stored locally. Pending extracted captures are stored locally until uploaded, exhausted, disconnected or a connection is replaced. Uploaded snapshots/audits are retained by the workspace administrator's database policy; no automatic retention deletion is implemented.
+Authentication credential: a scoped 30-day capture connection token is stored locally, not synced across browsers. It is transmitted to the configured Supabase project only. Project URL and browser-safe key are also stored locally. Pending extracted captures are stored locally until uploaded, exhausted, disconnected or a connection is replaced. Uploaded snapshots/audits are retained by the workspace administrator's database policy; no automatic retention deletion is implemented.
 
 No advertising, data sale or separate analytics collection is implemented. The company database is hosted by Supabase. The publisher must accurately complete store disclosures, define retention/support, and confirm commercial source-use conditions before submission. Do not assert the lending-purpose certification without evaluating the intended collections use.
 
@@ -82,3 +82,10 @@ Rename the product and extension to Lawcovery / Lawcovery Case Capture. Update t
 ## Version 1.3.3 — 2026-10-29 (development draft)
 
 Give the “law” part of the Lawcovery wordmark a separate dark background, light text and gold border on login/loading/demo screens, the workspace sidebar and the extension popup. Keep “covery” as the adjoining wordmark text. Size the sidebar brand for the badge and longer name; support forced-colour system settings. No permission, connection, storage, parser or database changes. Refresh listing screenshots before publication.
+
+
+## Version 1.4.0 — 2026-10-30 (development draft)
+
+Choose **Fetch missing details** or **Refresh existing details** in the local dashboard or extension popup. A search row alone still counts as missing. Missing is the default for new connections; the selected mode is retained for subsequent searches. Each selection checks the original loaded search against the connected workspace database, restarts the queue with matching cases, and processes cases sequentially. A per-case coverage check skips targets that no longer match, without counting them as saved. Progress distinguishes processed, confirmed saved, skipped, remaining and failed cases. Zero matches complete without a court request. Missing/unavailable coverage checks stop processing with an actionable message; list saving still succeeds. Legacy queues are reclassified on resume/next tick.
+
+Apply `202610300004_case_fetch_modes.sql` before using this release. The connection token can now request **only CNR plus saved-detail existence** for up to 2,000 supplied CNRs in its workspace; it cannot read case content or audits, enumerate the database, or choose another workspace. This bounded metadata is processed transiently to choose targets; the local queue retains the original CNRs, mode and progress. No login token is persisted. Existing audited ingestion continues to retain snapshots/field changes, including unchanged checks without false change events. No new browser permissions, external services or data destinations. Refresh popup/progress screenshots and privacy disclosures for both fetch modes before store submission. Real Chrome/eCourts validation remains required.

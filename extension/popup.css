@@ -42,6 +42,21 @@ p {
 label {
   font-weight: 600;
 }
+fieldset {
+  min-inline-size: 0;
+  border: 1px solid #bbc9bf;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 12px 0;
+}
+legend { font-weight: 600; }
+#fetch-modes button { display: block; inline-size: 100%; margin-block: 6px; }
+#fetch-modes button[aria-pressed="false"] { background: transparent; color: #173c34; outline: 1px solid #bbc9bf; }
+progress { inline-size: 100%; accent-color: #173c34; }
+button:focus-visible { outline: 3px solid #8c631b; outline-offset: 3px; }
+@media (forced-colors: active) {
+  #fetch-modes button[aria-pressed="true"] { border: 2px solid ButtonText; }
+}
 
 .brand-wordmark { white-space: nowrap; }
 h1 .brand-law {
