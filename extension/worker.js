@@ -20,7 +20,11 @@ async function rpc(config, name, body, accessToken) {
   });
   const data = await response.json();
   if (!response.ok) {
-    const e = new Error(data.message || `Server returned ${response.status}`);
+    const e = new Error(
+      data.message === "Unsupported parser version"
+        ? "Database update required: run 202610290003_decision_date_capture.sql in Supabase, then resume the queue or reopen the case"
+        : data.message || `Server returned ${response.status}`,
+    );
     e.permanent = response.status >= 400 && response.status < 500;
     e.auth = /Connection invalid or expired/.test(e.message);
     throw e;
@@ -243,7 +247,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Verity dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.3.0", connected: Boolean(config?.enabled) };
+    return { version: "1.3.1", connected: Boolean(config?.enabled) };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Verity Case Capture.",

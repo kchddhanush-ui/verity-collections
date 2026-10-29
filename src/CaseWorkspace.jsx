@@ -25,6 +25,7 @@ const labels = {
   court: "Court",
   court_number_judge: "Court number / judge",
   case_status: "Status",
+  decision_date: "Decision Date",
   disposal_date: "Disposal date",
   nature_of_disposal: "Nature of disposal",
   petitioners: "Petitioners / advocates",

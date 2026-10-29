@@ -15,6 +15,7 @@ function searchPage() {
 test("search parser captures row identities, parties and scoped court totals", () => {
   const doc = searchPage(),
     result = VerityParser.extractSearch(doc, () => true);
+  assert.equal(result.parser_version, "1.0.0", "listing format stays compatible");
   assert.equal(result.entries.length, 2);
   assert.equal(result.reported_cases, 563);
   assert.equal(result.loaded_rows, 2);
@@ -75,6 +76,7 @@ test("search ingestion is audited, idempotent, tenant-scoped and does not overwr
     for (const migration of [
       "202610280001_case_capture_audit.sql",
       "202610290002_search_result_capture.sql",
+      "202610290003_decision_date_capture.sql",
     ])
       await db.exec(
         await readFile(

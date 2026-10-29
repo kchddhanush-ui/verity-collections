@@ -11,7 +11,9 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     revoked = false,
     courtTabs = [],
     loadResponse = null,
-    uploads = 0;
+    uploads = 0,
+    lastUpload = null,
+    outdated = false;
   const originalChrome = globalThis.chrome,
     originalFetch = globalThis.fetch;
   const savedNavigator = Object.getOwnPropertyDescriptor(
@@ -116,7 +118,13 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
             ]
           : [],
       );
+    if (outdated)
+      return Response.json(
+        { message: "Unsupported parser version" },
+        { status: 400 },
+      );
     uploads++;
+    lastUpload = JSON.parse(options.body).p_capture;
     return Response.json({ status: "created", case_id: "case-a" });
   };
   try {
@@ -172,6 +180,23 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       Object.keys(values).filter((k) => k.startsWith("pending:")).length,
       0,
     );
+    const dated = capture();
+    dated.parser_version = "1.1.0";
+    dated.data.decision_date = "07-10-2026";
+    assert.equal((await send({ type: "CAPTURE", capture: dated })).saved, true);
+    assert.equal(lastUpload.data.decision_date, "07-10-2026");
+    assert.equal(lastUpload.parser_version, "1.1.0");
+    outdated = true;
+    assert.match(
+      (
+        await send({
+          type: "CAPTURE",
+          capture: { ...dated, id: crypto.randomUUID() },
+        })
+      ).message,
+      /202610290003_decision_date_capture.sql/,
+    );
+    outdated = false;
     const list = { ...capture(), kind: "search_list", entries: [{}, {}] };
     delete list.cnr;
     assert.equal(
@@ -256,8 +281,15 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       true,
     );
     // Automatic list capture queues unique CNRs and advances only on confirmed saves.
-    const batchList = { ...list, entries: [{ cnr: payload.cnr }, { cnr: payload.cnr }] };
-    await send({ type: "CAPTURE", capture: batchList, searchSession: "page-a" });
+    const batchList = {
+      ...list,
+      entries: [{ cnr: payload.cnr }, { cnr: payload.cnr }],
+    };
+    await send({
+      type: "CAPTURE",
+      capture: batchList,
+      searchSession: "page-a",
+    });
     assert.equal(values.batch.cnrs.length, 1);
     values.batch.nextAt = 0;
     loadResponse = { error: "CAPTCHA required" };
@@ -272,9 +304,21 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     assert.equal(values.batch.index, 1);
     assert.equal(values.batch.failed.length, 0);
     const completedId = values.batch.id;
-    await send({ type: "CAPTURE", capture: batchList, searchSession: "page-a" });
-    assert.equal(values.batch.id, completedId, "retained result table cannot loop");
-    await send({ type: "CAPTURE", capture: batchList, searchSession: "page-b" });
+    await send({
+      type: "CAPTURE",
+      capture: batchList,
+      searchSession: "page-a",
+    });
+    assert.equal(
+      values.batch.id,
+      completedId,
+      "retained result table cannot loop",
+    );
+    await send({
+      type: "CAPTURE",
+      capture: batchList,
+      searchSession: "page-b",
+    });
     await send({ type: "BATCH_PAUSE" }, popup);
     values.batch.nextAt = 0;
     await send({ type: "BATCH_TICK" });

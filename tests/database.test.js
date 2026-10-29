@@ -21,6 +21,15 @@ test("PostgreSQL capture, audit, revocation and tenant isolation", async (t) => 
         "utf8",
       ),
     );
+    const decisionMigration = await readFile(
+      new URL(
+        "../supabase/migrations/202610290003_decision_date_capture.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    await db.exec(decisionMigration);
+    await db.exec(decisionMigration); // The upgrade is safe to rerun.
     const q = async (sql, args = []) => (await db.query(sql, args)).rows;
     const rpc = async (name, args) => {
       const placeholders = args.map((_, i) => `$${i + 1}`).join(",");
@@ -173,6 +182,115 @@ test("PostgreSQL capture, audit, revocation and tenant isolation", async (t) => 
         assert.equal(
           (await q("select data from court_cases"))[0].data.next_hearing_date,
           undefined,
+        );
+      },
+    );
+    await t.test(
+      "decision date is stored independently, corrected with audit, and protected from blank/stale captures",
+      async () => {
+        const cnr = "KAAA010000992025";
+        const decisionCapture = (value, disposal = "08-10-2026") => {
+          const cap = capture({
+            case_status: "Disposed",
+            case_stage: "Disposed",
+            decision_date: value,
+            disposal_date: disposal,
+          });
+          cap.cnr = cnr;
+          cap.parser_version = "1.1.0";
+          delete cap.data.next_hearing_date;
+          return cap;
+        };
+        const first = decisionCapture("07-10-2026");
+        const created = await ingest(ca.token, first);
+        assert.equal(created.status, "created");
+        await asUser(alice);
+        const stored = (
+          await q("select data from court_cases where id=$1", [created.case_id])
+        )[0].data;
+        assert.equal(stored.decision_date, "07-10-2026");
+        assert.equal(stored.disposal_date, "08-10-2026");
+        const snapshot = (
+          await q(
+            "select snapshot,parser_version from case_captures where id=$1",
+            [first.id],
+          )
+        )[0];
+        assert.equal(snapshot.snapshot.decision_date, "07-10-2026");
+        assert.equal(snapshot.parser_version, "1.1.0");
+        const corrected = decisionCapture("06-10-2026");
+        assert.equal((await ingest(ca.token, corrected)).status, "updated");
+        await asUser(alice);
+        const audit = (
+          await q("select changes from case_audit where capture_id=$1", [
+            corrected.id,
+          ])
+        )[0].changes;
+        assert.deepEqual(audit.decision_date, {
+          old: "07-10-2026",
+          new: "06-10-2026",
+        });
+        assert.equal(audit.disposal_date, undefined);
+        assert.equal((await ingest(ca.token, corrected)).duplicate, true);
+        for (const value of ["", "-", null, undefined])
+          assert.equal(
+            (await ingest(ca.token, decisionCapture(value))).status,
+            "unchanged",
+          );
+        const stale = decisionCapture("01-10-2026");
+        stale.captured_at = new Date(Date.now() - 3600000).toISOString();
+        assert.equal((await ingest(ca.token, stale)).status, "stale");
+        await asUser(alice);
+        assert.equal(
+          (
+            await q("select data from court_cases where id=$1", [
+              created.case_id,
+            ])
+          )[0].data.decision_date,
+          "06-10-2026",
+        );
+        assert.equal(
+          (
+            await q("select * from case_audit where case_id=$1", [
+              created.case_id,
+            ])
+          ).length,
+          2,
+        );
+        await asUser(bob);
+        assert.equal(
+          (await q("select * from court_cases where id=$1", [created.case_id]))
+            .length,
+          0,
+        );
+        // Decision date and snapshot must roll back with an unavailable audit.
+        await db.exec(
+          "reset role; create trigger decision_fail before insert on public.case_audit for each row execute function public.fail_audit();",
+        );
+        const failed = decisionCapture("05-10-2026");
+        await assert.rejects(ingest(ca.token, failed), /audit unavailable/);
+        await db.exec(
+          "reset role; drop trigger decision_fail on public.case_audit;",
+        );
+        await asUser(alice);
+        assert.equal(
+          (
+            await q("select data from court_cases where id=$1", [
+              created.case_id,
+            ])
+          )[0].data.decision_date,
+          "06-10-2026",
+        );
+        assert.equal(
+          (await q("select * from case_captures where id=$1", [failed.id]))
+            .length,
+          0,
+        );
+        const bad = decisionCapture("05-10-2026");
+        bad.parser_version = "99.0.0";
+        await assert.rejects(
+          ingest(ca.token, bad),
+          /Unsupported parser version/,
         );
       },
     );

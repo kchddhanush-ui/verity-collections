@@ -202,3 +202,18 @@ Use the arrows or month picker to navigate. Today follows India time; Next sched
 ## Workspace UI refresh
 
 Pull the feature branch, restart Vite and refresh Verity. The landing view is now **Overview**. Use **Cases** for the case register, **Hearing calendar** for hearing dates and **Connections** to create/manage a browser connection or create another company workspace. On smaller screens, navigation wraps and the case register uses labelled cards. Select a calendar day/count to view the complete case list below the month. Capture progress, pause/resume and the audited saving behaviour continue across workspace views. No SQL, package install or extension reload is required for this layout update.
+
+## Capture Decision Date — extension 1.3.1
+
+1. Pull `feat/ecourts-auto-capture-audit` in the working Git clone.
+2. Copy the new SQL migration on your Mac:
+
+   ```bash
+   pbcopy < supabase/migrations/202610290003_decision_date_capture.sql
+   ```
+
+3. Open your existing Supabase project → **SQL Editor → New query**. Paste and **Run**. This updates the existing audited ingest function without rewriting records or history. It can safely be run again. Do not rerun the original table-creation migration.
+4. Restart Vite. Reload the unpacked extension in `chrome://extensions` and confirm **1.3.1**.
+5. Refresh Verity and eCourts. Complete any required CAPTCHA/search and let the queue capture the cases again, or use **Refresh from eCourts** for a specific case.
+
+**Decision Date** is shown in current case details when supplied by the source, and preserved in snapshots and old/new audits when it changes. **Disposal date** remains a separate field. Missing dates are not inferred or copied. Past captures cannot recover a field that was never extracted; another source capture is required. New captures use detail format 1.1.0 so an older database fails visibly with the migration instruction rather than reporting a save while dropping this field. The migration also accepts legacy detail format 1.0.0; search captures remain unchanged.

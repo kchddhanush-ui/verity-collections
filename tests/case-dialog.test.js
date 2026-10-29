@@ -110,6 +110,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
                 court: "Example Court",
                 case_stage: "NBW",
                 case_status: "Pending",
+                decision_date: "07-10-2026",
               },
               last_checked_at: new Date().toISOString(),
             },
@@ -222,6 +223,14 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     const updated = document.querySelector("dialog[open]");
     assert.ok(updated, "successful fetch also opens the case dialog");
     assert.ok(updated.querySelector(".case-facts").textContent.includes("NBW"));
+    assert.ok(
+      updated
+        .querySelector(".case-facts")
+        .textContent.includes("Decision Date"),
+    );
+    assert.ok(
+      updated.querySelector(".case-facts").textContent.includes("07-10-2026"),
+    );
     assert.ok(
       updated
         .querySelector('[role="status"]')

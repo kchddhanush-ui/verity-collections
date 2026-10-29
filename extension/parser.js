@@ -1,6 +1,7 @@
 /* Reads only the opened case section. Never copies forms, CAPTCHA, scripts or session URLs. */
 (() => {
-  const version = "1.0.0";
+  const version = "1.1.0";
+  const searchVersion = "1.0.0";
   const source =
     "https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index";
   const text = (node) => (node?.textContent || "").replace(/\s+/g, " ").trim();
@@ -42,13 +43,17 @@
       "case stage": "case_stage",
       "court number and judge": "court_number_judge",
       "case status": "case_status",
+      "decision date": "decision_date",
       "disposal date": "disposal_date",
       "nature of disposal": "nature_of_disposal",
     };
     for (const th of root.querySelectorAll(
       ".case_details_table th, .case_status_table th",
     )) {
-      const label = text(th).toLowerCase();
+      const label = text(th)
+        .toLowerCase()
+        .replace(/\s*:\s*$/, "")
+        .trim();
       const field = fields[label];
       const td = th.nextElementSibling;
       if (field && td?.tagName === "TD" && text(td) && text(td) !== "-")
@@ -189,7 +194,7 @@
     return {
       kind: "search_list",
       source_url: source,
-      parser_version: version,
+      parser_version: searchVersion,
       search_context,
       reported_cases: Number(total[1].replaceAll(",", "")),
       total_establishments: establishments

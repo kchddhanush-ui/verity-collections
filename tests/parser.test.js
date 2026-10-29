@@ -50,3 +50,27 @@ test("matching search results are not interpreted as case details", () => {
     null,
   );
 });
+
+test("Decision Date is captured separately from Disposal Date on a disposed case", () => {
+  const d = doc();
+  d.querySelector(".case_status_table tbody").innerHTML =
+    `<tr><th>Case Status</th><td>Disposed</td></tr><tr><th>Decision Date</th><td>07-10-2026</td></tr><tr><th>Disposal Date</th><td>08-10-2026</td></tr><tr><th>Nature of Disposal</th><td>Contested</td></tr>`;
+  const result = VerityParser.extract(d, () => true);
+  assert.equal(result.parser_version, "1.1.0");
+  assert.equal(result.data.decision_date, "07-10-2026");
+  assert.equal(result.data.disposal_date, "08-10-2026");
+  assert.equal(result.data.case_status, "Disposed");
+  for (const label of ["Decision Date", "DECISION DATE :"]) {
+    d.querySelector(".case_status_table tbody").innerHTML =
+      `<tr><th>Case Status</th><td>Disposed</td></tr><tr><th>${label}</th><td>07-10-2026</td></tr>`;
+    const single = VerityParser.extract(d, () => true);
+    assert.equal(single.data.decision_date, "07-10-2026");
+    assert.equal(single.data.disposal_date, undefined);
+  }
+  d.querySelector(".case_status_table tbody").innerHTML =
+    "<tr><th>Case Status</th><td>Disposed</td></tr><tr><th>Decision Date</th><td>-</td></tr>";
+  assert.equal(
+    VerityParser.extract(d, () => true).data.decision_date,
+    undefined,
+  );
+});
