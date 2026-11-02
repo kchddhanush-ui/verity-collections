@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { WorkspaceIcon as Icon } from "./WorkspaceIcon";
+import { LawcoveryLogo } from "./LawcoveryLogo";
 
 const nav = [
   ["overview", "Overview", "overview"],
@@ -163,12 +164,7 @@ export function WorkspaceChrome({
         aria-modal={menuOpen || undefined}
       >
         <a className="console-brand brand" href="/" aria-label="Lawcovery home">
-          <span className="brand-mark">L</span>
-          <span className="brand-wordmark">
-            <span className="brand-law">law</span>
-            <strong>covery</strong>
-            <i>.</i>
-          </span>
+          <LawcoveryLogo />
           <small>Legal intelligence</small>
         </a>
         <button
