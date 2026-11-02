@@ -22,20 +22,23 @@ const show = (value) =>
       ? JSON.stringify(value)
       : String(value);
 const labels = {
+  case_reference: "Case reference",
+  registration_number: "Case number",
   case_type: "Case type",
+  case_status: "Status",
+  case_stage: "Stage",
   filing_number: "Filing number",
   filing_date: "Filing date",
-  registration_number: "Case number",
   registration_date: "Registration date",
   first_hearing_date: "First hearing",
   next_hearing_date: "Next hearing",
-  case_stage: "Stage",
-  court: "Court",
-  court_number_judge: "Court number / judge",
-  case_status: "Status",
   decision_date: "Decision Date",
   disposal_date: "Disposal date",
   nature_of_disposal: "Nature of disposal",
+  court: "Court",
+  court_number_judge: "Court number / judge",
+  parties_text: "Parties",
+  serial_number: "Search result row",
   petitioners: "Petitioners / advocates",
   respondents: "Respondents / advocates",
   acts: "Acts / sections",
@@ -43,6 +46,17 @@ const labels = {
   history: "Hearing history",
   orders: "Orders",
 };
+const fieldLabel = (key) =>
+  labels[key] || key.replace(/_/g, " ").replace(/^./, (letter) => letter.toUpperCase());
+const factOrder = new Map(Object.keys(labels).map((key, index) => [key, index]));
+function caseFacts(data) {
+  return Object.entries(data)
+    .filter(([, value]) => !Array.isArray(value))
+    .sort(([left], [right]) =>
+      (factOrder.get(left) ?? 999) - (factOrder.get(right) ?? 999) ||
+      fieldLabel(left).localeCompare(fieldLabel(right)),
+    );
+}
 async function call(name, args) {
   const { data, error } = await supabase.rpc(name, args);
   if (error) throw error;
@@ -1107,11 +1121,13 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       {tab === "details" && (
                         <>
                           <dl className="case-facts">
-                            {Object.entries(selected.data)
-                              .filter(([, v]) => !Array.isArray(v))
+                            {caseFacts(selected.data)
                               .map(([k, v]) => (
-                                <div key={k}>
-                                  <dt>{labels[k] || k}</dt>
+                                <div key={k} className={
+                                  ["court_number_judge", "parties_text"].includes(k)
+                                    ? "case-fact-wide" : undefined
+                                }>
+                                  <dt>{fieldLabel(k)}</dt>
                                   <dd>{show(v)}</dd>
                                 </div>
                               ))}
@@ -1120,10 +1136,10 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                             .filter(([, v]) => Array.isArray(v))
                             .map(([k, values]) => (
                               <div key={k}>
-                                <h3>{labels[k] || k}</h3>
+                                <h3>{fieldLabel(k)}</h3>
                                 {Array.isArray(values[0]) ? (
                                   <Table
-                                    label={labels[k] || k}
+                                    label={fieldLabel(k)}
                                     headers={
                                       k === "history"
                                         ? [
@@ -1207,7 +1223,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                                 ]}
                                 rows={Object.entries(a.changes).map(
                                   ([k, v]) => [
-                                    labels[k] || k,
+                                    fieldLabel(k),
                                     show(v.old),
                                     show(v.new),
                                   ],

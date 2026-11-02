@@ -617,6 +617,32 @@
 }
 .verity-console .case-detail-dialog .case-facts {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-block: 24px;
+  align-items: stretch;
+}
+.verity-console .case-detail-dialog .case-facts > div {
+  min-inline-size: 0;
+  padding: 16px 18px;
+  border: 1px solid #e6e7ef;
+  border-radius: 10px;
+  text-align: start;
+}
+.verity-console .case-detail-dialog .case-facts > .case-fact-wide {
+  grid-column: 1 / -1;
+}
+.verity-console .case-detail-dialog .case-facts dt {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.verity-console .case-detail-dialog .case-facts dd {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 @container case-viewer (width < 960px) {
   .verity-console .case-detail-dialog .case-facts {

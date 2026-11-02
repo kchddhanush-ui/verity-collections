@@ -54,6 +54,8 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
           id: "listing-a",
           cnr,
           data: {
+            parties_text: "Example petitioner versus Respondent",
+            serial_number: "8",
             registration_number: "1/2025",
             case_reference: "C.C./1/2025",
             petitioners: ["Example"],
@@ -261,6 +263,10 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     const dialog = document.querySelector("dialog[open]");
     assert.ok(dialog, "case opens immediately in modal");
     assert.ok(dialog.textContent.includes("C.C./1/2025"));
+    const factLabels = [...dialog.querySelectorAll(".case-facts dt")].map(node => node.textContent);
+    assert.deepEqual(factLabels, ["Case reference", "Case number", "Parties", "Search result row"]);
+    assert.ok(!dialog.querySelector(".case-facts").textContent.includes("parties_text"));
+    assert.equal(dialog.querySelector(".case-fact-wide dd").textContent, "Example petitioner versus Respondent");
     assert.match(dialog.querySelector('[role="status"]').textContent, /Refresh is not confirmed/);
     assert.ok(!dialog.textContent.includes("complete CAPTCHA"), "portal troubleshooting stays in Connections");
     const connectionStatus = [...dialog.querySelectorAll("button")].find(b => b.textContent === "View connection status");
