@@ -8,7 +8,7 @@ import {
   filterCases,
   percentage,
 } from "../lib/analytics";
-import { caseNumber, formatHearingDate, indiaToday } from "../lib/hearings";
+import { caseNumber, formatHearingDate, indiaToday, parseCourtDate } from "../lib/hearings";
 import { WorkspaceIcon } from "./WorkspaceIcon";
 import "../analytics.css";
 
@@ -54,7 +54,7 @@ function Bars({ rows, total, empty = "No matching records.", tone = "green" }) {
 function Trend({ model }) {
   const max = Math.max(
     1,
-    ...model.trend.flatMap((row) => [row.filings, row.decisions]),
+    ...model.trend.flatMap((row) => [row.filings, row.disposals]),
   );
   return (
     <>
@@ -65,14 +65,14 @@ function Trend({ model }) {
         </span>
         <span>
           <i className="legend-decisions" aria-hidden="true" />
-          Decision dates
+          Disposals
         </span>
       </div>
       <div
         className="analytics-trend-scroll"
         tabIndex="0"
         role="region"
-        aria-label="Monthly filings and recorded decision dates"
+        aria-label="Monthly filings and recorded disposals"
       >
         <ol className="analytics-trend">
           {model.trend.map((row) => (
@@ -82,7 +82,7 @@ function Trend({ model }) {
                   month: "long",
                   year: "numeric",
                 })}
-                : {row.filings} filings, {row.decisions} decision dates.
+                : {row.filings} filings, {row.disposals} disposals.
               </span>
               <div className="trend-columns" aria-hidden="true">
                 <div>
@@ -93,10 +93,10 @@ function Trend({ model }) {
                   />
                 </div>
                 <div>
-                  <span>{row.decisions}</span>
+                  <span>{row.disposals}</span>
                   <i
                     className="trend-decisions"
-                    style={{ blockSize: `${(row.decisions / max) * 140}px` }}
+                    style={{ blockSize: `${(row.disposals / max) * 140}px` }}
                   />
                 </div>
               </div>
@@ -110,16 +110,14 @@ function Trend({ model }) {
           ))}
         </ol>
       </div>
-      {!model.trend.some((row) => row.filings || row.decisions) && (
+      {!model.trend.some((row) => row.filings || row.disposals) && (
         <p className="analytics-empty">
-          No valid filing or Decision Date values fall in this window.
+          No valid filing or disposal dates fall in this window.
         </p>
       )}
       <p className="muted">
-        Valid filing dates: {model.filingDates}/{model.detailed} detailed cases.
-        Valid Decision Dates: {model.decisionDates}/{model.detailed}. Counts
-        follow the current filtered cohort; they do not reconstruct past case
-        statuses.
+        Filings and disposals belong to the currently selected case portfolio.
+        Disposals use Disposal Date, falling back to Decision Date on disposed cases.
       </p>
       <details className="analytics-chart-data">
         <summary>View monthly counts</summary>
@@ -130,12 +128,12 @@ function Trend({ model }) {
           aria-label="Monthly trend data"
         >
           <table className="case-table">
-            <caption>Monthly filings and Decision Date records</caption>
+            <caption>Monthly filings and disposals</caption>
             <thead>
               <tr>
                 <th scope="col">Month</th>
                 <th scope="col">Filings</th>
-                <th scope="col">Decision dates</th>
+                <th scope="col">Disposals</th>
               </tr>
             </thead>
             <tbody>
@@ -148,7 +146,7 @@ function Trend({ model }) {
                     })}
                   </th>
                   <td>{row.filings}</td>
-                  <td>{row.decisions}</td>
+                  <td>{row.disposals}</td>
                 </tr>
               ))}
             </tbody>
@@ -190,34 +188,28 @@ export function AnalyticsDashboard({
       dateLabel: "Next hearing",
     },
     {
-      key: "past",
-      label: "Past next-hearing dates",
-      rows: model.pastHearing,
-      dateLabel: "Saved next hearing",
+      key: "long_pending",
+      label: "Pending · over 1 year",
+      rows: model.longPending,
+      dateLabel: "Filed / registered",
     },
     {
-      key: "no_next",
-      label: "Pending · no hearing date",
-      rows: model.noNext.map((item) => ({ item })),
+      key: "nbw",
+      label: "Pending · NBW",
+      rows: model.pendingNbw.map(item => ({ item, day: parseCourtDate(item.data?.next_hearing_date) })),
       dateLabel: "Next hearing",
     },
     {
-      key: "missing_decision",
-      label: "Disposed · missing/invalid Decision Date",
-      rows: model.missingDecision.map((item) => ({ item })),
-      dateLabel: "Decision Date",
+      key: "summons",
+      label: "Pending · SUMMONS",
+      rows: model.pendingSummons.map(item => ({ item, day: parseCourtDate(item.data?.next_hearing_date) })),
+      dateLabel: "Next hearing",
     },
     {
-      key: "stale",
-      label: "Checks · 30+ days ago",
-      rows: model.stale,
-      dateLabel: "Last saved check",
-    },
-    {
-      key: "listed",
-      label: "Awaiting detailed capture",
-      rows: filtered.filter((c) => !c.hasDetails).map((item) => ({ item })),
-      dateLabel: "Hearing date",
+      key: "disposed",
+      label: "Disposed cases",
+      rows: model.closedCases,
+      dateLabel: "Disposal / decision date",
     },
   ];
   const selectedReview = reviews.find((row) => row.key === review);
@@ -228,45 +220,14 @@ export function AnalyticsDashboard({
     currentPage * 10,
   );
   const metrics = [
-    ["Average disposal TAT", model.averageTat === null ? "—" : `${count(model.averageTat)} days`, `${model.tatSamples} disposed cases · filing to disposal date (Decision Date when disposal date is unavailable)`, "clock"],
-    [
-      "Cases in view",
-      count(model.total),
-      `${model.detailed} detailed · ${model.listed} listed only`,
-      "cases",
-    ],
-    ["Pending", count(model.pending), "Confirmed pending status", "clock"],
-    ["Disposed", count(model.disposed), "Confirmed disposed status", "check"],
-    [
-      "Disposed share",
-      percent(model.disposalRate),
-      `${model.known} cases with known status`,
-      "analytics",
-    ],
-    [
-      "Hearings · next 7 days",
-      count(model.next7.length),
-      "Today and the following 6 days",
-      "calendar",
-    ],
-    [
-      "Past next-hearing dates",
-      count(model.pastHearing.length),
-      "Saved dates to check again",
-      "refresh",
-    ],
-    [
-      "Detail coverage",
-      percent(model.coverage),
-      `${model.detailed} of ${model.total} cases`,
-      "capture",
-    ],
-    [
-      "Median days to decision",
-      model.medianDays === null ? "—" : count(model.medianDays),
-      `${model.durationSamples} disposed cases with valid dates`,
-      "clock",
-    ],
+    ["Cases in view", count(model.total), "Current selected portfolio", "cases"],
+    ["Pending", count(model.pending), "Confirmed pending cases", "clock"],
+    ["Disposed", count(model.disposed), "Confirmed disposed cases", "check"],
+    ["Disposed share", percent(model.disposalRate), `${model.known} cases with a known status`, "analytics"],
+    ["Average disposal TAT", model.averageTat === null ? "—" : `${count(model.averageTat)} days`, `${model.tatSamples} disposed cases with valid date pairs`, "clock"],
+    ["Median disposal TAT", model.medianTat === null ? "—" : `${count(model.medianTat)} days`, "Middle duration in the same TAT sample", "clock"],
+    ["Pending · over 1 year", count(model.longPending.length), "Aged cases for portfolio review", "cases"],
+    ["Hearings · next 7 days", count(model.next7.length), "Today and the following 6 days", "calendar"],
   ];
   const activeFilters = Object.values(filters).some(Boolean);
   return (
@@ -277,7 +238,7 @@ export function AnalyticsDashboard({
       >
         <div className="analytics-filter-heading">
           <div>
-            <p className="panel-kicker">PORTFOLIO ANALYTICS</p>
+            <p className="panel-kicker">COMPANY PERFORMANCE</p>
             <p role="status">
               <strong>{model.total}</strong> of {cases.length} loaded cases
               {activeFilters ? " · filtered" : ""}
@@ -334,7 +295,7 @@ export function AnalyticsDashboard({
               onChange={(e) => setFilter("status", e.target.value)}
             >
               <option value="">All statuses</option>
-              {["Pending", "Disposed", "Status unknown", "Listed only"].map(
+              {["Pending", "Disposed", "Status unavailable"].map(
                 (value) => (
                   <option key={value} value={value}>
                     {value}
@@ -368,9 +329,8 @@ export function AnalyticsDashboard({
           </label>
         </div>
         <p className="muted">
-          Scope: saved records currently loaded for this company, up to 1,000
-          detailed cases and 1,000 listings merged by CNR. Figures follow the
-          filters above; listed-only records have no confirmed status. Today:{" "}
+          Scope: the currently loaded company portfolio. All figures follow
+          your filters. As of {" "}
           {formatHearingDate(today)} (India).
         </p>
       </section>
@@ -405,9 +365,13 @@ export function AnalyticsDashboard({
           <div className="analytics-grid">
             <Panel
               title="Portfolio status"
-              note="Every case is counted once. Listed-only records stay separate from detailed cases with an unknown status."
+              note="Every case is counted once; cases without a confirmed status remain visible."
             >
-              <Bars rows={model.status} total={model.total} />
+              <Bars rows={[
+                { label: "Pending", count: model.pending },
+                { label: "Disposed", count: model.disposed },
+                { label: "Status unavailable", count: model.unknown + model.listed },
+              ]} total={model.total} />
               <p className="muted">
                 Disposed share = disposed ÷ (pending + disposed). Unknown and
                 listed-only records are excluded; this is not a recovery or win
@@ -416,7 +380,7 @@ export function AnalyticsDashboard({
             </Panel>
             <Panel
               title="Cases by stage"
-              note={`${model.detailed} detailed cases. Stage labels are normalised for case and spacing.`}
+              note="Where cases currently stand in the court process."
             >
               <Bars
                 rows={model.stages}
@@ -424,10 +388,16 @@ export function AnalyticsDashboard({
                 empty="Capture detailed records to see case stages."
               />
             </Panel>
+            <Panel title="Disposal turnaround" className="analytics-wide"
+              note={`Time from filing to disposal for ${model.tatSamples} of ${model.disposed} disposed cases with valid dates.`}>
+              <Bars rows={model.tatBands} total={model.tatSamples} tone="gold"
+                empty="Disposal turnaround will appear when disposed cases have valid filing and closure dates." />
+              <p className="muted">Calendar days from Filing Date to Disposal Date, falling back to Decision Date. Cases without a valid chronological pair are excluded, rather than treated as zero.</p>
+            </Panel>
             <Panel
-              title="Filings & decision dates"
+              title="Filings & disposals"
               className="analytics-wide"
-              note="Actual source dates on the filtered case records. Disposal Date is not substituted for Decision Date."
+              note="Recorded filings and disposals by month for the selected portfolio."
             >
               <label className="analytics-trend-window">
                 Trend window
@@ -454,7 +424,7 @@ export function AnalyticsDashboard({
             </Panel>
             <Panel
               title="Hearing workload · next 30 days"
-              note="One saved next date per non-disposed detailed case. The last interval covers two days."
+              note="Scheduled court commitments grouped across the next 30 days."
             >
               <Bars
                 rows={model.hearingWeeks.map((row) => ({
@@ -464,15 +434,10 @@ export function AnalyticsDashboard({
                 total={model.upcoming.length}
                 empty="No saved next-hearing dates in the next 30 days."
               />
-              <p className="muted">
-                {model.noNext.length} pending cases have no recognised
-                next-hearing date. {model.pastHearing.length} non-disposed cases
-                have a saved next date before today.
-              </p>
             </Panel>
             <Panel
               title="Case mix"
-              note="All filtered cases, including listings. Case types use the source code, for example C.C. or P.C.R."
+              note="The mix of case types in the selected portfolio."
             >
               <Bars rows={model.types} total={model.total} />
             </Panel>
@@ -488,59 +453,9 @@ export function AnalyticsDashboard({
               />
             </Panel>
             <Panel
-              title="Capture recency"
-              note="Time since the last saved detail check, not a guarantee that court records are current. Listed-only cases are excluded."
-            >
-              <Bars
-                rows={model.freshness}
-                total={model.detailed}
-                empty="No detailed checks saved yet."
-              />
-            </Panel>
-            <Panel
-              title="Date completeness"
-              note="Dates must be valid calendar dates on or before today. Decision Date coverage is checked only for disposed cases."
-            >
-              <h3>Filing dates · {model.detailed} detailed cases</h3>
-              <Bars
-                rows={[
-                  { label: "Filing date present", count: model.filingDates },
-                ]}
-                total={model.detailed}
-                empty="Capture details to assess filing dates."
-              />
-              <h3>Decision Dates · {model.disposed} disposed cases</h3>
-              <Bars
-                rows={[
-                  {
-                    label: "Decision Date present",
-                    count: model.datedDisposed,
-                  },
-                ]}
-                total={model.disposed}
-                empty="No disposed cases to assess Decision Dates."
-              />
-              <p className="muted">
-                Missing dates are not assumed to be zero. Median time to
-                decision uses {model.durationSamples} disposed cases with valid
-                start and Decision Dates in chronological order.
-              </p>
-            </Panel>
-            <Panel
-              title="Judge / courtroom distribution"
+              title="Court portfolio & disposal TAT"
               className="analytics-wide"
-              note="Current judge or courtroom labels on detailed records. Historical judge changes are not counted as additional cases."
-            >
-              <Bars
-                rows={model.judges}
-                total={model.detailed}
-                empty="Capture case details to see judge and courtroom labels."
-              />
-            </Panel>
-            <Panel
-              title="Court distribution"
-              className="analytics-wide"
-              note="Cases grouped by the saved court name; these are portfolio counts, not court-wide case totals."
+              note="Portfolio workload and average disposal time by court. TAT samples reflect the selected case mix."
             >
               <div
                 className="case-table-wrap analytics-table-wrap"
@@ -555,9 +470,9 @@ export function AnalyticsDashboard({
                       {[
                         "Court",
                         "Cases",
-                        "Detailed",
                         "Pending",
                         "Disposed",
+                        "Average disposal TAT",
                         "Hearings · 7 days",
                       ].map((label) => (
                         <th scope="col" key={label}>
@@ -571,9 +486,9 @@ export function AnalyticsDashboard({
                       <tr key={row.label}>
                         <th scope="row">{row.label}</th>
                         <td>{row.total}</td>
-                        <td>{row.detailed}</td>
                         <td>{row.pending}</td>
                         <td>{row.disposed}</td>
+                        <td>{row.averageTat === null ? "—" : `${count(row.averageTat)} days`}<small>{row.tatSamples} cases in TAT sample</small></td>
                         <td>{row.next7}</td>
                       </tr>
                     ))}
@@ -586,12 +501,11 @@ export function AnalyticsDashboard({
             className="console-panel analytics-review"
             aria-labelledby="analytics-review-title"
           >
-            <p className="panel-kicker">CASE FOLLOW-UP</p>
-            <h2 id="analytics-review-title">Cases behind the numbers</h2>
+            <p className="panel-kicker">PORTFOLIO PRIORITIES</p>
+            <h2 id="analytics-review-title">Cases to discuss with your team</h2>
             <p className="muted">
-              Open a case to review its saved details. Past next-hearing dates
-              call for a fresh check; they do not confirm a missed hearing.
-              Categories can overlap and should not be added together.
+              Review upcoming commitments, aged pending cases and active stages.
+              Open a case to see its saved details. Categories may overlap.
             </p>
             <nav
               className="analytics-review-tabs"
@@ -657,9 +571,8 @@ export function AnalyticsDashboard({
                           <td>
                             {row.day
                               ? formatHearingDate(row.day)
-                              : review === "stale"
-                                ? `${row.days} days ago`
-                                : "Not recorded / invalid"}
+                              : "Not recorded"}
+                            {review === "long_pending" && <small>{count(row.days)} days pending</small>}
                           </td>
                         </tr>
                       ))}
@@ -690,14 +603,13 @@ export function AnalyticsDashboard({
               </p>
             )}
           </section>
-          <p className="muted analytics-methodology">
-            This dashboard describes saved case records, not live court activity
-            or recovered money. A disposed status does not establish a
-            favourable outcome. Refresh cases or complete another source capture
-            to update the figures.{" "}
-            {model.latestCheck &&
-              `Most recent saved detail check: ${new Date(model.latestCheck).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} (India).`}
-          </p>
+          <details className="muted analytics-methodology">
+            <summary>Report basis & definitions</summary>
+            <p>Figures cover the loaded company portfolio: up to 1,000 detailed cases and 1,000 listings merged by CNR. They follow the filters and describe saved records.</p>
+            <p>Disposed share uses pending plus disposed cases as its denominator. A disposed status does not establish recovery or a favourable outcome. Cases with an unavailable status remain in the portfolio total.</p>
+            <p>Average and median disposal TAT use the same sample: confirmed disposed cases with Filing Date and a valid Disposal Date, falling back to Decision Date. Missing, future and reversed date pairs are excluded. Calendar days are used. Pending age uses Filing Date, falling back to Registration Date. Today follows India time.</p>
+            <p>Monthly counts use the source dates on the current selected cases; they do not reconstruct historical portfolio balances. Court figures describe this company portfolio, not all cases in each court.</p>
+          </details>
         </>
       )}
     </div>

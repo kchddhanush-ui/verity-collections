@@ -178,6 +178,7 @@ test("filters affect the cohort consistently and listing/detail joins remain one
   ];
   assert.equal(filterCases(rows, { search: " finance " }).length, 1);
   assert.equal(filterCases(rows, { status: "Listed only" }).length, 1);
+  assert.equal(filterCases([...rows, row(4, {})], { status: "Status unavailable" }).length, 2);
   assert.equal(filterCases(rows, { stage: "NBW" }).length, 1);
   assert.equal(
     filterCases(rows, {
@@ -201,4 +202,49 @@ test("filters affect the cohort consistently and listing/detail joins remain one
   assert.equal(empty.total, 0);
   assert.equal(empty.coverage, null);
   assert.equal(empty.medianDays, null);
+});
+
+test("disposal TAT uses one filing-to-closure sample for averages, medians, bands and courts", () => {
+  const rows = [
+    row(1, { case_status: "Disposed", filing_date: "01-10-2026", disposal_date: "11-10-2026", decision_date: "21-10-2026" }),
+    row(2, { case_status: "Disposed", filing_date: "01-09-2026", decision_date: "01-10-2026", court: "Other Court" }),
+    row(3, { case_status: "Disposed", filing_date: "01-10-2026", disposal_date: "01-10-2026" }),
+    row(4, { case_status: "Disposed", registration_date: "01-10-2026", disposal_date: "11-10-2026" }),
+    row(5, { case_status: "Pending", filing_date: "01-10-2026", disposal_date: "11-10-2026" }),
+    row(6, { case_status: "Disposed", filing_date: "20-10-2026", disposal_date: "11-10-2026" }),
+    row(7, { case_status: "Disposed", filing_date: "01-10-2026", disposal_date: "30-10-2026" }),
+    row(8, { case_status: "Disposed", filing_date: "01-10-2026", disposal_date: "11-10-2026" }, false),
+  ];
+  const model = buildAnalytics(rows, { today });
+  assert.equal(model.tatSamples, 3);
+  assert.equal(model.averageTat, 40 / 3);
+  assert.equal(model.medianTat, 10);
+  assert.equal(model.tatBands.reduce((sum, band) => sum + band.count, 0), 3);
+  assert.equal(model.tatBands[0].count, 3);
+  assert.equal(model.courts.find(court => court.label === "EXAMPLE COURT").averageTat, 5);
+  assert.equal(model.courts.find(court => court.label === "OTHER COURT").averageTat, 30);
+  assert.equal(model.trend.at(-1).disposals, 5, "valid closure dates count disposed cases even when the filing date is unusable");
+  const empty = buildAnalytics([rows[4]], { today });
+  assert.equal(empty.averageTat, null);
+  assert.equal(empty.medianTat, null);
+  assert.equal(empty.tatSamples, 0);
+});
+
+test("company priorities use confirmed pending status and a strict over-one-year cutoff", () => {
+  const rows = [
+    row(1, { case_status: "Pending", filing_date: addDays(today, -365), case_stage: " nbw " }),
+    row(2, { case_status: "Pending", filing_date: addDays(today, -366), case_stage: " summons " }),
+    row(3, { case_status: "Pending", registration_date: addDays(today, -731), case_stage: "NBW" }),
+    row(4, { case_status: "Disposed", filing_date: addDays(today, -800), case_stage: "NBW" }),
+    row(5, { case_status: "Pending", filing_date: addDays(today, 1), case_stage: "SUMMONS" }),
+    row(6, { case_status: "Pending", filing_date: addDays(today, -800), case_stage: "NBW" }, false),
+  ];
+  const model = buildAnalytics(rows, { today });
+  assert.deepEqual(model.longPending.map(row => row.days), [731, 366]);
+  assert.equal(model.pendingNbw.length, 2);
+  assert.equal(model.pendingSummons.length, 2);
+  const scoped = buildAnalytics(filterCases(rows, { stage: "SUMMONS" }), { today });
+  assert.equal(scoped.longPending.length, 1);
+  assert.equal(scoped.pendingNbw.length, 0);
+  assert.equal(scoped.pendingSummons.length, 2);
 });

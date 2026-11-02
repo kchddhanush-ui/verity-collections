@@ -53,6 +53,7 @@ test("analytics filters, paginates follow-up cases and opens saved details", asy
         case_stage: "SUMMONS",
         court: "Example Court",
         next_hearing_date: "16-11-2026",
+        filing_date: "01-01-2025",
       },
     }));
     cases.push({
@@ -61,6 +62,8 @@ test("analytics filters, paginates follow-up cases and opens saved details", asy
       data: {
         case_reference: "C.C./99/2025",
         case_status: "Disposed",
+        filing_date: "01-01-2026",
+        disposal_date: "31-01-2026",
         court: "Example Court",
       },
     });
@@ -93,6 +96,18 @@ test("analytics filters, paginates follow-up cases and opens saved details", asy
         .querySelector(".analytics-filter-heading")
         .textContent.includes("13 of 13"),
     );
+    const titles = [...document.querySelectorAll("h2")].map(node => node.textContent);
+    for (const removed of ["Capture recency", "Date completeness", "Judge / courtroom distribution"])
+      assert.ok(!titles.includes(removed), `${removed} is excluded from company analytics`);
+    assert.ok(titles.includes("Disposal turnaround"));
+    assert.ok(titles.includes("Filings & disposals"));
+    assert.equal(document.querySelectorAll(".analytics-metrics article").length, 8);
+    const metrics = [...document.querySelectorAll(".analytics-metrics article")];
+    assert.equal(metrics.find(node => node.textContent.startsWith("Average disposal TAT")).querySelector("strong").textContent, "30 days");
+    assert.equal(metrics.find(node => node.textContent.startsWith("Median disposal TAT")).querySelector("strong").textContent, "30 days");
+    assert.equal(metrics.find(node => node.textContent.startsWith("Pending · over 1 year")).querySelector("strong").textContent, "12");
+    assert.ok(!metrics.some(node => node.textContent.includes("Detail coverage")));
+    assert.equal(document.querySelectorAll(".analytics-review-tabs button").length, 5);
     assert.equal(
       document.querySelectorAll(".analytics-review tbody tr").length,
       10,
@@ -127,10 +142,10 @@ test("analytics filters, paginates follow-up cases and opens saved details", asy
         .querySelector(".analytics-review")
         .textContent.includes("No cases in this follow-up category"),
     );
-    const missing = [
+    const disposed = [
       ...document.querySelectorAll(".analytics-review-tabs button"),
     ].find((b) => b.textContent.startsWith("Disposed"));
-    await click(missing);
+    await click(disposed);
     assert.equal(
       document.querySelectorAll(".analytics-review tbody tr").length,
       1,
@@ -138,6 +153,12 @@ test("analytics filters, paginates follow-up cases and opens saved details", asy
     await click(document.querySelector(".analytics-review .case-open"));
     assert.equal(opened.cnr, "KAAA010000992025");
     await click(button("Clear filters"));
+    const longPending = [...document.querySelectorAll(".analytics-review-tabs button")].find(node => node.textContent.startsWith("Pending · over 1 year"));
+    await click(longPending);
+    assert.equal(document.querySelectorAll(".analytics-review tbody tr").length, 10);
+    assert.match(document.querySelector(".analytics-review tbody").textContent, /days pending/);
+    await click(document.querySelector(".analytics-review .case-open"));
+    assert.equal(opened.data.case_status, "Pending");
     assert.ok(
       document
         .querySelector(".analytics-filter-heading")

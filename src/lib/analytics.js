@@ -44,6 +44,17 @@ const pastDate = (value, today) => {
 export const startDate = (item, today) =>
   pastDate(item.data?.filing_date, today) ||
   pastDate(item.data?.registration_date, today);
+const closureDate = (item, today) =>
+  pastDate(item.data?.disposal_date, today) ||
+  pastDate(item.data?.decision_date, today);
+function median(values) {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
+}
 function sortedCounts(map) {
   return [...map]
     .map(([label, count]) => ({ label, count }))
@@ -64,7 +75,10 @@ export function filterCases(cases, filters = {}) {
     (item) =>
       (!filters.court || courtName(item) === filters.court) &&
       (!filters.type || caseType(item) === filters.type) &&
-      (!filters.status || caseStatus(item) === filters.status) &&
+      (!filters.status ||
+        (filters.status === "Status unavailable"
+          ? ["Status unknown", "Listed only"].includes(caseStatus(item))
+          : caseStatus(item) === filters.status)) &&
       (!filters.stage ||
         (item.hasDetails && caseStage(item) === filters.stage)) &&
       (!search ||
@@ -127,6 +141,7 @@ export function buildAnalytics(
     "Date not recorded",
   ];
   const age = new Map(ageLabels.map((label) => [label, 0]));
+  const longPending = [];
   for (const item of pending) {
     const start = startDate(item, today);
     const days = start ? dayNumber(today) - dayNumber(start) : null;
@@ -145,7 +160,10 @@ export function buildAnalytics(
                     : 4
           ];
     age.set(label, age.get(label) + 1);
+    if (days !== null && days > 365)
+      longPending.push({ item, day: start, days });
   }
+  longPending.sort((a, b) => b.days - a.days || a.item.cnr.localeCompare(b.item.cnr));
   const freshness = new Map(
     [
       "Within 7 days",
@@ -210,6 +228,7 @@ export function buildAnalytics(
     month: shiftMonth(today.slice(0, 7), i - months + 1),
     filings: 0,
     decisions: 0,
+    disposals: 0,
   }));
   const trendMap = new Map(trend.map((row) => [row.month, row]));
   let filingDates = 0,
@@ -238,12 +257,35 @@ export function buildAnalytics(
     })
     .filter((value) => value !== null)
     .sort((a, b) => a - b);
-  const tatDurations = disposed.map(item => {
+  const closedCases = disposed.map(item => ({ item, day: closureDate(item, today) }));
+  for (const row of closedCases) {
+    const month = row.day && trendMap.get(row.day.slice(0, 7));
+    if (month) month.disposals++;
+  }
+  closedCases.sort((a, b) => (b.day || "").localeCompare(a.day || "") || a.item.cnr.localeCompare(b.item.cnr));
+  const tatRecords = closedCases.flatMap(({ item, day: closed }) => {
     const filing = pastDate(item.data?.filing_date, today);
-    const closed = pastDate(item.data?.disposal_date, today) || pastDate(item.data?.decision_date, today);
-    return filing && closed && closed >= filing ? dayNumber(closed) - dayNumber(filing) : null;
-  }).filter(value => value !== null);
+    return filing && closed && closed >= filing
+      ? [{ item, filing, closed, days: dayNumber(closed) - dayNumber(filing) }]
+      : [];
+  });
+  const tatDurations = tatRecords.map(row => row.days);
   const averageTat = tatDurations.length ? tatDurations.reduce((sum, days) => sum + days, 0) / tatDurations.length : null;
+  const tatBands = [
+    { label: "Within 90 days", max: 90 },
+    { label: "91–180 days", max: 180 },
+    { label: "181–365 days", max: 365 },
+    { label: "1–2 years", max: 730 },
+    { label: "Over 2 years", max: Infinity },
+  ].map((band, i, bands) => ({
+    label: band.label,
+    count: tatDurations.filter(days => days <= band.max && (i === 0 || days > bands[i - 1].max)).length,
+  }));
+  for (const court of courts.values()) {
+    const samples = tatRecords.filter(row => courtName(row.item) === court.label);
+    court.tatSamples = samples.length;
+    court.averageTat = samples.length ? samples.reduce((sum, row) => sum + row.days, 0) / samples.length : null;
+  }
   const middle = Math.floor(durations.length / 2);
   const medianDays = durations.length
     ? durations.length % 2
@@ -284,7 +326,13 @@ export function buildAnalytics(
     decisionDates,
     datedDisposed: disposed.length - missingDecision.length,
     averageTat,
+    medianTat: median(tatDurations),
     tatSamples: tatDurations.length,
+    tatBands,
+    closedCases,
+    longPending,
+    pendingNbw: pending.filter(item => caseStage(item) === "NBW"),
+    pendingSummons: pending.filter(item => caseStage(item) === "SUMMONS"),
     medianDays,
     durationSamples: durations.length,
     upcoming,

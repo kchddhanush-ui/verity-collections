@@ -633,7 +633,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     overview:
                       "A clear view of your cases, stages and captured court records.",
                     analytics:
-                      "Explore case progress, hearing workload and the quality of your saved records.",
+                      "Understand case progress, disposal timelines and upcoming court commitments.",
                     cases:
                       "Find a case, review its progress, and see the latest saved details.",
                     calendar:
