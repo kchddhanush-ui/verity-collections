@@ -69,9 +69,9 @@ export function WorkspaceOverview({
       "amber-icon",
     ],
     [
-      "Next 30 days",
+      "Upcoming hearings · Next 30 days",
       model.upcoming.length,
-      `${model.next7.length} in the next 7 days`,
+      `Includes ${model.next7.length} hearings in the next 7 days`,
       "calendar",
       "blue-icon",
     ],
