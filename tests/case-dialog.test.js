@@ -158,6 +158,12 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
         }),
       ),
     );
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "overview keeps capture controls out of the company brief");
+    assert.equal(document.querySelector('[role="alert"]'), null, "connection update notices stay in Connections");
+    await act(async () =>
+      document.querySelector('.sidebar-nav button[aria-label="Connections"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
     assert.match(document.querySelector('[role="alert"]').textContent, /Chrome is running Lawcovery Case Capture 1.4.0/);
     assert.equal(document.querySelector(".batch-capture-panel"), null, "old worker queues are not presented as the fixed implementation");
     oldExtension = false;
@@ -175,7 +181,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     );
     const missingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Fetch missing details");
     const existingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Refresh existing details");
-    assert.ok(missingButton && existingButton, "workspace exposes both fetch modes");
+    assert.ok(missingButton && existingButton, "Connections exposes both fetch modes");
     assert.equal(missingButton.getAttribute("aria-pressed"), "true");
     assert.match(document.querySelector(".batch-capture-panel").textContent, /0 already saved.*1 missing details/);
     assert.equal(document.querySelector('[role="alert"]'), null, "extension upgrade clears the old-version notice");
@@ -186,6 +192,11 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     assert.equal(modeRequest.payload.workspace, "workspace-a");
     assert.ok(document.querySelector('.batch-capture-panel progress').hasAttribute("hidden"), "zero matching cases do not show an indeterminate bar");
     assert.equal(batchRequests.filter(m => m.action === "FETCH_CASE").length, 0);
+    await act(async () =>
+      document.querySelector('.sidebar-nav button[aria-label="Overview"]')
+        .dispatchEvent(new window.Event("click", { bubbles: true })),
+    );
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Overview");
     assert.ok(
       document.querySelector(".console-metrics"),
       "overview opens first",
@@ -204,6 +215,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       document.querySelector(".analytics-dashboard"),
       "analytics is reachable from the workspace",
     );
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Analytics");
 
     assert.ok(document.querySelector('.skip-link[href="#workspace-content"]'));
     await act(async () =>
@@ -215,6 +227,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       document.querySelector(".connection-panel"),
       "connections has its own view",
     );
+    assert.ok(document.querySelector(".batch-capture-panel"), "Court sync returns when opening Connections");
     assert.ok(
       [...document.querySelectorAll("button")].some(
         (b) => b.textContent === "Create extension connection",
@@ -229,6 +242,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       document.querySelector(".hearing-calendar"),
       "calendar remains reachable from navigation",
     );
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from the calendar");
     const caseNav = document.querySelector(
       '.sidebar-nav button[aria-label="Cases"]',
     );
@@ -236,6 +250,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     await act(async () =>
       caseNav.dispatchEvent(new window.Event("click", { bubbles: true })),
     );
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Cases");
     const view = [...document.querySelectorAll("button")].find((b) =>
       b.textContent.includes("View ·"),
     );

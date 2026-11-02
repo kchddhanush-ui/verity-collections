@@ -201,7 +201,7 @@ Use the arrows or month picker to navigate. Today follows India time; Next sched
 
 ## Workspace UI refresh
 
-Pull the feature branch, restart Vite and refresh Lawcovery. The landing view is now **Overview**. Use **Cases** for the case register, **Hearing calendar** for hearing dates and **Connections** to create/manage a browser connection or create another company workspace. On smaller screens, navigation wraps and the case register uses labelled cards. Select a calendar day/count to view the complete case list below the month. Capture progress, pause/resume and the audited saving behaviour continue across workspace views. No SQL, package install or extension reload is required for this layout update.
+Pull the feature branch, restart Vite and refresh Lawcovery. The landing view is now **Overview**. Use **Cases** for the case register, **Hearing calendar** for hearing dates and **Connections** to create/manage a browser connection or create another company workspace. On smaller screens, navigation wraps and the case register uses labelled cards. Select a calendar day/count to view the complete case list below the month. The Court sync panel, fetch options, queue progress, pause/resume and extension-update notices are shown only in **Connections**. Automatic capture and audited saving continue while viewing other tabs. No SQL, package install or extension reload is required for this layout update.
 
 ## Capture Decision Date — extension 1.3.1
 
@@ -244,7 +244,7 @@ Analytics covers the currently loaded company portfolio (the same limit as Cases
 2. In the existing Supabase project, choose **SQL Editor → New query**, paste with **Cmd+V** and click **Run**. Copying in Terminal alone does not execute it. Run this after the existing capture migrations; it is safe to rerun and does not rewrite cases or audit history. Decision Date still requires the preceding `202610290003_decision_date_capture.sql` migration.
 3. Restart `npm run dev`. In `chrome://extensions`, click Reload on **Lawcovery Case Capture** and confirm **1.4.1**. Refresh both Lawcovery and the eCourts tab.
 4. Complete your eCourts search/CAPTCHA. Search rows and totals save automatically. Every automatic search fetches missing details only.
-5. In the **Court sync** panel or extension popup, choose:
+5. In **Connections → Court sync**, or the extension popup, choose:
    - **Fetch missing details:** only CNRs without a saved detail record. A listed/search-only row qualifies.
    - **Refresh existing details:** only CNRs that already have a detail record; fetch current details and update them with separate snapshots and field-change audits.
 

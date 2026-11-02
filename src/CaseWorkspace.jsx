@@ -659,8 +659,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               {error}
             </div>
           )}
-          {captureUpdate && <div className="console-error" role="alert">{captureUpdate}</div>}
-          {batch && (
+          {portfolioView === "connections" && captureUpdate && <div className="console-error" role="alert">{captureUpdate}</div>}
+          {portfolioView === "connections" && batch && (
             <section
               className="case-fetch-status batch-capture-panel"
               aria-label="Automatic case detail capture"
