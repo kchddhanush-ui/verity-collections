@@ -564,6 +564,85 @@
   color: var(--muted);
   font-size: 11px;
 }
+/* Case viewing needs its own unlayered geometry: global auth-dialog defaults
+   otherwise override the layered workspace width and padding. */
+.verity-console .case-detail-dialog {
+  inline-size: min(1200px, calc(100vw - 48px));
+  max-inline-size: none;
+  max-block-size: calc(100dvh - 48px);
+  padding: 0;
+  margin: auto;
+  border-radius: 18px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  container: case-viewer / inline-size;
+}
+.verity-console .case-detail-dialog > .console-panel {
+  margin: 0;
+  padding: 28px 32px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.verity-console .case-dialog-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px 24px;
+  padding-block-end: 20px;
+}
+.verity-console .case-dialog-heading > div {
+  min-inline-size: 0;
+}
+.verity-console .case-dialog-heading h2 {
+  margin: 0;
+  font-size: clamp(20px, 2vw, 28px);
+  overflow-wrap: anywhere;
+}
+.verity-console .case-dialog-heading .console-eyebrow {
+  margin-block-end: 8px;
+  overflow-wrap: anywhere;
+}
+.verity-console .case-detail-dialog button {
+  font-size: 13px;
+}
+.verity-console .case-detail-dialog .case-tabs {
+  flex-wrap: nowrap;
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+.verity-console .case-detail-dialog .case-tabs button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.verity-console .case-detail-dialog .case-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@container case-viewer (width < 960px) {
+  .verity-console .case-detail-dialog .case-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container case-viewer (width < 640px) {
+  .verity-console .case-dialog-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container case-viewer (width < 560px) {
+  .verity-console .case-detail-dialog .case-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .verity-console .case-detail-dialog {
+    inline-size: calc(100vw - 16px);
+    max-block-size: calc(100dvh - 16px);
+    border-radius: 12px;
+  }
+  .verity-console .case-detail-dialog > .console-panel {
+    padding: 20px 16px;
+  }
+}
 .verity-console .case-tabs button[aria-pressed="true"] {
   color: #5544bd;
   background: #eeecff;

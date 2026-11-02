@@ -100,15 +100,6 @@ export function WorkspaceOverview({
           <p>Here’s what needs your attention across the legal portfolio.</p>
         </div>
         <div className="overview-actions">
-          <a
-            className="btn btn-outline"
-            href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Icon name="external" size={16} />
-            Open eCourts
-          </a>
           <button
             className="btn btn-primary"
             disabled={busy}

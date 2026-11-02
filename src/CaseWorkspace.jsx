@@ -441,6 +441,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         setFetchStatus({
           message: result.error,
           actionNeeded: result.actionNeeded,
+          connectionNotice: true,
         });
         return;
       }
@@ -449,6 +450,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           message:
             result?.message ||
             "Upload pending. Check the extension status, then refresh cases after it syncs.",
+          connectionNotice: true,
         });
         return;
       }
@@ -462,7 +464,11 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         message: `${result.message}. Details and audit history refreshed.`,
       });
     } catch (e) {
-      setFetchStatus({ message: e.message, actionNeeded: true });
+      setFetchStatus({
+        message: e.message,
+        actionNeeded: true,
+        connectionNotice: true,
+      });
     } finally {
       setFetching("");
       setBusy(false);
@@ -556,15 +562,17 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                 }
               </p>
             </div>
-            <a
-              className="console-link button-primary btn btn-primary"
-              href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index"
-              target="_blank"
-              rel="noreferrer"
-            >
-              <WorkspaceIcon name="external" size={17} />
-              Open eCourts
-            </a>
+            {portfolioView === "connections" && (
+              <a
+                className="console-link button-primary btn btn-primary"
+                href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <WorkspaceIcon name="external" size={17} />
+                Open eCourts
+              </a>
+            )}
           </div>
         )}
         {error && (
@@ -682,7 +690,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
             {batchError && <p role="alert">{batchError}</p>}
           </section>
         )}
-        {fetchStatus && !selected && (
+        {portfolioView === "connections" && fetchStatus && !selected && (
           <div className="case-fetch-status" role="status">
             {fetching && <progress aria-label="Fetching court case details" />}
             <p>{fetchStatus.message}</p>
@@ -1007,9 +1015,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                               : "No cases captured yet"}
                           </h3>
                           <p>
-                            Connect the extension, complete CAPTCHA on eCourts,
-                            and view search results or open a case. Then refresh
-                            this list.
+                            Saved company cases will appear here. Manage your
+                            source connection in Connections.
                           </p>
                         </div>
                       )}
@@ -1055,18 +1062,23 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                           {fetching && (
                             <progress aria-label="Fetching court case details" />
                           )}
-                          <p>{fetchStatus.message}</p>
-                          {fetchStatus.actionNeeded && (
+                          {fetchStatus.connectionNotice ? (
                             <>
                               <p>
-                                Complete any CAPTCHA or repeat the search in
-                                eCourts, then use View or Refresh from eCourts
-                                again.
+                                Refresh is not confirmed. Showing saved case
+                                information.
                               </p>
-                              <button onClick={focusCourt}>
-                                Go to eCourts tab
+                              <button
+                                onClick={() => {
+                                  closeCase();
+                                  setPortfolioView("connections");
+                                }}
+                              >
+                                View connection status
                               </button>
                             </>
+                          ) : (
+                            <p>{fetchStatus.message}</p>
                           )}
                         </div>
                       )}
@@ -1087,10 +1099,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       </nav>
                       {!selected.hasDetails && (
                         <p className="listing-notice">
-                          This case was saved from search results. Use View or
-                          Refresh from eCourts to fetch its details through your
-                          existing court tab. If asked, complete CAPTCHA or
-                          repeat the search there, then retry.
+                          Only saved search information is available for this
+                          case. Use Refresh from eCourts to request its details.
+                          Connection issues can be reviewed in Connections.
                         </p>
                       )}
                       {tab === "details" && (

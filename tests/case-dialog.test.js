@@ -261,26 +261,24 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     const dialog = document.querySelector("dialog[open]");
     assert.ok(dialog, "case opens immediately in modal");
     assert.ok(dialog.textContent.includes("C.C./1/2025"));
-    assert.ok(
-      dialog
-        .querySelector('[role="status"]')
-        .textContent.includes("complete CAPTCHA"),
-    );
-    assert.ok(
-      [...dialog.querySelectorAll("button")].some(
-        (b) => b.textContent === "Go to eCourts tab",
-      ),
-    );
-    const close = [...dialog.querySelectorAll("button")].find(
-      (b) => b.textContent === "Close details",
-    );
-    await act(async () =>
-      close.dispatchEvent(new window.Event("click", { bubbles: true })),
-    );
+    assert.match(dialog.querySelector('[role="status"]').textContent, /Refresh is not confirmed/);
+    assert.ok(!dialog.textContent.includes("complete CAPTCHA"), "portal troubleshooting stays in Connections");
+    const connectionStatus = [...dialog.querySelectorAll("button")].find(b => b.textContent === "View connection status");
+    await act(async () => connectionStatus.dispatchEvent(new window.Event("click", { bubbles: true })));
     assert.equal(document.querySelector("dialog"), null);
+    const portalLinks = () => [...document.querySelectorAll("a")].filter(a => a.textContent.replace(/\s+/g, " ").trim() === "Open eCourts");
+    assert.equal(portalLinks().length, 1, "Connections provides the portal link");
+    assert.match(document.querySelector('.case-fetch-status[role="status"]').textContent, /complete CAPTCHA/);
+    assert.ok([...document.querySelectorAll("button")].some(b => b.textContent === "Go to eCourts tab"));
+    for (const label of ["Overview", "Analytics", "Hearing calendar", "Cases"]) {
+      await act(async () => document.querySelector(`.sidebar-nav button[aria-label="${label}"]`).dispatchEvent(new window.Event("click", { bubbles: true })));
+      assert.equal(portalLinks().length, 0, `${label} does not show Open eCourts`);
+      assert.equal(document.querySelector('.case-fetch-status[role="status"]'), null, `${label} does not repeat connection messages`);
+    }
     simulatedSuccess = true;
+    const freshView = [...document.querySelectorAll("button")].find(b => b.textContent.includes("View ·"));
     await act(async () =>
-      view.dispatchEvent(new window.Event("click", { bubbles: true })),
+      freshView.dispatchEvent(new window.Event("click", { bubbles: true })),
     );
     const updated = document.querySelector("dialog[open]");
     assert.ok(updated, "successful fetch also opens the case dialog");
@@ -298,6 +296,9 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
         .querySelector('[role="status"]')
         .textContent.includes("Case saved"),
     );
+    const close = [...updated.querySelectorAll("button")].find(b => b.textContent === "Close details");
+    await act(async () => close.dispatchEvent(new window.Event("click", { bubbles: true })));
+    assert.equal(document.querySelector("dialog"), null);
   } finally {
     if (root) await act(async () => root.unmount());
     if (server) await server.close();
