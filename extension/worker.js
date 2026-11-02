@@ -151,7 +151,7 @@ async function handle(message, sender) {
     await chrome.storage.local.set({
       config: {
         ...cfg,
-        fetchMode: cfg.fetchMode === "existing" ? "existing" : "missing",
+        fetchMode: "missing",
         connectionId: result.id,
         workspace: result.workspace,
         enabled: true,
@@ -253,7 +253,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Lawcovery dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.4.0", connected: Boolean(config?.enabled) };
+    return { version: "1.4.1", connected: Boolean(config?.enabled), automaticFetchMode: "missing" };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Lawcovery Case Capture.",
@@ -441,6 +441,8 @@ function batchSummary(batch) {
   return {
     id: batch.id, state: batch.state, mode: batch.mode || "missing",
     sourceTotal: (batch.sourceCnrs || batch.cnrs).length,
+    existingDetails: batch.existingDetails ?? null,
+    missingDetails: batch.missingDetails ?? null,
     total: batch.cnrs.length, processed: batch.index,
     saved: batch.saved ?? batch.index, skipped: batch.skipped || 0,
     waiting: batch.cnrs.length - batch.index,
@@ -451,6 +453,10 @@ function batchSummary(batch) {
 function fetchMode(mode) {
   if (!["missing", "existing"].includes(mode)) throw new Error("Choose missing or existing case details");
   return mode;
+}
+function needsMissingRecheck(batch) {
+  return batch.policyVersion !== 2 || !["missing", "existing"].includes(batch.mode) ||
+    (batch.mode === "existing" && batch.refreshRequested !== true);
 }
 async function detailCoverage(config, cnrs) {
   const rows = await rpc(config, "get_case_capture_coverage", { p_token: config.token, p_cnrs: cnrs });
@@ -467,12 +473,16 @@ async function prepareBatch(previous, config, mode) {
   const batch = {
     id: crypto.randomUUID(), fingerprint: previous.fingerprint, tabId: previous.tabId,
     connectionId: config.connectionId, sourceCnrs, mode,
+    policyVersion: 2, refreshRequested: mode === "existing",
+    existingDetails: null, missingDetails: null,
     cnrs: [], index: 0, saved: 0, skipped: 0, failed: [],
     state: "attention", needsClassification: true, nextAt: 0,
     updatedAt: new Date().toISOString(),
   };
   try {
     const coverage = await detailCoverage(config, sourceCnrs);
+    batch.existingDetails = sourceCnrs.filter(cnr => coverage.get(cnr)).length;
+    batch.missingDetails = sourceCnrs.length - batch.existingDetails;
     batch.cnrs = sourceCnrs.filter(cnr => coverage.get(cnr) === (mode === "existing"));
     batch.needsClassification = false;
     batch.state = batch.cnrs.length ? "waiting" : "complete";
@@ -484,8 +494,9 @@ async function prepareBatch(previous, config, mode) {
     if (e.auth) config = { ...config, enabled: false };
     batch.message = `${e.message}. Resume queue to retry the coverage check.`;
   }
-  // The selected mode also applies to subsequent source searches on this connection.
-  await chrome.storage.local.set({ batch, config: { ...config, fetchMode: mode } });
+  // Refresh is authorised for this queue only. Every new search is missing-only,
+  // including connections whose older configuration remembered "existing".
+  await chrome.storage.local.set({ batch, config: { ...config, fetchMode: "missing" } });
   await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
   return { batch: batchSummary(batch) };
 }
@@ -498,7 +509,7 @@ async function enqueueBatch(capture, tabId, config, searchSession) {
   )), b => b.toString(16).padStart(2, "0")).join("");
   const { batch: old } = await chrome.storage.local.get("batch");
   if (old?.fingerprint === fingerprint && old.connectionId === config.connectionId) return;
-  await prepareBatch({ sourceCnrs, fingerprint, tabId }, config, config.fetchMode || "missing");
+  await prepareBatch({ sourceCnrs, fingerprint, tabId }, config, "missing");
 }
 // Called under the save/config lock. A non-blocking navigation lock avoids
 // replacing a queue halfway through another authorised case load.
@@ -516,8 +527,8 @@ async function controlBatch(action) {
   const { batch, config } = await chrome.storage.local.get(["batch", "config"]);
   if (!batch || !config?.enabled || batch.connectionId !== config.connectionId)
     throw new Error("No active batch. Connect/resume capture and load an eCourts search first.");
-  if (action === "BATCH_RESUME" && (batch.needsClassification || !batch.mode))
-    return await startBatch(batch.mode || "missing");
+  if (action === "BATCH_RESUME" && (batch.needsClassification || needsMissingRecheck(batch)))
+    return await startBatch(needsMissingRecheck(batch) ? "missing" : batch.mode);
   if (batch.state === "complete") return { batch: batchSummary(batch) };
   const paused = action === "BATCH_PAUSE";
   const next = { ...batch, state: paused ? "paused" : "waiting", nextAt: Date.now(),
@@ -533,7 +544,7 @@ async function runBatch(tabId) {
     const { config, batch } = await chrome.storage.local.get(["config", "batch"]);
     if (!batch || !config?.enabled || batch.connectionId !== config.connectionId ||
         (tabId !== undefined && batch.tabId !== tabId)) return {};
-    if (!batch.mode) {
+    if (needsMissingRecheck(batch)) {
       return await navigator.locks.request("verity-sync", async () => {
         const { batch: latest, config: now } = await chrome.storage.local.get(["batch", "config"]);
         if (!now?.enabled || latest?.id !== batch.id || now.connectionId !== batch.connectionId) return {};

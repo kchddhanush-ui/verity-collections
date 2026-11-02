@@ -98,10 +98,10 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       "/src/CaseWorkspace.jsx",
     );
     await server.ssrLoadModule("/src/components/AnalyticsDashboard.jsx");
-    let simulatedSuccess = false;
+    let simulatedSuccess = false, oldExtension = true;
     const batchRequests = [];
     let simulatedBatch = { id: "queue-a", mode: "missing", state: "waiting", total: 1, sourceTotal: 1,
-      processed: 0, saved: 0, skipped: 0, waiting: 1, failed: 0, current: cnr, message: "Missing details selected" };
+      existingDetails: 0, missingDetails: 1, processed: 0, saved: 0, skipped: 0, waiting: 1, failed: 0, current: cnr, message: "Missing details selected" };
     window.postMessage = (message) =>
       queueMicrotask(() => {
         batchRequests.push(message);
@@ -131,7 +131,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
             id: message.id,
             result:
               message.action === "PING"
-                ? { connected: true }
+                ? oldExtension ? { connected: true, version: "1.4.0" } : { connected: true, version: "1.4.1", automaticFetchMode: "missing" }
                 : ["BATCH_STATUS", "BATCH_START"].includes(message.action)
                   ? { batch: simulatedBatch }
                 : simulatedSuccess
@@ -158,10 +158,27 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
         }),
       ),
     );
+    assert.match(document.querySelector('[role="alert"]').textContent, /Chrome is running Lawcovery Case Capture 1.4.0/);
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "old worker queues are not presented as the fixed implementation");
+    oldExtension = false;
+    await act(async () =>
+      root.render(
+        React.createElement(CaseWorkspace, {
+          session: {
+            user: { id: "user-a", email: "example@example.com" },
+            access_token: "refreshed-test-token",
+          },
+          onSignOut: () => {},
+          pending: false,
+        }),
+      ),
+    );
     const missingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Fetch missing details");
     const existingButton = [...document.querySelectorAll("button")].find(b => b.textContent === "Refresh existing details");
     assert.ok(missingButton && existingButton, "workspace exposes both fetch modes");
     assert.equal(missingButton.getAttribute("aria-pressed"), "true");
+    assert.match(document.querySelector(".batch-capture-panel").textContent, /0 already saved.*1 missing details/);
+    assert.equal(document.querySelector('[role="alert"]'), null, "extension upgrade clears the old-version notice");
     await act(async () => existingButton.dispatchEvent(new window.Event("click", { bubbles: true })));
     assert.equal(existingButton.getAttribute("aria-pressed"), "true");
     const modeRequest = batchRequests.find(m => m.action === "BATCH_START");

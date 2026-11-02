@@ -231,7 +231,7 @@ Use court/type/status/stage/search filters to define the case cohort. The Trend 
 Analytics covers the currently loaded company portfolio (the same limit as Cases), not unbounded database aggregates or reported search totals. It does not infer recovery amounts, outcomes or missed hearings from status/date fields. Refer to README.md for metric definitions and exclusions.
 
 
-## Fetch missing details or refresh existing cases — extension 1.4.0
+## Fetch missing details or refresh existing cases — extension 1.4.1
 
 1. Pull the feature branch, then copy the new query on your Mac:
 
@@ -242,14 +242,21 @@ Analytics covers the currently loaded company portfolio (the same limit as Cases
    ```
 
 2. In the existing Supabase project, choose **SQL Editor → New query**, paste with **Cmd+V** and click **Run**. Copying in Terminal alone does not execute it. Run this after the existing capture migrations; it is safe to rerun and does not rewrite cases or audit history. Decision Date still requires the preceding `202610290003_decision_date_capture.sql` migration.
-3. Restart `npm run dev`. In `chrome://extensions`, click Reload on **Lawcovery Case Capture** and confirm **1.4.0**. Refresh both Lawcovery and the eCourts tab.
-4. Complete your eCourts search/CAPTCHA. Search rows and totals save automatically. Missing details are fetched by default on new connections.
+3. Restart `npm run dev`. In `chrome://extensions`, click Reload on **Lawcovery Case Capture** and confirm **1.4.1**. Refresh both Lawcovery and the eCourts tab.
+4. Complete your eCourts search/CAPTCHA. Search rows and totals save automatically. Every automatic search fetches missing details only.
 5. In the **Court sync** panel or extension popup, choose:
    - **Fetch missing details:** only CNRs without a saved detail record. A listed/search-only row qualifies.
    - **Refresh existing details:** only CNRs that already have a detail record; fetch current details and update them with separate snapshots and field-change audits.
 
-Each option restarts the queue for the original loaded source search, even after completion. The selected mode is remembered for subsequent searches on that connection. It is not tied to the dashboard's search/filter/portfolio limits. Wait for an in-flight case to finish before changing modes. Repeated retained result tables do not automatically restart the run. A new source document/search starts a run in the selected mode. The existing five-second minimum gap, pause/resume, session/CAPTCHA handling and loaded-source limit remain.
+Each option restarts the queue for the original loaded source search, even after completion. Refresh existing details is a one-time run for the loaded search. Every subsequent automatic search uses Fetch missing details, even if an older connection remembered another mode. It is not tied to the dashboard's search/filter/portfolio limits. Wait for an in-flight case to finish before changing modes. Repeated retained result tables do not automatically restart the run. A new source document/search starts a missing-only run. The existing five-second minimum gap, pause/resume, session/CAPTCHA handling and loaded-source limit remain.
 
 Progress separates **processed**, **saved**, **skipped**, **remaining** and **failed**. A case saved elsewhere after selection is skipped in missing mode. A zero-match queue completes without opening a court case. Coverage errors stop the queue; fix the database/connection and Resume queue to recheck. Missing refers to the whole case detail record, not a blank field: choose Refresh existing details when adding previously missed fields such as Decision Date. Manual View/Refresh actions on a specific case remain available in either mode.
 
 The new connection-authorized SQL function returns only existence flags for supplied CNRs in the connection's workspace (maximum 2,000), not case content or audits. The dashboard account/origin checks remain in place and no new Chrome permissions or packages are required. Existing connections do not need to be replaced.
+
+
+### Fix repeated existing-case fetching — 1.4.1
+
+Stop Vite with Ctrl+C, pull `feat/ecourts-auto-capture-audit`, and restart `npm run dev`. In `chrome://extensions`, reload Lawcovery Case Capture and verify **1.4.1**; then refresh Lawcovery and eCourts. Existing queues from older releases are reclassified for missing details before they continue/resume. New automatic searches never inherit a previous existing-case refresh. Before-run saved/missing totals appear in both progress panels so you can check the selected cases. Zero missing cases means no detail pages are opened.
+
+This correction needs no new SQL. If the fetch-mode migration was not previously applied, use the copy/paste/Run instructions above for `202610300004_case_fetch_modes.sql`. A failed coverage check stops fetching instead of falling back to all cases. If the website reports an older extension, reload the extension in the correct unpacked `verity-collections-github/extension` folder and refresh both tabs; pulling code/restarting the website alone does not replace Chrome's running worker. CAPTCHA and workspace-connection requirements still apply. A manual case-number/View click or an explicit case Refresh remains an individual fresh fetch as previously requested.

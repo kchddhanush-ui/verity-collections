@@ -104,6 +104,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const [batch, setBatch] = useState(null);
   const [batchError, setBatchError] = useState("");
   const [batchBusy, setBatchBusy] = useState(false);
+  const [captureUpdate, setCaptureUpdate] = useState("");
   const [searches, setSearches] = useState([]);
   const [portfolioView, setPortfolioView] = useState("overview");
   const [listingAudits, setListingAudits] = useState([]);
@@ -327,10 +328,19 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       lastProgress = "";
     setBatch(null);
     setBatchError("");
+    setCaptureUpdate("");
     if (!workspace || !session.access_token) return;
     async function poll() {
       try {
         const ping = await extensionRequest("PING");
+        if (ping?.connected && ping.automaticFetchMode !== "missing") {
+          if (active) {
+            setBatch(null);
+            setCaptureUpdate(`Chrome is running ${ping.version ? `Lawcovery Case Capture ${ping.version}` : "an older Lawcovery extension"}. Reload Lawcovery Case Capture 1.4.1 in chrome://extensions, then refresh Lawcovery and eCourts to use missing-only automatic fetches.`);
+          }
+          return;
+        }
+        if (active) setCaptureUpdate("");
         if (ping?.connected) {
           const result = await extensionRequest(
             "BATCH_STATUS",
@@ -648,6 +658,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               {error}
             </div>
           )}
+          {captureUpdate && <div className="console-error" role="alert">{captureUpdate}</div>}
           {batch && (
             <section
               className="case-fetch-status batch-capture-panel"
@@ -698,13 +709,21 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                 <p>
                   Missing means no saved case detail record; a search row alone
                   does not count. Each option starts a new queue for the loaded
-                  eCourts search and applies to future searches on this connection.
+                  eCourts search. Refresh existing details applies to this run
+                  only. Every new search fetches missing details.
                 </p>
               </fieldset>
               <p>
-                <strong>Mode: {batch.mode === "existing" ? "Refresh existing details" : "Fetch missing details"}</strong>
+                <strong>Mode: {batch.mode === "existing" ? "One-time refresh of existing details" : "Fetch missing details"}</strong>
                 {batch.sourceTotal != null && ` · ${batch.sourceTotal} cases in the loaded source search`}
               </p>
+              {batch.existingDetails != null && batch.missingDetails != null && (
+                <p>
+                  Before this run: <strong>{batch.existingDetails} already saved</strong>
+                  {" · "}<strong>{batch.missingDetails} missing details</strong>.
+                  {batch.mode === "missing" && " Only missing details are selected for fetching."}
+                </p>
+              )}
               <progress
                 aria-label="Selected cases processed"
                 hidden={!batch.total}

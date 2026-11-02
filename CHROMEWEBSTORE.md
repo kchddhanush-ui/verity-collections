@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Lawcovery Case Capture
 
-Last updated: 2026-10-30. Development installation only; not submitted or published.
+Last updated: 2026-11-02. Development installation only; not submitted or published.
 
 ## Store listing draft
 
@@ -89,3 +89,10 @@ Give the “law” part of the Lawcovery wordmark a separate dark background, li
 Choose **Fetch missing details** or **Refresh existing details** in the local dashboard or extension popup. A search row alone still counts as missing. Missing is the default for new connections; the selected mode is retained for subsequent searches. Each selection checks the original loaded search against the connected workspace database, restarts the queue with matching cases, and processes cases sequentially. A per-case coverage check skips targets that no longer match, without counting them as saved. Progress distinguishes processed, confirmed saved, skipped, remaining and failed cases. Zero matches complete without a court request. Missing/unavailable coverage checks stop processing with an actionable message; list saving still succeeds. Legacy queues are reclassified on resume/next tick.
 
 Apply `202610300004_case_fetch_modes.sql` before using this release. The connection token can now request **only CNR plus saved-detail existence** for up to 2,000 supplied CNRs in its workspace; it cannot read case content or audits, enumerate the database, or choose another workspace. This bounded metadata is processed transiently to choose targets; the local queue retains the original CNRs, mode and progress. No login token is persisted. Existing audited ingestion continues to retain snapshots/field changes, including unchanged checks without false change events. No new browser permissions, external services or data destinations. Refresh popup/progress screenshots and privacy disclosures for both fetch modes before store submission. Real Chrome/eCourts validation remains required.
+
+
+## Version 1.4.1 — 2026-11-02 (development draft)
+
+Fix a remembered refresh mode causing later automatic searches to revisit saved cases. Every new automatic search now fetches missing details only. Refresh existing details is a one-time action scoped to the requested queue; older saved refresh queues are reclassified as missing-only before continuing or resuming. Per-case coverage rechecks, confirmed-save progress and separate audited snapshots remain intact. Show the before-run saved/missing counts and label existing-case runs as one-time refreshes. Zero missing cases opens no source case page. The local dashboard detects an older running extension and asks the user to reload 1.4.1 and refresh both tabs. Pulling/restarting the website alone does not update Chrome's running extension.
+
+No new SQL, parser format, permissions, storage destinations or collected case fields. Existing `202610300004_case_fetch_modes.sql` remains required. Queue storage adds a policy version, explicit-refresh flag and before-run coverage counts. Refresh popup/dashboard screenshots for the clarified mode/count display before store submission. Real Chrome/eCourts validation remains required.

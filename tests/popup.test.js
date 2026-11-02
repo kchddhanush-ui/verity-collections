@@ -8,7 +8,7 @@ test("popup switches fetch modes and presents empty queues without a misleading 
   const originalDocument = globalThis.document, originalChrome = globalThis.chrome;
   const values = {
     config: { enabled: true, workspace: "Example", expiresAt: "2026-11-20T00:00:00Z" },
-    batch: { cnrs: ["KAAA010000012025"], index: 0, saved: 0, skipped: 0, failed: [], mode: "missing", state: "waiting", message: "One selected" },
+    batch: { cnrs: ["KAAA010000012025"], index: 0, saved: 0, skipped: 0, failed: [], existingDetails: 3, missingDetails: 1, mode: "missing", state: "waiting", message: "One selected" },
   };
   const sent = [];
   let fail = false;
@@ -38,11 +38,14 @@ test("popup switches fetch modes and presents empty queues without a misleading 
     await import("../extension/popup.js");
     await ready;
     assert.equal(document.getElementById("fetch-missing").getAttribute("aria-pressed"), "true");
+    assert.match(document.getElementById("batch-coverage").textContent, /3 already saved · 1 missing details/);
+    assert.match(document.body.textContent, /Every new search fetches missing details/);
     const changed = rendered();
     document.getElementById("fetch-existing").dispatchEvent(new window.Event("click"));
     await changed;
     assert.deepEqual(sent, [{ type: "BATCH_START", mode: "existing" }]);
     assert.equal(document.getElementById("fetch-existing").getAttribute("aria-pressed"), "true");
+    assert.match(document.getElementById("batch-mode").textContent, /One-time refresh/);
     assert.equal(document.getElementById("batch-progress").hidden, true);
     assert.match(document.getElementById("batch-status").textContent, /0\/0 processed · 0 saved/);
     fail = true;

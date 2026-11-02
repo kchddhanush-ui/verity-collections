@@ -23,7 +23,10 @@ async function render() {
     $("batch-progress").hidden = !batch.cnrs.length;
     $("batch-progress").max = batch.cnrs.length || 1;
     $("batch-progress").value = batch.index;
-    $("batch-mode").textContent = `Mode: ${batch.mode === "existing" ? "Refresh existing details" : "Fetch missing details"}`;
+    $("batch-mode").textContent = `Mode: ${batch.mode === "existing" ? "One-time refresh of existing details" : "Fetch missing details"}`;
+    $("batch-coverage").textContent = batch.existingDetails != null && batch.missingDetails != null
+      ? `Before this run: ${batch.existingDetails} already saved · ${batch.missingDetails} missing details`
+      : "";
     $("batch-status").textContent = `${batch.index}/${batch.cnrs.length} processed · ${batch.saved ?? batch.index} saved · ${batch.skipped || 0} skipped · ${batch.failed.length} failed · ${batch.message}`;
     $("fetch-missing").setAttribute("aria-pressed", String(batch.mode === "missing"));
     $("fetch-existing").setAttribute("aria-pressed", String(batch.mode === "existing"));
