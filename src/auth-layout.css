@@ -1,4 +1,14 @@
 /* The sign-in and recovery flows share the workspace's spacing and type scale. */
+.login-layout .auth-home-link {
+  margin-inline-end: auto;
+  color: #657960;
+  font-size: 11px;
+  text-decoration: none;
+  min-block-size: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+.login-layout .auth-home-link:hover { text-decoration: underline; }
 .login-layout {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-block-size: 100dvh;
