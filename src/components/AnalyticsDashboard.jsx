@@ -8,16 +8,22 @@ import {
   filterCases,
   percentage,
 } from "../lib/analytics";
-import { caseNumber, formatHearingDate, indiaToday, parseCourtDate } from "../lib/hearings";
+import {
+  caseNumber,
+  formatHearingDate,
+  indiaToday,
+  parseCourtDate,
+} from "../lib/hearings";
 import { WorkspaceIcon } from "./WorkspaceIcon";
-import "../analytics.css";
 
 const count = (value) =>
   value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 const percent = (value) => (value === null ? "—" : `${count(value)}%`);
 function Panel({ title, note, children, className = "" }) {
   return (
-    <section className={`console-panel analytics-panel ${className}`}>
+    <section
+      className={`console-panel analytics-panel card chart-card ${className}`}
+    >
       <h2>{title}</h2>
       {note && <p className="muted">{note}</p>}
       {children}
@@ -117,7 +123,8 @@ function Trend({ model }) {
       )}
       <p className="muted">
         Filings and disposals belong to the currently selected case portfolio.
-        Disposals use Disposal Date, falling back to Decision Date on disposed cases.
+        Disposals use Disposal Date, falling back to Decision Date on disposed
+        cases.
       </p>
       <details className="analytics-chart-data">
         <summary>View monthly counts</summary>
@@ -196,13 +203,19 @@ export function AnalyticsDashboard({
     {
       key: "nbw",
       label: "Pending · NBW",
-      rows: model.pendingNbw.map(item => ({ item, day: parseCourtDate(item.data?.next_hearing_date) })),
+      rows: model.pendingNbw.map((item) => ({
+        item,
+        day: parseCourtDate(item.data?.next_hearing_date),
+      })),
       dateLabel: "Next hearing",
     },
     {
       key: "summons",
       label: "Pending · SUMMONS",
-      rows: model.pendingSummons.map(item => ({ item, day: parseCourtDate(item.data?.next_hearing_date) })),
+      rows: model.pendingSummons.map((item) => ({
+        item,
+        day: parseCourtDate(item.data?.next_hearing_date),
+      })),
       dateLabel: "Next hearing",
     },
     {
@@ -220,23 +233,53 @@ export function AnalyticsDashboard({
     currentPage * 10,
   );
   const metrics = [
-    ["Cases in view", count(model.total), "Current selected portfolio", "cases"],
+    [
+      "Cases in view",
+      count(model.total),
+      "Current selected portfolio",
+      "cases",
+    ],
     ["Pending", count(model.pending), "Confirmed pending cases", "clock"],
     ["Disposed", count(model.disposed), "Confirmed disposed cases", "check"],
-    ["Disposed share", percent(model.disposalRate), `${model.known} cases with a known status`, "analytics"],
-    ["Average disposal TAT", model.averageTat === null ? "—" : `${count(model.averageTat)} days`, `${model.tatSamples} disposed cases with valid date pairs`, "clock"],
-    ["Median disposal TAT", model.medianTat === null ? "—" : `${count(model.medianTat)} days`, "Middle duration in the same TAT sample", "clock"],
-    ["Pending · over 1 year", count(model.longPending.length), "Aged cases for portfolio review", "cases"],
-    ["Hearings · next 7 days", count(model.next7.length), "Today and the following 6 days", "calendar"],
+    [
+      "Disposed share",
+      percent(model.disposalRate),
+      `${model.known} cases with a known status`,
+      "analytics",
+    ],
+    [
+      "Average disposal TAT",
+      model.averageTat === null ? "—" : `${count(model.averageTat)} days`,
+      `${model.tatSamples} disposed cases with valid date pairs`,
+      "clock",
+    ],
+    [
+      "Median disposal TAT",
+      model.medianTat === null ? "—" : `${count(model.medianTat)} days`,
+      "Middle duration in the same TAT sample",
+      "clock",
+    ],
+    [
+      "Pending · over 1 year",
+      count(model.longPending.length),
+      "Aged cases for portfolio review",
+      "cases",
+    ],
+    [
+      "Hearings · next 7 days",
+      count(model.next7.length),
+      "Today and the following 6 days",
+      "calendar",
+    ],
   ];
   const activeFilters = Object.values(filters).some(Boolean);
   return (
     <div className="analytics-dashboard">
       <section
-        className="console-panel analytics-filters"
+        className="console-panel analytics-filters card filters"
         aria-label="Analytics filters"
       >
-        <div className="analytics-filter-heading">
+        <div className="analytics-filter-heading card-title-row">
           <div>
             <p className="panel-kicker">COMPANY PERFORMANCE</p>
             <p role="status">
@@ -259,7 +302,7 @@ export function AnalyticsDashboard({
             Clear filters
           </button>
         </div>
-        <div className="analytics-filter-grid">
+        <div className="analytics-filter-grid filter-grid">
           <label>
             Court
             <select
@@ -295,13 +338,11 @@ export function AnalyticsDashboard({
               onChange={(e) => setFilter("status", e.target.value)}
             >
               <option value="">All statuses</option>
-              {["Pending", "Disposed", "Status unavailable"].map(
-                (value) => (
-                  <option key={value} value={value}>
-                    {value}
-                  </option>
-                ),
-              )}
+              {["Pending", "Disposed", "Status unavailable"].map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
             </select>
           </label>
           <label>
@@ -320,18 +361,20 @@ export function AnalyticsDashboard({
           </label>
           <label>
             Search portfolio
-            <input
-              type="search"
-              value={filters.search}
-              onChange={(e) => setFilter("search", e.target.value)}
-              placeholder="Case, CNR, party or court"
-            />
+            <div className="search-box">
+              <WorkspaceIcon name="search" size={16} />
+              <input
+                type="search"
+                value={filters.search}
+                onChange={(e) => setFilter("search", e.target.value)}
+                placeholder="Case, CNR, party or court"
+              />
+            </div>
           </label>
         </div>
         <p className="muted">
-          Scope: the currently loaded company portfolio. All figures follow
-          your filters. As of {" "}
-          {formatHearingDate(today)} (India).
+          Scope: the currently loaded company portfolio. All figures follow your
+          filters. As of {formatHearingDate(today)} (India).
         </p>
       </section>
       {!model.total ? (
@@ -350,9 +393,12 @@ export function AnalyticsDashboard({
         </div>
       ) : (
         <>
-          <div className="analytics-metrics">
-            {metrics.map(([label, value, note, icon]) => (
-              <article key={label}>
+          <div className="analytics-metrics metric-grid">
+            {metrics.slice(0, 4).map(([label, value, note, icon], index) => (
+              <article
+                className={`metric-card ${index === 0 ? "highlight" : ""}`}
+                key={label}
+              >
                 <div>
                   <span>{label}</span>
                   <WorkspaceIcon name={icon} size={18} />
@@ -362,41 +408,10 @@ export function AnalyticsDashboard({
               </article>
             ))}
           </div>
-          <div className="analytics-grid">
-            <Panel
-              title="Portfolio status"
-              note="Every case is counted once; cases without a confirmed status remain visible."
-            >
-              <Bars rows={[
-                { label: "Pending", count: model.pending },
-                { label: "Disposed", count: model.disposed },
-                { label: "Status unavailable", count: model.unknown + model.listed },
-              ]} total={model.total} />
-              <p className="muted">
-                Disposed share = disposed ÷ (pending + disposed). Unknown and
-                listed-only records are excluded; this is not a recovery or win
-                rate.
-              </p>
-            </Panel>
-            <Panel
-              title="Cases by stage"
-              note="Where cases currently stand in the court process."
-            >
-              <Bars
-                rows={model.stages}
-                total={model.detailed}
-                empty="Capture detailed records to see case stages."
-              />
-            </Panel>
-            <Panel title="Disposal turnaround" className="analytics-wide"
-              note={`Time from filing to disposal for ${model.tatSamples} of ${model.disposed} disposed cases with valid dates.`}>
-              <Bars rows={model.tatBands} total={model.tatSamples} tone="gold"
-                empty="Disposal turnaround will appear when disposed cases have valid filing and closure dates." />
-              <p className="muted">Calendar days from Filing Date to Disposal Date, falling back to Decision Date. Cases without a valid chronological pair are excluded, rather than treated as zero.</p>
-            </Panel>
+          <div className="analytics-grid analytics-primary">
             <Panel
               title="Filings & disposals"
-              className="analytics-wide"
+              className="analytics-primary-trend"
               note="Recorded filings and disposals by month for the selected portfolio."
             >
               <label className="analytics-trend-window">
@@ -411,94 +426,191 @@ export function AnalyticsDashboard({
               </label>
               <Trend model={model} />
             </Panel>
-            <Panel
-              title="Pending case age"
-              note="Uses filing date, falling back to registration date. Only confirmed pending cases are included; unknown or future start dates are excluded from dated bands."
-            >
-              <Bars
-                rows={model.age}
-                total={model.pending}
-                tone="gold"
-                empty="No confirmed pending cases in this view."
-              />
-            </Panel>
-            <Panel
-              title="Hearing workload · next 30 days"
-              note="Scheduled court commitments grouped across the next 30 days."
-            >
-              <Bars
-                rows={model.hearingWeeks.map((row) => ({
-                  label: `${formatHearingDate(row.from, { day: "numeric", month: "short" })} – ${formatHearingDate(row.through, { day: "numeric", month: "short" })}`,
-                  count: row.count,
-                }))}
-                total={model.upcoming.length}
-                empty="No saved next-hearing dates in the next 30 days."
-              />
-            </Panel>
-            <Panel
-              title="Case mix"
-              note="The mix of case types in the selected portfolio."
-            >
-              <Bars rows={model.types} total={model.total} />
-            </Panel>
-            <Panel
-              title="Nature of disposal"
-              note="Source descriptions on disposed cases. These labels are not interpreted as win/loss outcomes."
-            >
-              <Bars
-                rows={model.disposalTypes}
-                total={model.disposed}
-                tone="gold"
-                empty="No confirmed disposed cases in this view."
-              />
-            </Panel>
-            <Panel
-              title="Court portfolio & disposal TAT"
-              className="analytics-wide"
-              note="Portfolio workload and average disposal time by court. TAT samples reflect the selected case mix."
-            >
-              <div
-                className="case-table-wrap analytics-table-wrap"
-                role="region"
-                tabIndex="0"
-                aria-label="Court portfolio breakdown"
-              >
-                <table className="case-table">
-                  <caption>Court workload in the filtered portfolio</caption>
-                  <thead>
-                    <tr>
-                      {[
-                        "Court",
-                        "Cases",
-                        "Pending",
-                        "Disposed",
-                        "Average disposal TAT",
-                        "Hearings · 7 days",
-                      ].map((label) => (
-                        <th scope="col" key={label}>
-                          {label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {model.courts.map((row) => (
-                      <tr key={row.label}>
-                        <th scope="row">{row.label}</th>
-                        <td>{row.total}</td>
-                        <td>{row.pending}</td>
-                        <td>{row.disposed}</td>
-                        <td>{row.averageTat === null ? "—" : `${count(row.averageTat)} days`}<small>{row.tatSamples} cases in TAT sample</small></td>
-                        <td>{row.next7}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <section className="card priorities">
+              <span className="eyebrow">Portfolio priorities</span>
+              <h2>Cases to discuss with your team</h2>
+              <div className="priority-list">
+                {reviews.map((row) => (
+                  <button
+                    key={row.key}
+                    onClick={() => {
+                      setReview(row.key);
+                      document
+                        .getElementById("analytics-review-title")
+                        ?.scrollIntoView?.({
+                          block: "start",
+                          behavior: window.matchMedia?.(
+                            "(prefers-reduced-motion: reduce)",
+                          )?.matches
+                            ? "instant"
+                            : "smooth",
+                        });
+                    }}
+                  >
+                    <span>{row.label}</span>
+                    <strong>{count(row.rows.length)}</strong>
+                  </button>
+                ))}
               </div>
-            </Panel>
+            </section>
           </div>
+          <Panel
+            title="Court portfolio & disposal TAT"
+            className="court-card"
+            note="Portfolio workload and average disposal time by court. TAT samples reflect the selected case mix."
+          >
+            <div
+              className="case-table-wrap analytics-table-wrap"
+              role="region"
+              tabIndex="0"
+              aria-label="Court portfolio breakdown"
+            >
+              <table className="case-table">
+                <caption>Court workload in the filtered portfolio</caption>
+                <thead>
+                  <tr>
+                    {[
+                      "Court",
+                      "Cases",
+                      "Pending",
+                      "Disposed",
+                      "Average disposal TAT",
+                      "Hearings · 7 days",
+                    ].map((label) => (
+                      <th scope="col" key={label}>
+                        {label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {model.courts.map((row) => (
+                    <tr key={row.label}>
+                      <th scope="row">{row.label}</th>
+                      <td>{row.total}</td>
+                      <td>{row.pending}</td>
+                      <td>{row.disposed}</td>
+                      <td>
+                        {row.averageTat === null
+                          ? "—"
+                          : `${count(row.averageTat)} days`}
+                        <small>{row.tatSamples} cases in TAT sample</small>
+                      </td>
+                      <td>{row.next7}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Panel>
+          <details className="extended-insights card">
+            <summary>Detailed portfolio insights</summary>
+            <div className="analytics-metrics metric-grid analytics-secondary">
+              {metrics.slice(4).map(([label, value, note, icon]) => (
+                <article className="metric-card" key={label}>
+                  <div>
+                    <span>{label}</span>
+                    <WorkspaceIcon name={icon} size={18} />
+                  </div>
+                  <strong>{value}</strong>
+                  <small>{note}</small>
+                </article>
+              ))}
+            </div>
+            <div className="analytics-grid">
+              <Panel
+                title="Portfolio status"
+                note="Every case is counted once; cases without a confirmed status remain visible."
+              >
+                <Bars
+                  rows={[
+                    { label: "Pending", count: model.pending },
+                    { label: "Disposed", count: model.disposed },
+                    {
+                      label: "Status unavailable",
+                      count: model.unknown + model.listed,
+                    },
+                  ]}
+                  total={model.total}
+                />
+                <p className="muted">
+                  Disposed share = disposed ÷ (pending + disposed). Unknown and
+                  listed-only records are excluded; this is not a recovery or
+                  win rate.
+                </p>
+              </Panel>
+              <Panel
+                title="Cases by stage"
+                note="Where cases currently stand in the court process."
+              >
+                <Bars
+                  rows={model.stages}
+                  total={model.detailed}
+                  empty="Capture detailed records to see case stages."
+                />
+              </Panel>
+              <Panel
+                title="Disposal turnaround"
+                className="analytics-wide"
+                note={`Time from filing to disposal for ${model.tatSamples} of ${model.disposed} disposed cases with valid dates.`}
+              >
+                <Bars
+                  rows={model.tatBands}
+                  total={model.tatSamples}
+                  tone="gold"
+                  empty="Disposal turnaround will appear when disposed cases have valid filing and closure dates."
+                />
+                <p className="muted">
+                  Calendar days from Filing Date to Disposal Date, falling back
+                  to Decision Date. Cases without a valid chronological pair are
+                  excluded, rather than treated as zero.
+                </p>
+              </Panel>
+              <Panel
+                title="Pending case age"
+                note="Uses filing date, falling back to registration date. Only confirmed pending cases are included; unknown or future start dates are excluded from dated bands."
+              >
+                <Bars
+                  rows={model.age}
+                  total={model.pending}
+                  tone="gold"
+                  empty="No confirmed pending cases in this view."
+                />
+              </Panel>
+              <Panel
+                title="Hearing workload · next 30 days"
+                note="Scheduled court commitments grouped across the next 30 days."
+              >
+                <Bars
+                  rows={model.hearingWeeks.map((row) => ({
+                    label: `${formatHearingDate(row.from, { day: "numeric", month: "short" })} – ${formatHearingDate(row.through, { day: "numeric", month: "short" })}`,
+                    count: row.count,
+                  }))}
+                  total={model.upcoming.length}
+                  empty="No saved next-hearing dates in the next 30 days."
+                />
+              </Panel>
+              <Panel
+                title="Case mix"
+                note="The mix of case types in the selected portfolio."
+              >
+                <Bars rows={model.types} total={model.total} />
+              </Panel>
+              <Panel
+                title="Nature of disposal"
+                note="Source descriptions on disposed cases. These labels are not interpreted as win/loss outcomes."
+              >
+                <Bars
+                  rows={model.disposalTypes}
+                  total={model.disposed}
+                  tone="gold"
+                  empty="No confirmed disposed cases in this view."
+                />
+              </Panel>
+            </div>
+          </details>
           <section
-            className="console-panel analytics-review"
+            className="console-panel analytics-review card"
             aria-labelledby="analytics-review-title"
           >
             <p className="panel-kicker">PORTFOLIO PRIORITIES</p>
@@ -572,7 +684,9 @@ export function AnalyticsDashboard({
                             {row.day
                               ? formatHearingDate(row.day)
                               : "Not recorded"}
-                            {review === "long_pending" && <small>{count(row.days)} days pending</small>}
+                            {review === "long_pending" && (
+                              <small>{count(row.days)} days pending</small>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -605,10 +719,30 @@ export function AnalyticsDashboard({
           </section>
           <details className="muted analytics-methodology">
             <summary>Report basis & definitions</summary>
-            <p>Figures cover the loaded company portfolio: up to 1,000 detailed cases and 1,000 listings merged by CNR. They follow the filters and describe saved records.</p>
-            <p>Disposed share uses pending plus disposed cases as its denominator. A disposed status does not establish recovery or a favourable outcome. Cases with an unavailable status remain in the portfolio total.</p>
-            <p>Average and median disposal TAT use the same sample: confirmed disposed cases with Filing Date and a valid Disposal Date, falling back to Decision Date. Missing, future and reversed date pairs are excluded. Calendar days are used. Pending age uses Filing Date, falling back to Registration Date. Today follows India time.</p>
-            <p>Monthly counts use the source dates on the current selected cases; they do not reconstruct historical portfolio balances. Court figures describe this company portfolio, not all cases in each court.</p>
+            <p>
+              Figures cover the loaded company portfolio: up to 1,000 detailed
+              cases and 1,000 listings merged by CNR. They follow the filters
+              and describe saved records.
+            </p>
+            <p>
+              Disposed share uses pending plus disposed cases as its
+              denominator. A disposed status does not establish recovery or a
+              favourable outcome. Cases with an unavailable status remain in the
+              portfolio total.
+            </p>
+            <p>
+              Average and median disposal TAT use the same sample: confirmed
+              disposed cases with Filing Date and a valid Disposal Date, falling
+              back to Decision Date. Missing, future and reversed date pairs are
+              excluded. Calendar days are used. Pending age uses Filing Date,
+              falling back to Registration Date. Today follows India time.
+            </p>
+            <p>
+              Monthly counts use the source dates on the current selected cases;
+              they do not reconstruct historical portfolio balances. Court
+              figures describe this company portfolio, not all cases in each
+              court.
+            </p>
           </details>
         </>
       )}

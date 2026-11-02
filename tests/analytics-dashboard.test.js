@@ -102,6 +102,9 @@ test("analytics filters, paginates follow-up cases and opens saved details", asy
     assert.ok(titles.includes("Disposal turnaround"));
     assert.ok(titles.includes("Filings & disposals"));
     assert.equal(document.querySelectorAll(".analytics-metrics article").length, 8);
+    assert.equal(document.querySelectorAll(".analytics-metrics:not(.analytics-secondary) article").length, 4);
+    assert.ok(document.querySelector(".extended-insights"), "the remaining calculations stay available in detailed insights");
+    assert.ok(!document.querySelector(".extended-insights").hasAttribute("open"));
     const metrics = [...document.querySelectorAll(".analytics-metrics article")];
     assert.equal(metrics.find(node => node.textContent.startsWith("Average disposal TAT")).querySelector("strong").textContent, "30 days");
     assert.equal(metrics.find(node => node.textContent.startsWith("Median disposal TAT")).querySelector("strong").textContent, "30 days");
@@ -153,7 +156,7 @@ test("analytics filters, paginates follow-up cases and opens saved details", asy
     await click(document.querySelector(".analytics-review .case-open"));
     assert.equal(opened.cnr, "KAAA010000992025");
     await click(button("Clear filters"));
-    const longPending = [...document.querySelectorAll(".analytics-review-tabs button")].find(node => node.textContent.startsWith("Pending · over 1 year"));
+    const longPending = [...document.querySelectorAll(".priority-list button")].find(node => node.textContent.startsWith("Pending · over 1 year"));
     await click(longPending);
     assert.equal(document.querySelectorAll(".analytics-review tbody tr").length, 10);
     assert.match(document.querySelector(".analytics-review tbody").textContent, /days pending/);
