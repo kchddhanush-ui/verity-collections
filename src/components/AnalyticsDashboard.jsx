@@ -228,6 +228,7 @@ export function AnalyticsDashboard({
     currentPage * 10,
   );
   const metrics = [
+    ["Average disposal TAT", model.averageTat === null ? "—" : `${count(model.averageTat)} days`, `${model.tatSamples} disposed cases · filing to disposal date (Decision Date when disposal date is unavailable)`, "clock"],
     [
       "Cases in view",
       count(model.total),

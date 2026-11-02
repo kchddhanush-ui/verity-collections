@@ -4,6 +4,7 @@ import "./workspace.css";
 import { mergePortfolio } from "./lib/portfolio";
 import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
+import { CompanyBrief } from "./components/CompanyBrief";
 import { extensionRequest } from "./lib/extensionBridge";
 
 const AnalyticsDashboard = lazy(() =>
@@ -815,6 +816,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     </Suspense>
                   ) : portfolioView === "overview" ? (
                     <>
+                      <CompanyBrief cases={cases} company={workspaces.find(w => w.id === workspace)?.name || "Company"} />
                       <div className="console-metrics">
                         {totals.map(([label, count]) => (
                           <article key={label}>

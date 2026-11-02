@@ -238,6 +238,12 @@ export function buildAnalytics(
     })
     .filter((value) => value !== null)
     .sort((a, b) => a - b);
+  const tatDurations = disposed.map(item => {
+    const filing = pastDate(item.data?.filing_date, today);
+    const closed = pastDate(item.data?.disposal_date, today) || pastDate(item.data?.decision_date, today);
+    return filing && closed && closed >= filing ? dayNumber(closed) - dayNumber(filing) : null;
+  }).filter(value => value !== null);
+  const averageTat = tatDurations.length ? tatDurations.reduce((sum, days) => sum + days, 0) / tatDurations.length : null;
   const middle = Math.floor(durations.length / 2);
   const medianDays = durations.length
     ? durations.length % 2
@@ -277,6 +283,8 @@ export function buildAnalytics(
     filingDates,
     decisionDates,
     datedDisposed: disposed.length - missingDecision.length,
+    averageTat,
+    tatSamples: tatDurations.length,
     medianDays,
     durationSamples: durations.length,
     upcoming,
