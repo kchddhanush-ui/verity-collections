@@ -33,15 +33,119 @@
   overscroll-behavior: contain;
   gap: 0;
 }
-.verity-console .sidebar-nav {
-  display: block;
+.verity-console .console-sidebar .sidebar-nav {
+  display: grid;
+  gap: 6px;
 }
-.verity-console .console-brand {
+/* Share an icon centre and text column across the brand, navigation and footer. */
+.verity-console .console-sidebar .console-brand {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  column-gap: 6px;
+  row-gap: 6px;
+  align-items: center;
+  margin: 0 6px 28px;
+  padding: 0;
+  font-size: 1.3125rem;
+  line-height: 1.1;
   text-decoration: none;
   flex-shrink: 0;
 }
-.verity-console .brand-mark {
-  font-size: 19px;
+.verity-console .console-sidebar .console-brand::after {
+  content: none;
+}
+.verity-console .console-brand > .brand-mark {
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 32px;
+  block-size: 32px;
+  margin: 0;
+  font-size: 1.125rem;
+  line-height: 1;
+}
+.verity-console .console-brand > .brand-wordmark {
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: 0;
+  align-items: baseline;
+}
+.verity-console .console-brand > small {
+  position: static;
+  grid-column: 2;
+  grid-row: 2;
+  margin: 0;
+  font-size: 0.5rem;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+}
+.verity-console .console-sidebar .nav-label {
+  margin: 0 12px 12px 44px;
+  line-height: 1.5;
+}
+.verity-console .sidebar-nav .nav-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  inline-size: 100%;
+  min-inline-size: 0;
+  height: auto;
+  min-block-size: 46px;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: start;
+}
+.verity-console .sidebar-nav .nav-item > svg {
+  inline-size: 20px;
+  block-size: 20px;
+  justify-self: center;
+}
+.verity-console .sidebar-nav .nav-item > span:not(.nav-badge) {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.verity-console .sidebar-nav .nav-badge {
+  grid-column: 3;
+  justify-self: end;
+  margin: 0;
+  min-inline-size: 24px;
+  padding: 2px 7px;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  text-align: center;
+}
+.verity-console .console-sidebar .audit-card {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: start;
+  padding: 16px 12px;
+}
+.verity-console .audit-card > svg {
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 20px;
+  block-size: 20px;
+}
+.verity-console .audit-card > strong,
+.verity-console .audit-card > p {
+  grid-column: 2;
+  min-inline-size: 0;
+  margin: 0;
+}
+.verity-console .console-sidebar .workspace-status {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 12px;
+  margin: 16px 12px 0;
+  align-items: center;
+  line-height: 1.5;
+}
+.verity-console .workspace-status > span {
+  justify-self: center;
 }
 .verity-console .brand-law {
   margin: 0;
