@@ -1,3 +1,4 @@
+import { CourtPartySearch } from "./components/CourtPartySearch";
 import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace-theme.css";
@@ -353,7 +354,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           if (active) {
             setBatch(null);
             setCaptureUpdate(
-              `Chrome is running ${ping.version ? `Lawcovery Case Capture ${ping.version}` : "an older Lawcovery extension"}. Reload Lawcovery Case Capture 1.4.1 in chrome://extensions, then refresh Lawcovery and eCourts to use missing-only automatic fetches.`,
+              `Chrome is running ${ping.version ? `Lawcovery Case Capture ${ping.version}` : "an older Lawcovery extension"}. Reload Lawcovery Case Capture 1.5.0 in chrome://extensions, then refresh Lawcovery and eCourts to use missing-only automatic fetches.`,
             );
           }
           return;
@@ -598,6 +599,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           <div className="console-error" role="alert">
             {captureUpdate}
           </div>
+        )}
+        {portfolioView === "connections" && workspace && (
+          <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} />
         )}
         {portfolioView === "connections" && batch && (
           <section

@@ -19,6 +19,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     navigationBusy = false,
     coverageHook = null;
   const storedCnrs = new Set(), loads = [];
+  const sessionStorage = {}, openedTabs = [], focusedTabs = [], formMessages = [];
   const originalChrome = globalThis.chrome,
     originalFetch = globalThis.fetch;
   const savedNavigator = Object.getOwnPropertyDescriptor(
@@ -47,6 +48,13 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       onInstalled: { addListener: () => {} },
     },
     storage: {
+      session: {
+        get: async (key) => ({ [key]: sessionStorage[key] }),
+        set: async (data) => { Object.assign(sessionStorage, structuredClone(data)); },
+        remove: async (keys) => {
+          for (const key of [].concat(keys)) delete sessionStorage[key];
+        },
+      },
       local: {
         setAccessLevel: async () => {},
         get: async (key) =>
@@ -71,10 +79,19 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       },
     },
     tabs: {
+      onRemoved: { addListener: () => {} },
       query: async () => courtTabs,
-      update: async () => {},
-      create: async () => {},
+      update: async (id, change) => { if (change.active) focusedTabs.push(id); },
+      create: async (options) => {
+        openedTabs.push(options);
+        return { id: 12, url: options.url };
+      },
+      get: async (id) => ({ id, url: openedTabs.at(-1)?.url }),
       sendMessage: async (_id, message) => {
+        if (message.type === "PARTY_SEARCH_FORM") {
+          formMessages.push(message);
+          return message.step === "prepare" ? { ready: true } : { options: [{ value: "3", label: "Karnataka" }] };
+        }
         if (message.type === "PROBE_CASE") return { available: true, hasLink: true };
         if (message.type === "LOAD_CASE") loads.push(message);
         return loadResponse;
@@ -232,6 +249,30 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       (await send({ type: "DASHBOARD", action: "PING" }, app)).connected,
       true,
     );
+    await t.test("guided court form belongs to the requesting tab and workspace connection", async () => {
+      const party = (fields, sender = app) => send({
+        type: "DASHBOARD",
+        action: "PARTY_SEARCH",
+        payload: { ...payload, cnr: undefined, ...fields },
+      }, sender);
+      assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
+      assert.equal(openedTabs.at(-1).active, false);
+      assert.match((await party({ step: 0, value: "3" }, { ...app, tab: { id: 5 } })).error, /Start a new search/);
+      assert.equal((await party({ step: "prepare", party: "Example", year: "2025", status: "Both" })).ready, true);
+      assert.equal(focusedTabs.at(-1), 12);
+      assert.equal(formMessages.at(-1).party, "Example");
+      assert.equal(formMessages.at(-1).accessToken, undefined);
+      assert.equal(JSON.stringify(sessionStorage).includes("Example"), false);
+      const original = values.config;
+      values.config = { ...original, connectionId: "connection-b" };
+      try {
+        const result = await send({ type: "CAPTURE", capture: capture() }, { ...page, tab: { id: 12 } });
+        assert.equal(result.accepted, false);
+        assert.match(result.message, /another connection/);
+      } finally {
+        values.config = original;
+      }
+    });
     assert.ok(
       (
         await send(

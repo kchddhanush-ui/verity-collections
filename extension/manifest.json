@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Lawcovery Case Capture",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "minimum_chrome_version": "120",
   "description": "Automatically save eCourts search results, court totals and opened case details to your Lawcovery workspace with audit history.",
   "permissions": ["storage", "alarms"],
@@ -17,7 +17,7 @@
   "content_scripts": [
     {
       "matches": ["https://services.ecourts.gov.in/ecourtindia_v6/*"],
-      "js": ["parser.js", "navigation.js", "content.js"],
+      "js": ["parser.js", "navigation.js", "search-form.js", "content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     },

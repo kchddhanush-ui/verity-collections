@@ -1,4 +1,4 @@
-// Dashboard bridge. No credentials or court content are returned to the page.
+// Dashboard bridge. Returns only action status and court dropdown choices.
 window.addEventListener("message", (event) => {
   if (
     event.source !== window ||
@@ -9,7 +9,7 @@ window.addEventListener("message", (event) => {
   const { id, action, payload } = event.data;
   if (
     typeof id !== "string" ||
-    !["PING", "FETCH_CASE", "FOCUS_COURT", "BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME", "BATCH_START"].includes(action)
+    !["PING", "FETCH_CASE", "FOCUS_COURT", "BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME", "BATCH_START", "PARTY_SEARCH"].includes(action)
   )
     return;
   (async () => {

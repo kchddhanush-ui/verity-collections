@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Lawcovery Case Capture
 
-Last updated: 2026-11-02. Development installation only; not submitted or published.
+Last updated: 2026-11-03. Development installation only; not submitted or published.
 
 ## Store listing draft
 
@@ -8,7 +8,7 @@ Last updated: 2026-11-02. Development installation only; not submitted or publis
 
 **Short description:** Automatically save opened eCourts cases to your connected Lawcovery workspace, with a separate audit history.
 
-**Detailed description:** Connect your Lawcovery company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Fetch missing case details or refresh already-saved details from your loaded search. Pause capture anytime. You complete court searches and CAPTCHA yourself. Data is sent only to your configured company database.
+**Detailed description:** Connect your Lawcovery company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Fetch missing case details or refresh already-saved details from your loaded search. Pause capture anytime. Start a Party Name search in Lawcovery and complete CAPTCHA and submission in eCourts. Data is sent only to your configured company database.
 
 **Category:** Productivity. **Language:** English.
 
@@ -24,7 +24,7 @@ Store icon and screenshots have not been created. No icon paths are declared in 
 |---|---|
 | storage | Keep the workspace connection locally and preserve bounded pending uploads across browser worker restarts. Secrets are restricted to trusted extension contexts. |
 | alarms | Retry failed uploads up to three attempts and resume sequential case capture when the court tab heartbeat is throttled. |
-| https://services.ecourts.gov.in/* | Read supported opened case pages and show capture status; never solve CAPTCHA. |
+| https://services.ecourts.gov.in/* | Read supported case pages and court options, fill requested Party Name searches, and show capture status. |
 | Optional https://*.supabase.co/* | Allows asking for the user's exact Supabase project origin when connecting; sends captures and checks which supplied CNRs have saved details in the connected workspace. |
 
 No all-sites, cookies, downloads, browsing-history or remote-code execution permission is requested.
@@ -96,3 +96,7 @@ Apply `202610300004_case_fetch_modes.sql` before using this release. The connect
 Fix a remembered refresh mode causing later automatic searches to revisit saved cases. Every new automatic search now fetches missing details only. Refresh existing details is a one-time action scoped to the requested queue; older saved refresh queues are reclassified as missing-only before continuing or resuming. Per-case coverage rechecks, confirmed-save progress and separate audited snapshots remain intact. Show the before-run saved/missing counts and label existing-case runs as one-time refreshes. Zero missing cases opens no source case page. The local dashboard detects an older running extension and asks the user to reload 1.4.1 and refresh both tabs. Pulling/restarting the website alone does not update Chrome's running extension.
 
 No new SQL, parser format, permissions, storage destinations or collected case fields. Existing `202610300004_case_fetch_modes.sql` remains required. Queue storage adds a policy version, explicit-refresh flag and before-run coverage counts. Refresh popup/dashboard screenshots for the clarified mode/count display before store submission. Real Chrome/eCourts validation remains required.
+
+## Version 1.5.0 — 2026-11-03 (development draft)
+
+Adds guided Party Name search from the connected Lawcovery dashboard. A browser tab reads live State, District, Court Complex and Establishment options and fills the selected court, party name, registration year and status in the official eCourts form. The user completes CAPTCHA and clicks Go in eCourts. Search results use the existing audited capture flow and missing-details queue. The extension keeps only the draft tab and connection identifiers in session storage. It passes the party name, year and status transiently to the court form. The existing saved search context includes the submitted filters when results are captured. CAPTCHA data stays in eCourts. Existing host permissions cover the feature.

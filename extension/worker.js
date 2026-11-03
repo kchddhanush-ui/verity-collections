@@ -196,6 +196,10 @@ async function handle(message, sender) {
     const { config } = await chrome.storage.local.get("config");
     if (!config?.enabled)
       return { accepted: false, message: "Auto-save paused or not connected" };
+    const bindingKey = `party-court:${sender.tab.id}`;
+    const { [bindingKey]: boundConnection } = await chrome.storage.session.get(bindingKey);
+    if (boundConnection && boundConnection !== config.connectionId)
+      return { accepted: false, message: "This search belongs to another connection. Start a new search from the connected workspace." };
     const capture = message.capture;
     if (
       capture?.source_url !== source ||
@@ -239,6 +243,61 @@ async function handle(message, sender) {
   }
   throw new Error("Unsupported request");
 }
+async function partySearch(dashboardTabId, connectionId, payload) {
+  const key = `party-search:${dashboardTabId}`;
+  return await navigator.locks.request(key, { ifAvailable: true }, async (lock) => {
+    if (!lock) throw new Error("Wait for the current court selection to finish.");
+    const { config } = await chrome.storage.local.get("config");
+    if (!config?.enabled || config.connectionId !== connectionId)
+      throw new Error("The extension connection changed. Reconnect and start again.");
+    const { step } = payload;
+    const request = { type: "PARTY_SEARCH_FORM", step };
+    if (step === "open") {
+      const tab = await chrome.tabs.create({ url: source, active: false });
+      if (tab.id == null) throw new Error("Could not open eCourts.");
+      await chrome.storage.session.set({
+        [key]: { tabId: tab.id, connectionId },
+        [`party-court:${tab.id}`]: connectionId,
+      });
+      const deadline = Date.now() + 12000;
+      while (Date.now() < deadline) {
+        try {
+          const result = await chrome.tabs.sendMessage(tab.id, request);
+          if (result) return result;
+        } catch {
+          // The content script is injected when the court page is ready.
+        }
+        await new Promise((resolve) => setTimeout(resolve, 350));
+      }
+      throw new Error("The eCourts search form did not load. Check the new court tab.");
+    }
+    const { [key]: draft } = await chrome.storage.session.get(key);
+    if (!draft || draft.connectionId !== connectionId)
+      throw new Error("Start a new search from this connected Lawcovery tab.");
+    const tab = await chrome.tabs.get(draft.tabId);
+    const url = new URL(tab.url || "about:blank");
+    if (url.origin !== "https://services.ecourts.gov.in" ||
+        url.pathname !== "/ecourtindia_v6/" || url.searchParams.get("p") !== "casestatus/index")
+      throw new Error("The eCourts tab navigated away. Start a new search.");
+    if (step === "prepare") {
+      request.party = payload.party;
+      request.year = payload.year;
+      request.status = payload.status;
+    } else {
+      if (!Number.isInteger(step) || step < 0 || step > 3 ||
+          typeof payload.value !== "string" || payload.value.length > 500)
+        throw new Error("Invalid court selection.");
+      request.value = payload.value;
+    }
+    const result = await chrome.tabs.sendMessage(tab.id, request);
+    if (step === "prepare" && result?.ready) {
+      await chrome.tabs.update(tab.id, { active: true });
+      if (tab.windowId !== undefined) await chrome.windows.update(tab.windowId, { focused: true });
+      await chrome.storage.session.remove(key);
+    }
+    return result;
+  });
+}
 async function dashboard(message, sender) {
   await protectStorage();
   if (sender.id !== chrome.runtime.id || !sender.tab || !sender.url)
@@ -253,7 +312,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Lawcovery dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.4.1", connected: Boolean(config?.enabled), automaticFetchMode: "missing" };
+    return { version: "1.5.0", partySearch: true, connected: Boolean(config?.enabled), automaticFetchMode: "missing" };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Lawcovery Case Capture.",
@@ -264,7 +323,7 @@ async function dashboard(message, sender) {
     p.projectUrl?.replace(/\/$/, "") !== config.url ||
     typeof p.accessToken !== "string" ||
     p.accessToken.length > 12000 ||
-    (!["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME", "BATCH_START"].includes(message.action) && !/^[A-Z]{4}\d{12}$/.test(p.cnr)) ||
+    (!["BATCH_STATUS", "BATCH_PAUSE", "BATCH_RESUME", "BATCH_START", "PARTY_SEARCH"].includes(message.action) && !/^[A-Z]{4}\d{12}$/.test(p.cnr)) ||
     !/^[a-f0-9-]{36}$/i.test(p.workspace)
   )
     throw new Error("Invalid dashboard case request");
@@ -304,6 +363,7 @@ async function dashboard(message, sender) {
     const { batch } = await chrome.storage.local.get("batch");
     return { batch: batch?.connectionId === config.connectionId ? batchSummary(batch) : null };
   }
+  if (message.action === "PARTY_SEARCH") return await partySearch(sender.tab.id, config.connectionId, p);
   const tabs = await chrome.tabs.query({
     url: "https://services.ecourts.gov.in/ecourtindia_v6/*",
   });
@@ -389,6 +449,9 @@ async function dashboard(message, sender) {
     },
   );
 }
+chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.storage.session.remove([`party-search:${tabId}`, `party-court:${tabId}`]).catch(() => {});
+});
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   (async () => {
     try {

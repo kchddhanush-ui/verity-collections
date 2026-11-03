@@ -980,3 +980,30 @@
   color: #5544bd;
   background: #eeecff;
 }
+
+.verity-console .court-party-search {
+  display: grid;
+  gap: 12px;
+}
+.verity-console .court-party-search :is(p, h2, dl, dd, label) { margin: 0; }
+.verity-console .court-party-search > button { justify-self: start; }
+.verity-console .court-party-search :is(form, dl) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.verity-console .court-party-search label { display: grid; gap: 6px; }
+.verity-console .court-party-search > label { max-inline-size: 440px; }
+.verity-console .court-party-search :is(input, select) {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 42px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+}
+.verity-console .court-party-search dt { font-weight: 650; }
+.verity-console .court-party-search dd { overflow-wrap: anywhere; }
