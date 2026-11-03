@@ -100,7 +100,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       "/src/CaseWorkspace.jsx",
     );
     await server.ssrLoadModule("/src/components/AnalyticsDashboard.jsx");
-    let simulatedSuccess = false, oldExtension = true;
+    let simulatedSuccess = false, oldExtension = true, extensionConnected = false;
     const batchRequests = [];
     let simulatedBatch = { id: "queue-a", mode: "missing", state: "waiting", total: 1, sourceTotal: 1,
       existingDetails: 0, missingDetails: 1, processed: 0, saved: 0, skipped: 0, waiting: 1, failed: 0, current: cnr, message: "Missing details selected" };
@@ -133,7 +133,9 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
             id: message.id,
             result:
               message.action === "PING"
-                ? oldExtension ? { connected: true, version: "1.4.0" } : { connected: true, version: "1.4.1", automaticFetchMode: "missing" }
+                ? oldExtension ? { connected: true, version: "1.4.0" } : { connected: extensionConnected, version: "1.7.0", autoConnect: true, automaticFetchMode: "missing" }
+                : message.action === "AUTO_CONNECT"
+                  ? { state: "connected" }
                 : ["BATCH_STATUS", "BATCH_START"].includes(message.action)
                   ? { batch: simulatedBatch }
                 : simulatedSuccess
@@ -144,6 +146,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
                     },
           },
         });
+        if (message.action === "AUTO_CONNECT") extensionConnected = true;
         window.dispatchEvent(event);
       });
     const { createRoot } = await import("react-dom/client");
@@ -230,10 +233,13 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       "connections has its own view",
     );
     assert.ok(document.querySelector(".batch-capture-panel"), "Court sync returns when opening Connections");
+    assert.ok(batchRequests.some(request => request.action === "AUTO_CONNECT" && !request.payload.connect));
+    assert.match(document.querySelector(".connection-panel [role=status]").textContent, /Chrome connected/);
     assert.ok(
-      [...document.querySelectorAll("button")].some(
-        (b) => b.textContent === "Connect this workspace",
+      ![...document.querySelectorAll(".connection-panel button")].some(
+        button => button.textContent === "Connect this workspace",
       ),
+      "an automatically connected workspace does not show a manual connection button",
     );
     await act(async () =>
       document

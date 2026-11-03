@@ -131,7 +131,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     [query, setQuery] = useState(""),
     [tab, setTab] = useState("details");
   const requestedConnection = useRef("");
-  const [connectionStatus, setConnectionStatus] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState(null);
   const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -306,7 +306,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   }
   function connect() {
     requestedConnection.current = workspace;
-    setConnectionStatus("Connecting Chrome…");
+    setConnectionStatus({ message: "Connecting Chrome…" });
     setConnectionAttempt(attempt => attempt + 1);
   }
   function dashboardPayload(cnr) {
@@ -325,14 +325,14 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     setBatch(null);
     setBatchError("");
     setCaptureUpdate("");
-    if (requestedConnection.current !== workspace) setConnectionStatus("");
+    if (requestedConnection.current !== workspace) setConnectionStatus(null);
     if (pending || !workspace || !session.access_token) return;
     async function poll() {
       try {
         const ping = await extensionRequest("PING");
         if (!active) return;
         if (!ping?.autoConnect) {
-          setConnectionStatus("Reload Lawcovery Case Capture 1.7.0 in Chrome, then refresh this page.");
+          setConnectionStatus({ message: "Reload Lawcovery Case Capture 1.7.0 in Chrome, then refresh this page." });
         } else if (!connectionVerified || !ping.connected) {
           const result = await extensionRequest("AUTO_CONNECT", {
             ...dashboardPayload(),
@@ -349,7 +349,10 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
             disconnected: "Chrome is disconnected. Choose Connect this workspace to reconnect.",
             different: "Chrome is connected to a different account or workspace. Choose Connect this workspace to switch.",
           };
-          setConnectionStatus(result.error || statuses[result.state] || "Chrome connection could not be verified.");
+          setConnectionStatus({
+            state: result.state,
+            message: result.error || statuses[result.state] || "Chrome connection could not be verified.",
+          });
           connectionVerified = result.state === "connected";
           if (!connectionVerified) {
             setBatch(null);
@@ -401,7 +404,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           }
         } else if (active) setBatch(null);
       } catch {
-        if (active) setConnectionStatus("Open or reload Lawcovery Case Capture 1.7.0 in Chrome and refresh this page.");
+        if (active) setConnectionStatus({ message: "Open or reload Lawcovery Case Capture 1.7.0 in Chrome and refresh this page." });
       } finally {
         if (active) timer = setTimeout(poll, 6000);
       }
@@ -807,10 +810,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         Chrome may ask you to allow access to your Supabase project once.
                         Then use Search by party name to run an eCourts search and enter its CAPTCHA.
                       </p>
-                      <p role="status">{connectionStatus || "Checking Chrome connection…"}</p>
-                      <button disabled={busy} onClick={connect}>
-                        Connect this workspace
-                      </button>
+                      <p role="status">{connectionStatus?.message || "Checking Chrome connection…"}</p>
+                      {["disconnected", "different"].includes(connectionStatus?.state) && (
+                        <button disabled={busy} onClick={connect}>
+                          Connect this workspace
+                        </button>
+                      )}
                       <ul className="connection-list">
                         {connections.map((c) => (
                           <li key={c.id}>
