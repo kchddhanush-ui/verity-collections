@@ -367,6 +367,7 @@ async function claimCourtSearch(dashboardTab, connectionId, key, request, reload
       return { tabId, ...details };
     }
     let unavailable;
+    let previousResults;
     let busy = false;
     for (const tab of searchTabs) {
       const restoringOwnSearch = restoreSearch && previous?.tabId === tab.id &&
@@ -392,6 +393,10 @@ async function claimCourtSearch(dashboardTab, connectionId, key, request, reload
         result = await chrome.tabs.sendMessage(tab.id, reuse
           ? { ...request, step: "identity" } : request);
       } catch { /* An open tab may still be loading or need the updated extension. */ }
+      if (!reuse && result?.hasResults && result.pageId) {
+        previousResults ??= { tabId: tab.id, result };
+        continue;
+      }
       if (!forceReload && (reuse ? !result?.pageId : !result?.options?.length)) {
         unavailable = result?.error || "Chrome found an eCourts tab, but its search form did not respond. Let it finish loading or reload that tab here.";
         continue;
@@ -399,6 +404,7 @@ async function claimCourtSearch(dashboardTab, connectionId, key, request, reload
 
       return await claim(tab.id, { reuse, result });
     }
+    if (previousResults) return await claim(previousResults.tabId, { reuse: true, result: previousResults.result });
     if (unavailable) return { error: unavailable, canReload: true };
     if (busy) throw new Error("The open eCourts tab is still needed by a capture. Finish or resume that capture before reusing it.");
     if (searchTabs.length) throw new Error("The open eCourts tab belongs to another Lawcovery tab or workspace. Use that workspace or open a fresh Case Status tab.");
@@ -513,7 +519,7 @@ async function dashboard(message, sender) {
   const config = await dashboardConfig(origin);
   if (message.action === "PING")
     return {
-      version: "1.10.0", editableCourtSearch: true, autoOpenCourtTab: true, reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
+      version: "1.10.1", editableCourtSearch: true, autoOpenCourtTab: true, reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
       connected: Boolean(config?.enabled && Date.parse(config.expiresAt) > Date.now()),
       automaticFetchMode: "missing",
     };

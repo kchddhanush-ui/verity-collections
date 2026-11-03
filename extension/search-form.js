@@ -182,13 +182,14 @@
     if (step === "identity") return { pageId };
     if (step === "open") {
       if (previousPage === pageId) return { loading: true };
+      if (document.querySelector("#res_party #dispTable")) return { hasResults: true, pageId };
       const hasSelection = ids.some((_, index) => {
         const value = field(index)?.value;
         return options(index).some(option => option.value === value);
       });
       if (hasSelection || document.getElementById("petres_name")?.value?.trim() ||
-          document.getElementById("rgyearP")?.value?.trim() || document.querySelector("#res_party #dispTable"))
-        throw new Error("The open eCourts tab already has a search on it. Reload that tab to start fresh.");
+          document.getElementById("rgyearP")?.value?.trim())
+        throw new Error("The open eCourts tab already has a search draft. Use Reload open eCourts tab to replace it.");
 
       if (selected.length || !document.getElementById("petres_name") || !options(0).length)
         throw new Error("The eCourts Party Name form is unavailable.");
