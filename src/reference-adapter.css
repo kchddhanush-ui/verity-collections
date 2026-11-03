@@ -984,6 +984,7 @@
 .verity-console .court-party-search {
   display: grid;
   gap: 12px;
+  container: court-search / inline-size;
 }
 .verity-console .court-party-search :is(p, h2, dl, dd, label) { margin: 0; }
 .verity-console .court-party-search > button { justify-self: start; }
@@ -994,7 +995,16 @@
   align-items: end;
 }
 .verity-console .court-party-search label { display: grid; gap: 6px; }
-.verity-console .court-party-search > label { max-inline-size: 440px; }
+.verity-console .court-location-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+@container court-search (min-width: 40rem) {
+  .verity-console .court-location-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .verity-console .court-party-search :is(input, select) {
   inline-size: 100%;
   min-inline-size: 0;

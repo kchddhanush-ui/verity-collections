@@ -151,15 +151,19 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
       <p className="panel-kicker">ECOURTS SEARCH</p>
       <h2 id="court-party-title">Search by party name</h2>
       <p>Choose the court, enter the party name and type the eCourts CAPTCHA here. Lawcovery opens an eCourts tab in the background when needed and saves results to this workspace. Keep the eCourts tab open for future searches.</p>
-      {started && choices.map((options, index) => (
-        <label key={courtFields[index]}>
-          {courtFields[index]}
-          <select value={selections[index] || ""} disabled={busy} onChange={event => choose(index, event.target.value)}>
-            <option value="" disabled>Choose {courtFields[index].toLowerCase()}</option>
-            {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        </label>
-      ))}
+      {started && (
+        <div className="court-location-fields">
+          {choices.map((options, index) => (
+            <label key={courtFields[index]}>
+              {courtFields[index]}
+              <select value={selections[index] || ""} disabled={busy} onChange={event => choose(index, event.target.value)}>
+                <option value="" disabled>Choose {courtFields[index].toLowerCase()}</option>
+                {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
+          ))}
+        </div>
+      )}
       {started && selections.length === courtFields.length && (
         <form onSubmit={prepare}>
           <label>Petitioner or respondent<input name="party" value={criteria.party} onChange={editCriteria} required minLength={3} maxLength={99} disabled={busy} /></label>
