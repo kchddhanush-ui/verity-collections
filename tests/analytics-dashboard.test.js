@@ -51,6 +51,11 @@ test("analytics shows pending stages, carries filing year into drill-down and co
         case_type: "C.C.",
         case_status: "Pending",
         case_stage: "SUMMONS",
+        history: [
+          ["Judge", "01-01-2025", "11-01-2025", "NBW"],
+          ["Judge", "11-01-2025", "21-01-2025", "NBW"],
+          ["Judge", "21-01-2025", "31-01-2025", "SUMMONS"],
+        ],
         court: "Example Court",
         next_hearing_date: "16-11-2026",
         filing_date: "01-01-2025",
@@ -96,10 +101,11 @@ test("analytics shows pending stages, carries filing year into drill-down and co
         select.dispatchEvent(new window.Event("change", { bubbles: true }));
       });
     };
-    assert.equal(document.querySelectorAll(".analytics-metrics article").length, 4);
+    assert.equal(document.querySelectorAll(".analytics-metrics article").length, 5);
     const cards = [...document.querySelectorAll(".pending-stage-card")];
     assert.match(cards[0].textContent, /SUMMONS.*12 cases.*100%/);
     assert.match(cards[1].textContent, /ARGUMENTS.*0 cases.*0%/);
+    assert.match(cards.find((card) => card.textContent.startsWith("NBW")).textContent, /20 days.*12 completed observations/);
     await change("Filing year", "2025");
     await click(document.querySelector(".pending-stage-card"));
     assert.equal(opened.year, "2025");

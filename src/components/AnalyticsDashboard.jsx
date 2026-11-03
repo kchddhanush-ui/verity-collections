@@ -7,6 +7,7 @@ import {
   filterCases,
   filingYear,
   annualActivity,
+  observedStageDurations,
   percentage,
 } from "../lib/analytics";
 import {
@@ -169,6 +170,13 @@ export function AnalyticsDashboard({
   const pendingStages = [...pendingCounts].sort(([a, first], [b, second]) =>
     second - first || a.localeCompare(b),
   );
+  const stageDurations = useMemo(
+    () => observedStageDurations(filtered, today),
+    [filtered, today],
+  );
+  for (const stage of stageDurations.keys()) {
+    if (!pendingCounts.has(stage)) pendingStages.push([stage, 0]);
+  }
   const annualRows = months === "annual"
     ? annualActivity(filterCases(cases, { ...filters, year: "" }), today)
     : [];
@@ -186,6 +194,12 @@ export function AnalyticsDashboard({
       percent(model.disposalRate),
       `${model.known} cases with a known status`,
       "analytics",
+    ],
+    [
+      "Average filing to disposal",
+      model.averageTat === null ? "—" : `${count(model.averageTat)} days`,
+      `${count(model.tatSamples)} of ${count(model.disposed)} disposed cases with valid dates`,
+      "clock",
     ],
   ];
   const activeFilters = Object.values(filters).some(Boolean);
@@ -318,9 +332,15 @@ export function AnalyticsDashboard({
       <Panel title="Pending cases by stage" note={model.pending
         ? `Share of ${count(model.pending)} pending cases`
         : "No pending cases match these filters."}>
+        <p className="muted">
+          Stage times estimate calendar days from the first observed hearing
+          purpose to a recorded change in purpose. Counts and shares describe
+          pending cases. Stage times use completed observations in the filtered cases.
+        </p>
         <div className="pending-stage-grid">
           {pendingStages.map(([stage, total]) => {
             const share = percentage(total, model.pending) ?? 0;
+            const duration = stageDurations.get(stage);
             return (
               <button className="pending-stage-card" key={stage} type="button"
                 disabled={!total || !onStageCases}
@@ -329,6 +349,11 @@ export function AnalyticsDashboard({
                 <strong>{count(total)} {total === 1 ? "case" : "cases"}</strong>
                 <small>{percent(share)}</small>
                 <progress max="100" value={share} aria-hidden="true" />
+                <span className="stage-time">
+                  <small>Average observed time</small>
+                  <strong>{duration ? `${count(duration.days / duration.samples)} days` : "—"}</strong>
+                  <small>{duration ? `${count(duration.samples)} completed observations` : "No recorded transition"}</small>
+                </span>
               </button>
             );
           })}

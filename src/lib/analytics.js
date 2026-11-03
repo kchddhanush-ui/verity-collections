@@ -367,3 +367,36 @@ export function annualActivity(cases, today) {
   }
   return [...years.values()].sort((a, b) => b.year.localeCompare(a.year));
 }
+
+export function observedStageDurations(cases, today) {
+  const totals = new Map();
+  for (const item of cases) {
+    if (!item.hasDetails || !Array.isArray(item.data?.history)) continue;
+    const dates = new Map();
+    for (const row of item.data.history) {
+      if (!Array.isArray(row)) continue;
+      const day = pastDate(row[1], today);
+      const stage = caseStage({ data: { case_stage: row[3] } });
+      if (!day) continue;
+      dates.set(day, dates.has(day) && dates.get(day) !== stage ? null : stage);
+    }
+    let start = null;
+    let previous = null;
+    for (const [day, stage] of [...dates].sort(([a], [b]) => a.localeCompare(b))) {
+      if (!stage || stage === "Stage not recorded") {
+        start = previous = null;
+        continue;
+      }
+      if (stage === previous) continue;
+      if (previous) {
+        const total = totals.get(previous) || { days: 0, samples: 0 };
+        total.days += dayNumber(day) - dayNumber(start);
+        total.samples++;
+        totals.set(previous, total);
+      }
+      start = day;
+      previous = stage;
+    }
+  }
+  return totals;
+}

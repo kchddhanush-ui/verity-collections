@@ -1063,3 +1063,31 @@
   accent-color: #6658ed;
 }
 .verity-console .pending-stage-card:disabled { opacity: 1; }
+
+.verity-console .analytics-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+.verity-console .analytics-metrics .metric-card strong {
+  font-size: clamp(1.65rem, 2.8vw, 2.5rem);
+}
+.verity-console .pending-stage-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr));
+}
+.verity-console .pending-stage-card {
+  padding: 18px;
+  background: #f8f7ff;
+  border-color: #dcd6ff;
+}
+.verity-console .pending-stage-card > strong {
+  font-size: 1.55rem;
+}
+.verity-console .pending-stage-card > .stage-time {
+  display: grid;
+  gap: 4px;
+  padding-block-start: 10px;
+  border-block-start: 1px solid #ddd7f6;
+}
+.stage-time strong {
+  color: #4d3ac6;
+  font-size: 1.35rem;
+}
