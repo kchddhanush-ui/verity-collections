@@ -124,3 +124,7 @@ Explains why an open eCourts tab is unavailable and lets users reload an eligibl
 ## Version 1.9.2 — 2026-11-03 (development draft)
 
 Opens an inactive eCourts tab when no Case Status tab is open. Later searches reuse the tab while Lawcovery stays in focus.
+
+## Version 1.10.0 — 2026-11-03 (development draft)
+
+Makes court selections editable and restores search criteria after a court session expires. Lawcovery can display the next live CAPTCHA if the portal generates one. Users enter each answer themselves.

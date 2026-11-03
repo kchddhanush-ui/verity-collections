@@ -42,6 +42,7 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
     submissions++;
     assert.equal(captcha.value, "AbC123");
     table = { innerHTML: "New search results" };
+    image.dispatchEvent(new Event("load"));
   } };
   const fields = {
     sess_state_code: state,
@@ -66,7 +67,9 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
         return captured;
       },
     },
-    VerityCapture: { async save(capture) {
+    VerityCapture: { async save(capture, force, session) {
+      assert.equal(force, true);
+      assert.match(session, /^[a-f0-9-]{36}$/);
       saves++;
       assert.equal(capture, captured);
       return { saved: true, message: "Search saved" };
@@ -118,7 +121,10 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
   assert.notEqual(fresh.challengeId, original.challengeId);
   assert.match((await send({ step: "submit", challengeId: original.challengeId, answer: "AbC123" })).error, /CAPTCHA changed/);
   assert.equal(submissions, 0);
-  assert.equal((await send({ step: "submit", challengeId: fresh.challengeId, answer: "AbC123" })).saved, true);
+  const saved = await send({ step: "submit", challengeId: fresh.challengeId, answer: "AbC123" });
+  assert.equal(saved.saved, true);
+  assert.match(saved.nextCaptcha.image, /^data:image\/png;base64,/);
+  assert.notEqual(saved.nextCaptcha.challengeId, fresh.challengeId);
   assert.equal(submissions, 1);
   assert.equal(saves, 1);
   assert.equal(captcha.value, "");
@@ -127,4 +133,9 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
   assert.equal(nameInput.value, "Example Company");
   assert.equal(yearInput.value, "2025");
   assert.equal(radio.checked, true);
+  district.options.push(option("21", "Another district"));
+  assert.equal((await send({ step: 1, value: "21" })).options[0].label, "CMM Court Complex");
+  assert.match((await send(criteria)).error, /Complete the court selections/);
+  assert.match((await send({ step: "submit", challengeId: saved.nextCaptcha.challengeId, answer: "AbC123" })).error, /form changed/);
+  assert.equal(submissions, 1);
 });

@@ -33,14 +33,14 @@
       // The save helper has already shown the connection error.
     }
   }
-  async function save(capture, force = false) {
+  async function save(capture, force = false, captureSession = searchSession) {
     const signature = JSON.stringify(capture);
     if (!force && signature === previous) return;
     running = true;
     try {
       const result = await chrome.runtime.sendMessage({
         type: "CAPTURE",
-        searchSession,
+        searchSession: captureSession,
         capture: {
           ...capture,
           id: crypto.randomUUID(),

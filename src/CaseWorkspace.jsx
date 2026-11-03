@@ -617,8 +617,10 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
             {captureUpdate}
           </div>
         )}
-        {portfolioView === "connections" && workspace && (
-          <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} onSaved={() => perform(refresh)} />
+        {workspace && (
+          <div hidden={portfolioView !== "connections"}>
+            <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} onSaved={() => perform(refresh)} />
+          </div>
         )}
         {portfolioView === "connections" && batch && (
           <section

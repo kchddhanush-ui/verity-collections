@@ -13,8 +13,8 @@
       .slice(0, 1000);
   }
 
-  function assertSelections() {
-    if (selected.some((value, index) => field(index)?.value !== value)) {
+  function assertSelections(count = selected.length) {
+    if (selected.slice(0, count).some((value, index) => field(index)?.value !== value)) {
       throw new Error("Court selections changed in eCourts. Start a new search in Lawcovery.");
     }
   }
@@ -126,6 +126,10 @@
     const oldText = results()?.textContent;
     const oldAlert = visibleAlert();
 
+    const submittedSrc = image.currentSrc || image.src;
+    let imageReloaded = false;
+    const onLoad = () => { imageReloaded = true; };
+    image.addEventListener("load", onLoad);
     submitting = true;
     try {
       input.value = answer;
@@ -150,13 +154,25 @@
         return null;
       }, 20000);
       if (!outcome) throw new Error("eCourts did not confirm the result. Check the court tab before searching again.");
-      if (!outcome.capture) return outcome;
-      const result = await VerityCapture.save(outcome.capture, true);
+      const result = outcome.capture
+        ? await VerityCapture.save(outcome.capture, true, crypto.randomUUID())
+        : outcome;
+      let nextCaptcha;
+      try {
+        const next = await waitFor(() => {
+          const candidate = captchaImage();
+          return candidate?.complete && candidate.naturalWidth &&
+            (candidate !== image || imageReloaded || (candidate.currentSrc || candidate.src) !== submittedSrc);
+        }, 1200);
+        if (next) nextCaptcha = await readChallenge();
+      } catch { /* A CAPTCHA preview failure does not undo a saved search. */ }
       return {
         saved: Boolean(result?.saved),
         message: result?.message || "eCourts returned cases, but Lawcovery could not confirm the save.",
+        nextCaptcha,
       };
     } finally {
+      image.removeEventListener("load", onLoad);
       input.value = "";
       submitting = false;
     }
@@ -178,13 +194,14 @@
         throw new Error("The eCourts Party Name form is unavailable.");
       return { options: options(0) };
     }
-    assertSelections();
     if (step === "refresh" || step === "submit") {
+      assertSelections();
       assertPrepared();
       if (step === "refresh") return await refreshChallenge();
       return await submit(challengeId, answer);
     }
     if (step === "prepare") {
+      assertSelections();
       if (selected.length !== ids.length || typeof party !== "string" ||
           party.trim().length < 3 || party.length > 99 || typeof year !== "string" || !/^\d{4}$/.test(year) ||
           !["Pending", "Disposed", "Both"].includes(status))
@@ -209,10 +226,15 @@
       prepared = { tab, nameInput, yearInput, radio, party: party.trim(), year };
       return await readChallenge();
     }
-    const index = selected.length;
+    const index = step;
     const select = field(index);
-    if (step !== index || !select || !options(index).some((option) => option.value === value))
+    if (!Number.isInteger(index) || index < 0 || index > selected.length ||
+        !select || !options(index).some(option => option.value === value))
       throw new Error("Choose a court option from the current eCourts list.");
+    assertSelections(index);
+    prepared = undefined;
+    challenge = undefined;
+    selected.length = index;
 
     // Wait for the portal to replace the dependent choices. Never return stale options.
     const next = field(index + 1);
