@@ -48,7 +48,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     setChoices([]);
     run(async () => {
       const ping = await extensionRequest("PING");
-      if (!ping?.reloadCourtTab) throw new Error("Reload Lawcovery Case Capture 1.9.1 in Chrome and refresh Lawcovery.");
+      if (!ping?.autoOpenCourtTab) throw new Error("Reload Lawcovery Case Capture 1.9.2 in Chrome and refresh Lawcovery.");
       const result = await extensionRequest("PARTY_SEARCH", {
         ...dashboardPayload(), step: "open", reloadExisting,
       });
@@ -110,7 +110,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     <section className="card sync-card court-party-search" aria-labelledby="court-party-title">
       <p className="panel-kicker">ECOURTS SEARCH</p>
       <h2 id="court-party-title">Search by party name</h2>
-      <p>Choose the court, enter the party name and type the eCourts CAPTCHA here. Use Open eCourts once and keep that tab open. Lawcovery uses it in the background and saves results to this workspace.</p>
+      <p>Choose the court, enter the party name and type the eCourts CAPTCHA here. Lawcovery opens an eCourts tab in the background when needed and saves results to this workspace. Keep the eCourts tab open for future searches.</p>
       {selections.length > 0 && (
         <dl>{selections.map((label, index) => (
           <div key={courtFields[index]}><dt>{courtFields[index]}</dt><dd>{label}</dd></div>

@@ -265,4 +265,4 @@ The header search navigates to Cases and filters the existing loaded portfolio. 
 
 ### Guided search using an open eCourts tab
 
-Reload Lawcovery Case Capture **1.9.0** in Chrome and refresh Lawcovery. Open an idle eCourts Case Status tab once and return to Lawcovery. **Load court options** uses that tab without bringing it forward. Enter the CAPTCHA in Lawcovery and keep the eCourts tab open while the capture queue runs. **Show eCourts tab** brings the source forward when you choose it. **Start over** can reuse the same source when its capture queue finishes.
+Reload Lawcovery Case Capture **1.9.2** in Chrome and refresh Lawcovery. **Load court options** uses an eligible open eCourts Case Status tab. If none is open, it creates one inactive tab in the Lawcovery window. Enter the CAPTCHA in Lawcovery and keep the eCourts tab open while the capture queue runs. **Show eCourts tab** brings the source forward when you choose it. **Start over** can reuse the same source when its capture queue finishes.

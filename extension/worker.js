@@ -341,7 +341,8 @@ function isCourtSearchPage(tab) {
       (url.pathname === "/ecourtindia_v6/" && url.searchParams.get("p") === "casestatus/index"));
 }
 
-async function claimCourtSearch(dashboardTabId, connectionId, key, request, reloadExisting) {
+async function claimCourtSearch(dashboardTab, connectionId, key, request, reloadExisting) {
+  const dashboardTabId = dashboardTab.id;
   return await navigator.locks.request("verity-sync", async () => {
     const stored = await chrome.storage.local.get(null);
     if (!stored.config?.enabled || stored.config.connectionId !== connectionId)
@@ -349,6 +350,22 @@ async function claimCourtSearch(dashboardTabId, connectionId, key, request, relo
     const previous = (await chrome.storage.session.get(key))[key];
     const tabs = await chrome.tabs.query({ url: "https://services.ecourts.gov.in/ecourtindia_v6/*" });
     const searchTabs = tabs.filter(tab => tab.id != null && isCourtSearchPage(tab));
+    if (previous && !searchTabs.some(tab => tab.id === previous.tabId)) {
+      const tab = await chrome.tabs.get(previous.tabId).catch(() => null);
+      if (tab?.status === "loading" && isCourtSearchPage({ url: tab.pendingUrl }))
+        searchTabs.push(tab);
+    }
+
+    async function claim(tabId, details) {
+      await chrome.storage.session.set({
+        [key]: { tabId, connectionId },
+        [`party-owner:${tabId}`]: dashboardTabId,
+        [`party-court:${tabId}`]: connectionId,
+      });
+      if (previous && previous.tabId !== tabId)
+        await chrome.storage.session.remove(`party-owner:${previous.tabId}`);
+      return { tabId, ...details };
+    }
     let unavailable;
     let busy = false;
     for (const tab of searchTabs) {
@@ -363,6 +380,7 @@ async function claimCourtSearch(dashboardTabId, connectionId, key, request, relo
       if ((state[owner] != null && state[owner] !== dashboardTabId) ||
           (state[binding] && state[binding] !== connectionId)) continue;
 
+      if (tab.status === "loading") return await claim(tab.id, { loading: true });
       const reuse = reloadExisting || (previous?.tabId === tab.id && previous.connectionId === connectionId);
       let result;
       try {
@@ -374,19 +392,18 @@ async function claimCourtSearch(dashboardTabId, connectionId, key, request, relo
         continue;
       }
 
-      await chrome.storage.session.set({
-        [key]: { tabId: tab.id, connectionId },
-        [owner]: dashboardTabId,
-        [binding]: connectionId,
-      });
-      if (previous && previous.tabId !== tab.id)
-        await chrome.storage.session.remove(`party-owner:${previous.tabId}`);
-      return { tabId: tab.id, reuse, result };
+      return await claim(tab.id, { reuse, result });
     }
     if (unavailable) return { error: unavailable, canReload: true };
     if (busy) throw new Error("The open eCourts tab is still needed by a capture. Finish or resume that capture before reusing it.");
     if (searchTabs.length) throw new Error("The open eCourts tab belongs to another Lawcovery tab or workspace. Use that workspace or open a fresh Case Status tab.");
-    throw new Error("No eCourts Case Status tab is open. Click Open eCourts once, return here, then click Load court options.");
+    const tab = await chrome.tabs.create({
+      url: source,
+      active: false,
+      ...(dashboardTab.windowId == null ? {} : { windowId: dashboardTab.windowId }),
+    });
+    if (tab.id == null) throw new Error("Chrome could not open the background eCourts tab.");
+    return await claim(tab.id, { loading: true });
   });
 }
 
@@ -400,8 +417,8 @@ async function focusCourtTab(tab) {
   await chrome.windows.update(tab.windowId, options);
 }
 
-async function partySearch(dashboardTabId, connectionId, payload) {
-  const key = `party-search:${dashboardTabId}`;
+async function partySearch(dashboardTab, connectionId, payload) {
+  const key = `party-search:${dashboardTab.id}`;
   return await navigator.locks.request(key, { ifAvailable: true }, async (lock) => {
     if (!lock) throw new Error("Wait for the current court selection to finish.");
     const { config } = await chrome.storage.local.get("config");
@@ -412,11 +429,11 @@ async function partySearch(dashboardTabId, connectionId, payload) {
     if (step === "open") {
       return await navigator.locks.request("verity-case-navigation", { ifAvailable: true }, async navigation => {
         if (!navigation) throw new Error("Wait for the current case to finish loading, then try again.");
-        const claim = await claimCourtSearch(dashboardTabId, connectionId, key, request, payload.reloadExisting === true);
+        const claim = await claimCourtSearch(dashboardTab, connectionId, key, request, payload.reloadExisting === true);
         if (claim.error) return claim;
-        const { tabId, reuse, result } = claim;
-        if (!reuse) return result;
-        await chrome.tabs.reload(tabId);
+        const { tabId, reuse, loading, result } = claim;
+        if (!reuse && !loading) return result;
+        if (reuse) await chrome.tabs.reload(tabId);
         const deadline = Date.now() + 15000;
         while (Date.now() < deadline) {
           let response;
@@ -427,7 +444,7 @@ async function partySearch(dashboardTabId, connectionId, payload) {
           if (response?.options?.length) return response;
           await new Promise(resolve => setTimeout(resolve, 350));
         }
-        throw new Error("The open eCourts page did not finish reloading. Refresh it and try again.");
+        throw new Error("The background eCourts tab did not finish loading. Wait a moment and try Load court options again.");
       });
     }
     const { [key]: draft } = await chrome.storage.session.get(key);
@@ -485,7 +502,7 @@ async function dashboard(message, sender) {
   const config = await dashboardConfig(origin);
   if (message.action === "PING")
     return {
-      version: "1.9.1", reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
+      version: "1.9.2", autoOpenCourtTab: true, reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
       connected: Boolean(config?.enabled && Date.parse(config.expiresAt) > Date.now()),
       automaticFetchMode: "missing",
     };
@@ -539,7 +556,7 @@ async function dashboard(message, sender) {
     const { batch } = await chrome.storage.local.get("batch");
     return { batch: batch?.connectionId === config.connectionId ? batchSummary(batch) : null };
   }
-  if (message.action === "PARTY_SEARCH") return await partySearch(sender.tab.id, config.connectionId, p);
+  if (message.action === "PARTY_SEARCH") return await partySearch(sender.tab, config.connectionId, p);
   const tabs = await chrome.tabs.query({
     url: "https://services.ecourts.gov.in/ecourtindia_v6/*",
   });

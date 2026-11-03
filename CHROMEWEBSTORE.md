@@ -120,3 +120,7 @@ Guided court searches reuse an open eCourts tab without opening or focusing a br
 ## Version 1.9.1 — 2026-11-03 (development draft)
 
 Explains why an open eCourts tab is unavailable and lets users reload an eligible tab from Lawcovery without switching to it.
+
+## Version 1.9.2 — 2026-11-03 (development draft)
+
+Opens an inactive eCourts tab when no Case Status tab is open. Later searches reuse the tab while Lawcovery stays in focus.

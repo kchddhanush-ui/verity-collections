@@ -96,7 +96,9 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       update: async (id, change) => { if (change.active) focusedTabs.push(id); },
       create: async (options) => {
         openedTabs.push(options);
-        return { id: 12, url: options.url };
+        const tab = { id: 12, url: options.url, windowId: options.windowId };
+        if (!options.active) courtTabs = [tab];
+        return tab;
       },
       get: async id => {
         const tab = courtTabs.find(tab => tab.id === id);
@@ -285,11 +287,10 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         action: "PARTY_SEARCH",
         payload: { ...payload, cnr: undefined, ...fields },
       }, sender);
-      assert.match((await party({ step: "open" })).error, /No eCourts Case Status tab/);
-      courtTabs = [{ id: 12, url: page.url, windowId: 20 }];
-      assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
+      const dashboard = { ...app, tab: { ...app.tab, windowId: 20 } };
+      assert.equal((await party({ step: "open" }, dashboard)).options[0].label, "Karnataka");
       assert.equal(openedWindows.length, 0);
-      assert.equal(openedTabs.length, 0);
+      assert.deepEqual(openedTabs, [{ url: page.url, active: false, windowId: 20 }]);
       assert.equal(reloadedTabs.length, 0);
       assert.match((await party({ step: "open" }, { ...app, tab: { id: 5 } })).error, /another Lawcovery tab or workspace/);
       assert.match((await party({ step: 0, value: "3" }, { ...app, tab: { id: 5 } })).error, /Start a new search/);
@@ -327,14 +328,14 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       assert.deepEqual(reloadedTabs, [12]);
       assert.equal(formMessages.at(-1).previousPage, "previous-page");
       assert.equal(openedWindows.length, 0);
-      assert.equal(openedTabs.length, 0);
+      assert.equal(openedTabs.length, 1);
       courtTabs = [{ id: 13, url: "https://services.ecourts.gov.in/ecourtindia_v6/casestatus" }];
       courtScriptReady = false;
       assert.equal((await party({ step: "open" })).canReload, true);
       assert.deepEqual(reloadedTabs, [12]);
       assert.equal((await party({ step: "open", reloadExisting: true })).options[0].label, "Karnataka");
       assert.deepEqual(reloadedTabs, [12, 13]);
-      assert.equal(openedTabs.length + openedWindows.length, 0);
+      assert.equal(openedTabs.length + openedWindows.length, 1);
       courtTabs = [];
     });
     assert.ok(
