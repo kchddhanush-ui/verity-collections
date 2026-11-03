@@ -3,17 +3,24 @@ import { extensionRequest } from "../lib/extensionBridge";
 
 const courtFields = ["State", "District", "Court complex", "Establishment"];
 
-export function CourtPartySearch({ dashboardPayload }) {
+export function CourtPartySearch({ dashboardPayload, onSaved }) {
   const [choices, setChoices] = useState([]);
   const [selections, setSelections] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [ready, setReady] = useState(false);
+  const [captcha, setCaptcha] = useState(null);
+  const [prepared, setPrepared] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
 
   async function request(fields) {
     const result = await extensionRequest("PARTY_SEARCH", { ...dashboardPayload(), ...fields });
     if (!result || result.error) throw new Error(result?.error || "eCourts did not respond.");
+    if (["prepare", "refresh"].includes(fields.step) &&
+        (typeof result.challengeId !== "string" || typeof result.image !== "string" ||
+          result.image.length > 350000 || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(result.image)))
+      throw new Error("The eCourts CAPTCHA could not be displayed. Open the court tab to continue.");
     return result;
   }
 
@@ -31,12 +38,15 @@ export function CourtPartySearch({ dashboardPayload }) {
 
   function start() {
     setStarted(false);
-    setReady(false);
+    setCaptcha(null);
+    setPrepared(false);
+    setFinished(false);
+    setNotice("");
     setSelections([]);
     setChoices([]);
     run(async () => {
       const ping = await extensionRequest("PING");
-      if (!ping?.partySearch) throw new Error("Reload Lawcovery Case Capture 1.5.0 in Chrome and refresh this page.");
+      if (!ping?.partyCaptcha) throw new Error("Reload Lawcovery Case Capture 1.6.0 in Chrome and refresh this page.");
       const result = await request({ step: "open" });
       setChoices(result.options || []);
       setStarted(true);
@@ -63,8 +73,28 @@ export function CourtPartySearch({ dashboardPayload }) {
         year: String(form.get("year")).trim(),
         status: form.get("status"),
       });
-      if (!result.ready) throw new Error("Check the eCourts tab before continuing.");
-      setReady(true);
+      setCaptcha(result);
+      setPrepared(true);
+    });
+  }
+
+  function refreshCaptcha() {
+    setCaptcha(null);
+    run(async () => setCaptcha(await request({ step: "refresh" })));
+  }
+
+  function search(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const answer = String(new FormData(form).get("captcha") || "").trim();
+    const challengeId = captcha.challengeId;
+    form.reset();
+    setCaptcha(null);
+    run(async () => {
+      const result = await request({ step: "submit", answer, challengeId });
+      setNotice(result.message);
+      setFinished(true);
+      if (result.saved) await onSaved?.();
     });
   }
 
@@ -72,7 +102,7 @@ export function CourtPartySearch({ dashboardPayload }) {
     <section className="card sync-card court-party-search" aria-labelledby="court-party-title">
       <p className="panel-kicker">ECOURTS SEARCH</p>
       <h2 id="court-party-title">Search by party name</h2>
-      <p>Choose the court and enter your search in Lawcovery. Finish the CAPTCHA and click Go in eCourts to save the results.</p>
+      <p>Choose the court, enter the party name and type the eCourts CAPTCHA here. Search results save to this workspace.</p>
       {selections.length > 0 && (
         <dl>{selections.map((label, index) => (
           <div key={courtFields[index]}><dt>{courtFields[index]}</dt><dd>{label}</dd></div>
@@ -87,7 +117,7 @@ export function CourtPartySearch({ dashboardPayload }) {
           </select>
         </label>
       )}
-      {started && selections.length === courtFields.length && !ready && (
+      {started && selections.length === courtFields.length && !prepared && (
         <form onSubmit={prepare}>
           <label>Petitioner or respondent<input name="party" required minLength={3} maxLength={99} disabled={busy} /></label>
           <label>Registration year<input name="year" required inputMode="numeric" pattern="[0-9]{4}" maxLength={4} disabled={busy} /></label>
@@ -98,7 +128,26 @@ export function CourtPartySearch({ dashboardPayload }) {
         </form>
       )}
       {busy && <p role="status">Waiting for eCourts…</p>}
-      {ready && <p role="status">The eCourts form is ready. Complete the CAPTCHA and click Go. Results will save to this workspace through your extension connection.</p>}
+      {prepared && !finished && (
+        <div className="party-captcha">
+          {captcha && (
+            <form method="post" onSubmit={search}>
+              <img src={captcha.image} alt="eCourts CAPTCHA. For audio, open the eCourts tab." />
+              <label>
+                CAPTCHA
+                <input name="captcha" required maxLength={6} pattern="[A-Za-z0-9]{1,6}"
+                  autoComplete="off" autoCapitalize="none" spellCheck={false} disabled={busy} />
+              </label>
+              <button className="btn btn-primary" type="submit" disabled={busy}>Search eCourts</button>
+            </form>
+          )}
+          <button className="btn" type="button" disabled={busy} onClick={refreshCaptcha}>Get a new CAPTCHA</button>
+        </div>
+      )}
+      {notice && <p role="status">{notice}</p>}
+      {started && (prepared || error) && (
+        <button className="btn" type="button" disabled={busy} onClick={() => run(() => request({ step: "focus" }))}>Open this search in eCourts</button>
+      )}
       {error && <p role="alert">{error}</p>}
       <button className="btn" disabled={busy} type="button" onClick={start}>
         {started ? "Start over" : "Load court options"}

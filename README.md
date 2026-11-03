@@ -201,4 +201,4 @@ Overview, Analytics, Cases, Hearing calendar and Connections keep their existing
 
 ### Start a Party Name search in Lawcovery
 
-Reload extension **1.5.0** in Chrome and refresh the Lawcovery tab. In a connected company workspace, open **Connections → Search by party name → Load court options**. Choose the court fields in order, then enter the party name, registration year and status. **Continue to CAPTCHA** opens the prepared eCourts tab. Complete the CAPTCHA and click **Go** there. Results and missing details follow the existing audited save flow. Use **Start over** to change an earlier court selection.
+Reload extension **1.6.0** in Chrome and refresh Lawcovery. In a connected workspace, open **Connections → Search by party name → Load court options**. Choose the court, enter the party name, year and status, then select **Continue to CAPTCHA**. Type the displayed code in Lawcovery and select **Search eCourts**. Use **Get a new CAPTCHA** for a fresh image or **Open this search in eCourts** for the official form and audio option. Results follow the existing audited save flow. The challenge and answer are used only for the current browser search.

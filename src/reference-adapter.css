@@ -1007,3 +1007,17 @@
 }
 .verity-console .court-party-search dt { font-weight: 650; }
 .verity-console .court-party-search dd { overflow-wrap: anywhere; }
+
+.verity-console .party-captcha {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.verity-console .party-captcha img {
+  display: block;
+  max-inline-size: 100%;
+  min-inline-size: 120px;
+  background: white;
+  border: 1px solid #d9d6e6;
+  border-radius: 6px;
+}

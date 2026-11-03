@@ -1,4 +1,4 @@
-// Dashboard bridge. Returns only action status and court dropdown choices.
+// Dashboard bridge. Relays permitted actions to the extension for the connected Lawcovery tab.
 window.addEventListener("message", (event) => {
   if (
     event.source !== window ||

@@ -279,23 +279,28 @@ async function partySearch(dashboardTabId, connectionId, payload) {
     if (url.origin !== "https://services.ecourts.gov.in" ||
         url.pathname !== "/ecourtindia_v6/" || url.searchParams.get("p") !== "casestatus/index")
       throw new Error("The eCourts tab navigated away. Start a new search.");
-    if (step === "prepare") {
+    if (step === "focus") {
+      await chrome.tabs.update(tab.id, { active: true });
+      if (tab.windowId !== undefined) await chrome.windows.update(tab.windowId, { focused: true });
+      return { focused: true };
+    }
+    if (step === "submit") {
+      if (typeof payload.challengeId !== "string" || !/^[a-f0-9-]{36}$/i.test(payload.challengeId) ||
+          typeof payload.answer !== "string" || !/^[a-z0-9]{1,6}$/i.test(payload.answer))
+        throw new Error("Enter the letters or numbers shown in the CAPTCHA.");
+      request.challengeId = payload.challengeId;
+      request.answer = payload.answer;
+    } else if (step === "prepare") {
       request.party = payload.party;
       request.year = payload.year;
       request.status = payload.status;
-    } else {
+    } else if (step !== "refresh") {
       if (!Number.isInteger(step) || step < 0 || step > 3 ||
           typeof payload.value !== "string" || payload.value.length > 500)
         throw new Error("Invalid court selection.");
       request.value = payload.value;
     }
-    const result = await chrome.tabs.sendMessage(tab.id, request);
-    if (step === "prepare" && result?.ready) {
-      await chrome.tabs.update(tab.id, { active: true });
-      if (tab.windowId !== undefined) await chrome.windows.update(tab.windowId, { focused: true });
-      await chrome.storage.session.remove(key);
-    }
-    return result;
+    return await chrome.tabs.sendMessage(tab.id, request);
   });
 }
 async function dashboard(message, sender) {
@@ -312,7 +317,7 @@ async function dashboard(message, sender) {
       "This dashboard origin is not connected. Reconnect from your Lawcovery dashboard.",
     );
   if (message.action === "PING")
-    return { version: "1.5.0", partySearch: true, connected: Boolean(config?.enabled), automaticFetchMode: "missing" };
+    return { version: "1.6.0", partySearch: true, partyCaptcha: true, connected: Boolean(config?.enabled), automaticFetchMode: "missing" };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Lawcovery Case Capture.",

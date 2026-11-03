@@ -16,7 +16,7 @@
     node.textContent = `Lawcovery · ${message}`;
   }
   async function scan() {
-    if (targeted || document.visibilityState !== "visible") return;
+    if (targeted || globalThis.VerityPartySearch?.submitting || document.visibilityState !== "visible") return;
     if (running) {
       rerun = true;
       return;
@@ -27,8 +27,15 @@
       previous = "";
       return;
     }
+    try {
+      await save(capture);
+    } catch {
+      // The save helper has already shown the connection error.
+    }
+  }
+  async function save(capture, force = false) {
     const signature = JSON.stringify(capture);
-    if (signature === previous) return;
+    if (!force && signature === previous) return;
     running = true;
     try {
       const result = await chrome.runtime.sendMessage({
@@ -42,8 +49,10 @@
       });
       if (result?.accepted) previous = signature;
       if (result?.message) notify(result.message);
-    } catch {
+      return result;
+    } catch (error) {
       notify("Extension reloaded — refresh this tab to reconnect.");
+      throw error;
     } finally {
       running = false;
       if (rerun) {
@@ -52,6 +61,7 @@
       }
     }
   }
+  globalThis.VerityCapture = { save };
   function schedule(records) {
     if (
       records?.length &&

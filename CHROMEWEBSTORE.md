@@ -8,7 +8,7 @@ Last updated: 2026-11-03. Development installation only; not submitted or publis
 
 **Short description:** Automatically save opened eCourts cases to your connected Lawcovery workspace, with a separate audit history.
 
-**Detailed description:** Connect your Lawcovery company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Fetch missing case details or refresh already-saved details from your loaded search. Pause capture anytime. Start a Party Name search in Lawcovery and complete CAPTCHA and submission in eCourts. Data is sent only to your configured company database.
+**Detailed description:** Connect your Lawcovery company workspace once, then automatically save case details as you open them on district eCourts. Keep case stages, hearing dates, parties, processes and loaded hearing history together. View previous and new values in a separate audit history. Fetch missing case details or refresh already-saved details from your loaded search. Pause capture anytime. Run a Party Name search and type the eCourts CAPTCHA in Lawcovery. The answer is submitted to eCourts in the live browser session. Saved case and search data go to the configured company database.
 
 **Category:** Productivity. **Language:** English.
 
@@ -31,7 +31,7 @@ No all-sites, cookies, downloads, browsing-history or remote-code execution perm
 
 ## Privacy and data use
 
-Collected and transmitted: loaded case text including party/advocate names, court identifiers, status, dates, Acts, processes and hearing-history rows. User activity consists of capture timestamps and the fact a case was opened. Full browsing history, CAPTCHA contents, court session tokens and unrelated page forms are not collected. Financial/legal information may be present in court text; only extract fields needed by this feature.
+Collected and transmitted: loaded case text including party/advocate names, court identifiers, status, dates, Acts, processes and hearing-history rows. User activity consists of capture timestamps and the fact a case was opened. For guided Party Name search, the active CAPTCHA image and manually typed answer pass between eCourts and the connected local Lawcovery tab. They are excluded from stored records and database uploads. Full browsing history, court session tokens and unrelated page forms are excluded. Financial/legal information may be present in court text; only extract fields needed by this feature.
 
 Authentication credential: a scoped 30-day capture connection token is stored locally, not synced across browsers. It is transmitted to the configured Supabase project only. Project URL and browser-safe key are also stored locally. Pending extracted captures are stored locally until uploaded, exhausted, disconnected or a connection is replaced. Uploaded snapshots/audits are retained by the workspace administrator's database policy; no automatic retention deletion is implemented.
 
@@ -100,3 +100,7 @@ No new SQL, parser format, permissions, storage destinations or collected case f
 ## Version 1.5.0 — 2026-11-03 (development draft)
 
 Adds guided Party Name search from the connected Lawcovery dashboard. A browser tab reads live State, District, Court Complex and Establishment options and fills the selected court, party name, registration year and status in the official eCourts form. The user completes CAPTCHA and clicks Go in eCourts. Search results use the existing audited capture flow and missing-details queue. The extension keeps only the draft tab and connection identifiers in session storage. It passes the party name, year and status transiently to the court form. The existing saved search context includes the submitted filters when results are captured. CAPTCHA data stays in eCourts. Existing host permissions cover the feature.
+
+## Version 1.6.0 — 2026-11-03 (development draft)
+
+Displays the live Party Name CAPTCHA in Lawcovery and submits the user’s answer through the prepared eCourts tab. Captures a fresh result list through the existing audited save flow. The image and answer are transient. Existing browser permissions cover this flow.

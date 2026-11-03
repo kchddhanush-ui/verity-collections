@@ -5,7 +5,7 @@ import { runInNewContext } from "node:vm";
 
 const script = await readFile(new URL("../extension/search-form.js", import.meta.url), "utf8");
 
-test("guided party search follows the portal's dependent choices and leaves submission to the user", async () => {
+test("guided party search relays a live CAPTCHA and saves only fresh results after manual entry", async () => {
   const option = (value, textContent) => ({ value, textContent });
   const select = (options, update = () => {}) => ({
     value: "",
@@ -27,6 +27,22 @@ test("guided party search follows the portal's dependent choices and leaves subm
   const nameInput = { value: "", dispatchEvent() {} };
   const yearInput = { value: "", dispatchEvent() {} };
   const radio = { checked: false, click() { this.checked = true; } };
+  const image = new EventTarget();
+  Object.assign(image, {
+    complete: true, naturalWidth: 120, naturalHeight: 40,
+    src: "https://services.ecourts.gov.in/ecourtindia_v6/vendor/securimage/securimage_show.php",
+  });
+  const captcha = { value: "", dispatchEvent() {} };
+  let table;
+  let submissions = 0;
+  let saves = 0;
+  const results = { textContent: "", querySelector: () => table };
+  const captured = { kind: "search_list", entries: [{ cnr: "KAAA010000012025" }] };
+  const submit = { click() {
+    submissions++;
+    assert.equal(captcha.value, "AbC123");
+    table = { innerHTML: "New search results" };
+  } };
   const fields = {
     sess_state_code: state,
     sess_dist_code: district,
@@ -36,13 +52,42 @@ test("guided party search follows the portal's dependent choices and leaves subm
     petres_name: nameInput,
     rgyearP: yearInput,
     radB: radio,
+    fcaptcha_code: captcha,
+    res_party: results,
   };
   let listener;
   runInNewContext(script, {
-    Event, setTimeout,
+    Event, setTimeout, URL, crypto,
+    location: { origin: "https://services.ecourts.gov.in" },
+    VerityParser: {
+      visible: () => true,
+      extractSearch(_document, isVisible) {
+        assert.ok(isVisible(table));
+        return captured;
+      },
+    },
+    VerityCapture: { async save(capture) {
+      saves++;
+      assert.equal(capture, captured);
+      return { saved: true, message: "Search saved" };
+    } },
     document: { getElementById(id) {
       assert.ok(id in fields, `unexpected form control: ${id}`);
       return fields[id];
+    },
+    querySelector(selector) {
+      if (selector === "#div_captcha_party #captcha_image") return image;
+      if (selector.includes("refreshCaptcha()")) return { click: () => image.dispatchEvent(new Event("load")) };
+      if (selector.includes("submit_party_name();")) return submit;
+      throw new Error("Unexpected selector: " + selector);
+    },
+    querySelectorAll: () => [],
+    createElement(tag) {
+      assert.equal(tag, "canvas");
+      return {
+        getContext: () => ({ drawImage(source) { assert.equal(source, image); } }),
+        toDataURL: () => "data:image/png;base64,AA==",
+      };
     } },
     chrome: { runtime: { id: "test", onMessage: { addListener(fn) { listener = fn; } } } },
   });
@@ -60,7 +105,19 @@ test("guided party search follows the portal's dependent choices and leaves subm
   assert.match((await send(criteria)).error, /changed in eCourts/);
   assert.equal(nameInput.value, "");
   district.value = "20";
-  assert.equal((await send(criteria)).ready, true);
+  const original = await send(criteria);
+  assert.match(original.image, /^data:image\/png;base64,/);
+  assert.equal(submissions, 0);
+  const fresh = await send({ step: "refresh" });
+  assert.notEqual(fresh.challengeId, original.challengeId);
+  assert.match((await send({ step: "submit", challengeId: original.challengeId, answer: "AbC123" })).error, /CAPTCHA changed/);
+  assert.equal(submissions, 0);
+  assert.equal((await send({ step: "submit", challengeId: fresh.challengeId, answer: "AbC123" })).saved, true);
+  assert.equal(submissions, 1);
+  assert.equal(saves, 1);
+  assert.equal(captcha.value, "");
+  assert.match((await send({ step: "submit", challengeId: fresh.challengeId, answer: "AbC123" })).error, /CAPTCHA changed/);
+  assert.equal(submissions, 1);
   assert.equal(nameInput.value, "Example Company");
   assert.equal(yearInput.value, "2025");
   assert.equal(radio.checked, true);

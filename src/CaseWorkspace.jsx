@@ -354,7 +354,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           if (active) {
             setBatch(null);
             setCaptureUpdate(
-              `Chrome is running ${ping.version ? `Lawcovery Case Capture ${ping.version}` : "an older Lawcovery extension"}. Reload Lawcovery Case Capture 1.5.0 in chrome://extensions, then refresh Lawcovery and eCourts to use missing-only automatic fetches.`,
+              `Chrome is running ${ping.version ? `Lawcovery Case Capture ${ping.version}` : "an older Lawcovery extension"}. Reload Lawcovery Case Capture 1.6.0 in chrome://extensions, then refresh Lawcovery and eCourts to use missing-only automatic fetches.`,
             );
           }
           return;
@@ -601,7 +601,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           </div>
         )}
         {portfolioView === "connections" && workspace && (
-          <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} />
+          <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} onSaved={() => perform(refresh)} />
         )}
         {portfolioView === "connections" && batch && (
           <section
@@ -790,8 +790,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       <h2>Connect Chrome for automatic capture</h2>
                       <p>
                         Connect Lawcovery Case Capture in Chrome to save your
-                        loaded eCourts cases automatically. Complete CAPTCHA and
-                        search in eCourts to start capturing details.
+                        loaded eCourts cases automatically. Use Search by party name
+                        to enter the CAPTCHA and run the search in Lawcovery.
                       </p>
                       <p>
                         Connections stay active until paused, revoked, expired,
@@ -865,8 +865,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       <WorkspaceIcon name="shield" size={26} />
                       <h3>Automatic updates. Clear history.</h3>
                       <p>
-                        Complete CAPTCHA and search in eCourts. The connected
-                        extension fetches missing case details one at a time.
+                        Run a party-name search in Lawcovery or search directly in
+                        eCourts. The extension fetches missing details one at a time.
                         Choose Refresh existing details to update already-saved
                         cases.
                       </p>

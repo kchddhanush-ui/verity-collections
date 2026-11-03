@@ -90,7 +90,11 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       sendMessage: async (_id, message) => {
         if (message.type === "PARTY_SEARCH_FORM") {
           formMessages.push(message);
-          return message.step === "prepare" ? { ready: true } : { options: [{ value: "3", label: "Karnataka" }] };
+          if (message.step === "prepare") {
+            return { challengeId: "00000000-0000-4000-8000-000000000042", image: "data:image/png;base64,AA==" };
+          }
+          if (message.step === "submit") return { saved: true };
+          return { options: [{ value: "3", label: "Karnataka" }] };
         }
         if (message.type === "PROBE_CASE") return { available: true, hasLink: true };
         if (message.type === "LOAD_CASE") loads.push(message);
@@ -258,11 +262,21 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
       assert.equal(openedTabs.at(-1).active, false);
       assert.match((await party({ step: 0, value: "3" }, { ...app, tab: { id: 5 } })).error, /Start a new search/);
-      assert.equal((await party({ step: "prepare", party: "Example", year: "2025", status: "Both" })).ready, true);
-      assert.equal(focusedTabs.at(-1), 12);
+      const prepared = await party({ step: "prepare", party: "Example", year: "2025", status: "Both" });
+      assert.match(prepared.image, /^data:image\/png;base64,/);
+      assert.equal(focusedTabs.length, 0);
       assert.equal(formMessages.at(-1).party, "Example");
       assert.equal(formMessages.at(-1).accessToken, undefined);
+      const submission = { step: "submit", challengeId: prepared.challengeId, answer: "AbC123" };
+      assert.match((await party(submission, { ...app, tab: { id: 5 } })).error, /Start a new search/);
+      assert.equal((await party(submission)).saved, true);
+      assert.equal(formMessages.at(-1).answer, submission.answer);
+      assert.equal(formMessages.at(-1).accessToken, undefined);
       assert.equal(JSON.stringify(sessionStorage).includes("Example"), false);
+      assert.equal(JSON.stringify(sessionStorage).includes(submission.answer), false);
+      assert.equal(JSON.stringify(sessionStorage).includes(prepared.image), false);
+      assert.equal((await party({ step: "focus" })).focused, true);
+      assert.equal(focusedTabs.at(-1), 12);
       const original = values.config;
       values.config = { ...original, connectionId: "connection-b" };
       try {
