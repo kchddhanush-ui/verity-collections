@@ -1031,3 +1031,35 @@
   border: 1px solid #d9d6e6;
   border-radius: 6px;
 }
+
+.pending-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 12px;
+}
+.pending-stage-card {
+  display: grid;
+  gap: 8px;
+  min-inline-size: 0;
+  padding: 14px;
+  text-align: start;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #e0ddf0;
+  border-radius: 10px;
+}
+.pending-stage-card > span {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pending-stage-card > span svg { flex-shrink: 0; }
+.pending-stage-card > strong { font-size: 1.15rem; }
+.pending-stage-card progress {
+  inline-size: 100%;
+  block-size: 6px;
+  accent-color: #6658ed;
+}
+.verity-console .pending-stage-card:disabled { opacity: 1; }

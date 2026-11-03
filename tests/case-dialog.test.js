@@ -197,20 +197,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     assert.equal(modeRequest.payload.workspace, "workspace-a");
     assert.ok(document.querySelector('.batch-capture-panel progress').hasAttribute("hidden"), "zero matching cases do not show an indeterminate bar");
     assert.equal(batchRequests.filter(m => m.action === "FETCH_CASE").length, 0);
-    await act(async () =>
-      document.querySelector('.sidebar-nav button[aria-label="Overview"]')
-        .dispatchEvent(new window.Event("click", { bubbles: true })),
-    );
-    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Overview");
-    assert.ok(
-      document.querySelector(".console-metrics"),
-      "overview opens first",
-    );
-    assert.equal(
-      document.querySelector(".connection-panel"),
-      null,
-      "setup stays out of the overview",
-    );
+    assert.equal(document.querySelector('.sidebar-nav button[aria-label="Overview"]'), null);
     await act(async () =>
       document
         .querySelector('.sidebar-nav button[aria-label="Analytics"]')
@@ -282,7 +269,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     assert.equal(portalLinks().length, 1, "Connections provides the portal link");
     assert.match(document.querySelector('.case-fetch-status[role="status"]').textContent, /complete CAPTCHA/);
     assert.ok([...document.querySelectorAll("button")].some(b => b.textContent === "Go to eCourts tab"));
-    for (const label of ["Overview", "Analytics", "Hearing calendar", "Cases"]) {
+    for (const label of ["Analytics", "Hearing calendar", "Cases"]) {
       await act(async () => document.querySelector(`.sidebar-nav button[aria-label="${label}"]`).dispatchEvent(new window.Event("click", { bubbles: true })));
       assert.equal(portalLinks().length, 0, `${label} does not show Open eCourts`);
       assert.equal(document.querySelector('.case-fetch-status[role="status"]'), null, `${label} does not repeat connection messages`);

@@ -5,7 +5,7 @@ import "./workspace-theme.css";
 import { mergePortfolio } from "./lib/portfolio";
 import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
-import { WorkspaceOverview } from "./components/WorkspaceOverview";
+import { filterCases } from "./lib/analytics";
 import { WorkspaceChrome } from "./components/WorkspaceChrome";
 import { extensionRequest } from "./lib/extensionBridge";
 
@@ -123,7 +123,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const [batchBusy, setBatchBusy] = useState(false);
   const [captureUpdate, setCaptureUpdate] = useState("");
   const [searches, setSearches] = useState([]);
-  const [portfolioView, setPortfolioView] = useState("overview");
+  const [caseDrilldown, setCaseDrilldown] = useState(null);
+  const [portfolioView, setPortfolioView] = useState("analytics");
   const [listingAudits, setListingAudits] = useState([]);
   const [selected, setSelected] = useState(null),
     [audits, setAudits] = useState([]),
@@ -519,15 +520,16 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       setFetchStatus({ message: e.message, actionNeeded: true });
     }
   }
-  const filtered = cases.filter((c) =>
-    JSON.stringify([c.cnr, c.data]).toLowerCase().includes(query.toLowerCase()),
-  );
+  const filtered = filterCases(cases, {
+    ...(caseDrilldown && caseDrilldown.workspace === workspace ? caseDrilldown.filters : {}),
+    search: query,
+  });
   return (
     <WorkspaceChrome
       session={session}
       workspaces={workspaces}
       workspace={workspace}
-      onWorkspace={setWorkspace}
+      onWorkspace={(id) => { setCaseDrilldown(null); setWorkspace(id); }}
       busy={busy}
       loading={loading}
       pending={pending}
@@ -551,14 +553,13 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         id="workspace-content"
         tabIndex="-1"
       >
-        {!["overview", "calendar"].includes(portfolioView) && (
+        {portfolioView !== "calendar" && (
           <div className="console-title page-heading">
             <div>
               <p className="console-eyebrow">
                 YOUR WORKSPACE /{" "}
                 {
                   {
-                    overview: "OVERVIEW",
                     analytics: "ANALYTICS",
                     cases: "CASES",
                     calendar: "COURT DIARY",
@@ -569,7 +570,6 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               <h1>
                 {
                   {
-                    overview: "Your portfolio, in focus.",
                     analytics: "Your cases, by the numbers.",
                     cases: "Your case portfolio.",
                     calendar: "Your hearing diary.",
@@ -580,10 +580,8 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               <p>
                 {
                   {
-                    overview:
-                      "A clear view of your cases, stages and captured court records.",
                     analytics:
-                      "Understand case progress, disposal timelines and upcoming court commitments.",
+                      "Review pending stages, filing activity and court workload.",
                     cases:
                       "Find a case, review its progress, and see the latest saved details.",
                     calendar:
@@ -782,22 +780,14 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     <AnalyticsDashboard
                       key={workspace}
                       cases={cases}
-                      onOpenCase={openSavedCase}
+                      onStageCases={({ search, ...filters }) => {
+                        setCaseDrilldown({ workspace, filters });
+                        setQuery(search);
+                        setPortfolioView("cases");
+                        window.scrollTo?.(0, 0);
+                      }}
                     />
                   </Suspense>
-                ) : portfolioView === "overview" ? (
-                  <WorkspaceOverview
-                    cases={cases}
-                    user={session.user}
-                    company={
-                      workspaces.find((w) => w.id === workspace)?.name ||
-                      "Company"
-                    }
-                    onNavigate={setPortfolioView}
-                    onOpenCase={openSavedCase}
-                    onRefresh={() => perform(refresh)}
-                    busy={busy}
-                  />
                 ) : portfolioView === "connections" ? (
                   <div className="connections-layout connections-grid">
                     {" "}
@@ -956,6 +946,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                           </div>
                         </label>
                       </div>
+                      {caseDrilldown && caseDrilldown.workspace === workspace && (
+                        <p className="muted">
+                          {Object.values(caseDrilldown.filters).filter(Boolean).join(" · ")}
+                          {" "}<button type="button" className="btn" onClick={() => setCaseDrilldown(null)}>Clear stage filters</button>
+                        </p>
+                      )}
                       <p className="muted">
                         {filtered.length} matching of {cases.length} loaded
                         cases · up to 1,000 detail records and 1,000 listing

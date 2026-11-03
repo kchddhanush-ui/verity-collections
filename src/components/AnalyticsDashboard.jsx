@@ -1,18 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   analyticsOptions,
   buildAnalytics,
   caseStage,
   caseStatus,
-  courtName,
   filterCases,
+  filingYear,
+  annualActivity,
   percentage,
 } from "../lib/analytics";
 import {
-  caseNumber,
   formatHearingDate,
   indiaToday,
-  parseCourtDate,
 } from "../lib/hearings";
 import { WorkspaceIcon } from "./WorkspaceIcon";
 
@@ -28,33 +27,6 @@ function Panel({ title, note, children, className = "" }) {
       {note && <p className="muted">{note}</p>}
       {children}
     </section>
-  );
-}
-function Bars({ rows, total, empty = "No matching records.", tone = "green" }) {
-  if (!total) return <p className="analytics-empty">{empty}</p>;
-  return (
-    <dl
-      tabIndex="0"
-      aria-label="Counts by category"
-      className={`analytics-bars analytics-bars-${tone}`}
-    >
-      {rows.map((row) => (
-        <div key={row.label}>
-          <dt>{row.label}</dt>
-          <dd>
-            <span className="analytics-track" aria-hidden="true">
-              <span
-                style={{ inlineSize: `${percentage(row.count, total) || 0}%` }}
-              />
-            </span>
-            <span>
-              {count(row.count)}{" "}
-              <small>{percent(percentage(row.count, total))}</small>
-            </span>
-          </dd>
-        </div>
-      ))}
-    </dl>
   );
 }
 function Trend({ model }) {
@@ -165,7 +137,7 @@ function Trend({ model }) {
 }
 export function AnalyticsDashboard({
   cases,
-  onOpenCase,
+  onStageCases,
   today = indiaToday(),
 }) {
   const [filters, setFilters] = useState({
@@ -174,64 +146,32 @@ export function AnalyticsDashboard({
     status: "",
     stage: "",
     search: "",
+    year: "",
   });
   const [months, setMonths] = useState(6);
-  const [review, setReview] = useState("upcoming");
-  const [page, setPage] = useState(1);
+
   const options = useMemo(() => analyticsOptions(cases), [cases]);
   const filtered = useMemo(() => filterCases(cases, filters), [cases, filters]);
   const model = useMemo(
     () => buildAnalytics(filtered, { today, months }),
     [filtered, today, months],
   );
-  useEffect(() => setPage(1), [filters, review]);
   const setFilter = (name, value) =>
     setFilters((old) => ({ ...old, [name]: value }));
-  const reviews = [
-    {
-      key: "upcoming",
-      label: "Hearings · next 30 days",
-      rows: model.upcoming,
-      dateLabel: "Next hearing",
-    },
-    {
-      key: "long_pending",
-      label: "Pending · over 1 year",
-      rows: model.longPending,
-      dateLabel: "Filed / registered",
-    },
-    {
-      key: "nbw",
-      label: "Pending · NBW",
-      rows: model.pendingNbw.map((item) => ({
-        item,
-        day: parseCourtDate(item.data?.next_hearing_date),
-      })),
-      dateLabel: "Next hearing",
-    },
-    {
-      key: "summons",
-      label: "Pending · SUMMONS",
-      rows: model.pendingSummons.map((item) => ({
-        item,
-        day: parseCourtDate(item.data?.next_hearing_date),
-      })),
-      dateLabel: "Next hearing",
-    },
-    {
-      key: "disposed",
-      label: "Disposed cases",
-      rows: model.closedCases,
-      dateLabel: "Disposal / decision date",
-    },
-  ];
-  const selectedReview = reviews.find((row) => row.key === review);
-  const pages = Math.max(1, Math.ceil(selectedReview.rows.length / 10));
-  const currentPage = Math.min(page, pages);
-  const reviewRows = selectedReview.rows.slice(
-    (currentPage - 1) * 10,
-    currentPage * 10,
+  const years = [...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse();
+  const pendingCounts = new Map(options.stages.map((stage) => [stage, 0]));
+  for (const item of filtered) {
+    if (caseStatus(item) === "Pending") {
+      const stage = caseStage(item);
+      pendingCounts.set(stage, pendingCounts.get(stage) + 1);
+    }
+  }
+  const pendingStages = [...pendingCounts].sort(([a, first], [b, second]) =>
+    second - first || a.localeCompare(b),
   );
+  const annualRows = months === "annual"
+    ? annualActivity(filterCases(cases, { ...filters, year: "" }), today)
+    : [];
   const metrics = [
     [
       "Cases in view",
@@ -246,30 +186,6 @@ export function AnalyticsDashboard({
       percent(model.disposalRate),
       `${model.known} cases with a known status`,
       "analytics",
-    ],
-    [
-      "Average disposal TAT",
-      model.averageTat === null ? "—" : `${count(model.averageTat)} days`,
-      `${model.tatSamples} disposed cases with valid date pairs`,
-      "clock",
-    ],
-    [
-      "Median disposal TAT",
-      model.medianTat === null ? "—" : `${count(model.medianTat)} days`,
-      "Middle duration in the same TAT sample",
-      "clock",
-    ],
-    [
-      "Pending · over 1 year",
-      count(model.longPending.length),
-      "Aged cases for portfolio review",
-      "cases",
-    ],
-    [
-      "Hearings · next 7 days",
-      count(model.next7.length),
-      "Today and the following 6 days",
-      "calendar",
     ],
   ];
   const activeFilters = Object.values(filters).some(Boolean);
@@ -296,6 +212,7 @@ export function AnalyticsDashboard({
                 status: "",
                 stage: "",
                 search: "",
+                year: "",
               })
             }
           >
@@ -360,6 +277,13 @@ export function AnalyticsDashboard({
             </select>
           </label>
           <label>
+            Filing year
+            <select value={filters.year} onChange={(e) => setFilter("year", e.target.value)}>
+              <option value="">All years</option>
+              {years.map((year) => <option key={year}>{year}</option>)}
+            </select>
+          </label>
+          <label>
             Search portfolio
             <div className="search-box">
               <WorkspaceIcon name="search" size={16} />
@@ -373,379 +297,118 @@ export function AnalyticsDashboard({
           </label>
         </div>
         <p className="muted">
-          Scope: the currently loaded company portfolio. All figures follow your
-          filters. As of {formatHearingDate(today)} (India).
+          Scope: the currently loaded company portfolio. Portfolio totals follow your filters. As of {formatHearingDate(today)} (India).
         </p>
       </section>
-      {!model.total ? (
-        <div className="console-panel console-empty">
-          <WorkspaceIcon name="analytics" size={32} />
-          <h2>
-            {cases.length
-              ? "No cases match these filters"
-              : "Analytics starts with saved cases"}
-          </h2>
-          <p>
-            {cases.length
-              ? "Clear or adjust the filters to see your portfolio."
-              : "Complete an eCourts search and capture cases to populate this dashboard. Figures update as details are saved."}
-          </p>
+      <div className="analytics-metrics metric-grid">
+        {metrics.map(([label, value, note, icon], index) => (
+          <article
+            className={`metric-card ${index === 0 ? "highlight" : ""}`}
+            key={label}
+          >
+            <div>
+              <span>{label}</span>
+              <WorkspaceIcon name={icon} size={18} />
+            </div>
+            <strong>{value}</strong>
+            <small>{note}</small>
+          </article>
+        ))}
+      </div>
+      <Panel title="Pending cases by stage" note={model.pending
+        ? `Share of ${count(model.pending)} pending cases`
+        : "No pending cases match these filters."}>
+        <div className="pending-stage-grid">
+          {pendingStages.map(([stage, total]) => {
+            const share = percentage(total, model.pending) ?? 0;
+            return (
+              <button className="pending-stage-card" key={stage} type="button"
+                disabled={!total || !onStageCases}
+                onClick={() => onStageCases({ ...filters, status: "Pending", stage })}>
+                <span>{stage} {total > 0 && <WorkspaceIcon name="arrow" size={16} />}</span>
+                <strong>{count(total)} {total === 1 ? "case" : "cases"}</strong>
+                <small>{percent(share)}</small>
+                <progress max="100" value={share} aria-hidden="true" />
+              </button>
+            );
+          })}
         </div>
-      ) : (
-        <>
-          <div className="analytics-metrics metric-grid">
-            {metrics.slice(0, 4).map(([label, value, note, icon], index) => (
-              <article
-                className={`metric-card ${index === 0 ? "highlight" : ""}`}
-                key={label}
-              >
-                <div>
-                  <span>{label}</span>
-                  <WorkspaceIcon name={icon} size={18} />
-                </div>
-                <strong>{value}</strong>
-                <small>{note}</small>
-              </article>
-            ))}
-          </div>
-          <div className="analytics-grid analytics-primary">
-            <Panel
-              title="Filings & disposals"
-              className="analytics-primary-trend"
-              note="Recorded filings and disposals by month for the selected portfolio."
+      </Panel>
+      <div>
+        <Panel
+          title="Filings & disposals"
+          className="analytics-primary-trend"
+          note="Recorded filings and disposals by month for the selected portfolio."
+        >
+          <label className="analytics-trend-window">
+            Trend window
+            <select
+              value={months}
+              onChange={(e) => setMonths(e.target.value === "annual" ? "annual" : Number(e.target.value))}
             >
-              <label className="analytics-trend-window">
-                Trend window
-                <select
-                  value={months}
-                  onChange={(e) => setMonths(Number(e.target.value))}
-                >
-                  <option value={6}>Last 6 months</option>
-                  <option value={12}>Last 12 months</option>
-                </select>
-              </label>
-              <Trend model={model} />
-            </Panel>
-            <section className="card priorities">
-              <span className="eyebrow">Portfolio priorities</span>
-              <h2>Cases to discuss with your team</h2>
-              <div className="priority-list">
-                {reviews.map((row) => (
-                  <button
-                    key={row.key}
-                    onClick={() => {
-                      setReview(row.key);
-                      document
-                        .getElementById("analytics-review-title")
-                        ?.scrollIntoView?.({
-                          block: "start",
-                          behavior: window.matchMedia?.(
-                            "(prefers-reduced-motion: reduce)",
-                          )?.matches
-                            ? "instant"
-                            : "smooth",
-                        });
-                    }}
-                  >
-                    <span>{row.label}</span>
-                    <strong>{count(row.rows.length)}</strong>
-                  </button>
+              <option value={6}>Last 6 months</option>
+              <option value={12}>Last 12 months</option>
+              <option value="annual">Year on year</option>
+            </select>
+          </label>
+          {months === "annual" ? (
+            <div className="case-table-wrap">
+              <p>All filing years. Events count in the year they occurred. Other filters still apply.</p>
+              {annualRows.length ? (
+                <table className="case-table">
+                  <caption>Annual filings and disposals</caption>
+                  <thead><tr><th scope="col">Year</th><th scope="col">Filings</th><th scope="col">Disposals</th></tr></thead>
+                  <tbody>{annualRows.map((row) => (
+                    <tr key={row.year}><th scope="row">{row.year}</th><td>{row.filings}</td><td>{row.disposals}</td></tr>
+                  ))}</tbody>
+                </table>
+              ) : <p>No dated filings or disposals match these filters.</p>}
+            </div>
+          ) : <Trend model={model} />}
+        </Panel>
+      </div>
+      <Panel
+        title="Court breakdown"
+        className="court-card"
+        note="Case totals by court for the filtered portfolio."
+      >
+        <div
+          className="case-table-wrap analytics-table-wrap"
+          role="region"
+          tabIndex="0"
+          aria-label="Court portfolio breakdown"
+        >
+          <table className="case-table">
+            <caption>Court workload in the filtered portfolio</caption>
+            <thead>
+              <tr>
+                {[
+                  "Court",
+                  "Cases",
+                  "Pending",
+                  "Disposed",
+                  "Hearings · 7 days",
+                ].map((label) => (
+                  <th scope="col" key={label}>
+                    {label}
+                  </th>
                 ))}
-              </div>
-            </section>
-          </div>
-          <Panel
-            title="Court portfolio & disposal TAT"
-            className="court-card"
-            note="Portfolio workload and average disposal time by court. TAT samples reflect the selected case mix."
-          >
-            <div
-              className="case-table-wrap analytics-table-wrap"
-              role="region"
-              tabIndex="0"
-              aria-label="Court portfolio breakdown"
-            >
-              <table className="case-table">
-                <caption>Court workload in the filtered portfolio</caption>
-                <thead>
-                  <tr>
-                    {[
-                      "Court",
-                      "Cases",
-                      "Pending",
-                      "Disposed",
-                      "Average disposal TAT",
-                      "Hearings · 7 days",
-                    ].map((label) => (
-                      <th scope="col" key={label}>
-                        {label}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {model.courts.map((row) => (
-                    <tr key={row.label}>
-                      <th scope="row">{row.label}</th>
-                      <td>{row.total}</td>
-                      <td>{row.pending}</td>
-                      <td>{row.disposed}</td>
-                      <td>
-                        {row.averageTat === null
-                          ? "—"
-                          : `${count(row.averageTat)} days`}
-                        <small>{row.tatSamples} cases in TAT sample</small>
-                      </td>
-                      <td>{row.next7}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Panel>
-          <details className="extended-insights card">
-            <summary>Detailed portfolio insights</summary>
-            <div className="analytics-metrics metric-grid analytics-secondary">
-              {metrics.slice(4).map(([label, value, note, icon]) => (
-                <article className="metric-card" key={label}>
-                  <div>
-                    <span>{label}</span>
-                    <WorkspaceIcon name={icon} size={18} />
-                  </div>
-                  <strong>{value}</strong>
-                  <small>{note}</small>
-                </article>
+              </tr>
+            </thead>
+            <tbody>
+              {model.courts.map((row) => (
+                <tr key={row.label}>
+                  <th scope="row">{row.label}</th>
+                  <td>{row.total}</td>
+                  <td>{row.pending}</td>
+                  <td>{row.disposed}</td>
+                  <td>{row.next7}</td>
+                </tr>
               ))}
-            </div>
-            <div className="analytics-grid">
-              <Panel
-                title="Portfolio status"
-                note="Every case is counted once; cases without a confirmed status remain visible."
-              >
-                <Bars
-                  rows={[
-                    { label: "Pending", count: model.pending },
-                    { label: "Disposed", count: model.disposed },
-                    {
-                      label: "Status unavailable",
-                      count: model.unknown + model.listed,
-                    },
-                  ]}
-                  total={model.total}
-                />
-                <p className="muted">
-                  Disposed share = disposed ÷ (pending + disposed). Unknown and
-                  listed-only records are excluded; this is not a recovery or
-                  win rate.
-                </p>
-              </Panel>
-              <Panel
-                title="Cases by stage"
-                note="Where cases currently stand in the court process."
-              >
-                <Bars
-                  rows={model.stages}
-                  total={model.detailed}
-                  empty="Capture detailed records to see case stages."
-                />
-              </Panel>
-              <Panel
-                title="Disposal turnaround"
-                className="analytics-wide"
-                note={`Time from filing to disposal for ${model.tatSamples} of ${model.disposed} disposed cases with valid dates.`}
-              >
-                <Bars
-                  rows={model.tatBands}
-                  total={model.tatSamples}
-                  tone="gold"
-                  empty="Disposal turnaround will appear when disposed cases have valid filing and closure dates."
-                />
-                <p className="muted">
-                  Calendar days from Filing Date to Disposal Date, falling back
-                  to Decision Date. Cases without a valid chronological pair are
-                  excluded, rather than treated as zero.
-                </p>
-              </Panel>
-              <Panel
-                title="Pending case age"
-                note="Uses filing date, falling back to registration date. Only confirmed pending cases are included; unknown or future start dates are excluded from dated bands."
-              >
-                <Bars
-                  rows={model.age}
-                  total={model.pending}
-                  tone="gold"
-                  empty="No confirmed pending cases in this view."
-                />
-              </Panel>
-              <Panel
-                title="Hearing workload · next 30 days"
-                note="Scheduled court commitments grouped across the next 30 days."
-              >
-                <Bars
-                  rows={model.hearingWeeks.map((row) => ({
-                    label: `${formatHearingDate(row.from, { day: "numeric", month: "short" })} – ${formatHearingDate(row.through, { day: "numeric", month: "short" })}`,
-                    count: row.count,
-                  }))}
-                  total={model.upcoming.length}
-                  empty="No saved next-hearing dates in the next 30 days."
-                />
-              </Panel>
-              <Panel
-                title="Case mix"
-                note="The mix of case types in the selected portfolio."
-              >
-                <Bars rows={model.types} total={model.total} />
-              </Panel>
-              <Panel
-                title="Nature of disposal"
-                note="Source descriptions on disposed cases. These labels are not interpreted as win/loss outcomes."
-              >
-                <Bars
-                  rows={model.disposalTypes}
-                  total={model.disposed}
-                  tone="gold"
-                  empty="No confirmed disposed cases in this view."
-                />
-              </Panel>
-            </div>
-          </details>
-          <section
-            className="console-panel analytics-review card"
-            aria-labelledby="analytics-review-title"
-          >
-            <p className="panel-kicker">PORTFOLIO PRIORITIES</p>
-            <h2 id="analytics-review-title">Cases to discuss with your team</h2>
-            <p className="muted">
-              Review upcoming commitments, aged pending cases and active stages.
-              Open a case to see its saved details. Categories may overlap.
-            </p>
-            <nav
-              className="analytics-review-tabs"
-              aria-label="Case follow-up categories"
-            >
-              {reviews.map((row) => (
-                <button
-                  key={row.key}
-                  aria-pressed={review === row.key}
-                  onClick={() => setReview(row.key)}
-                >
-                  {row.label}
-                  <span>{row.rows.length}</span>
-                </button>
-              ))}
-            </nav>
-            <p role="status">
-              {selectedReview.rows.length} cases · {selectedReview.label}
-            </p>
-            {reviewRows.length ? (
-              <>
-                <div
-                  className="case-table-wrap analytics-table-wrap"
-                  role="region"
-                  tabIndex="0"
-                  aria-label="Cases for follow-up"
-                >
-                  <table className="case-table">
-                    <caption>{selectedReview.label}</caption>
-                    <thead>
-                      <tr>
-                        {[
-                          "Case / CNR",
-                          "Court",
-                          "Stage / status",
-                          selectedReview.dateLabel,
-                        ].map((label) => (
-                          <th scope="col" key={label}>
-                            {label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reviewRows.map((row) => (
-                        <tr key={row.item.cnr}>
-                          <th scope="row">
-                            <button
-                              className="case-open"
-                              onClick={() => onOpenCase(row.item)}
-                            >
-                              {caseNumber(row.item)}
-                              <small>{row.item.cnr}</small>
-                            </button>
-                          </th>
-                          <td>{courtName(row.item)}</td>
-                          <td>
-                            {row.item.hasDetails
-                              ? caseStage(row.item)
-                              : "Awaiting details"}
-                            <small>{caseStatus(row.item)}</small>
-                          </td>
-                          <td>
-                            {row.day
-                              ? formatHearingDate(row.day)
-                              : "Not recorded"}
-                            {review === "long_pending" && (
-                              <small>{count(row.days)} days pending</small>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="analytics-pagination">
-                  <span>
-                    Page {currentPage} of {pages} · 10 cases per page
-                  </span>
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setPage(currentPage - 1)}
-                  >
-                    Previous page
-                  </button>
-                  <button
-                    disabled={currentPage === pages}
-                    onClick={() => setPage(currentPage + 1)}
-                  >
-                    Next page
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="analytics-empty">
-                No cases in this follow-up category match your filters.
-              </p>
-            )}
-          </section>
-          <details className="muted analytics-methodology">
-            <summary>Report basis & definitions</summary>
-            <p>
-              Figures cover the loaded company portfolio: up to 1,000 detailed
-              cases and 1,000 listings merged by CNR. They follow the filters
-              and describe saved records.
-            </p>
-            <p>
-              Disposed share uses pending plus disposed cases as its
-              denominator. A disposed status does not establish recovery or a
-              favourable outcome. Cases with an unavailable status remain in the
-              portfolio total.
-            </p>
-            <p>
-              Average and median disposal TAT use the same sample: confirmed
-              disposed cases with Filing Date and a valid Disposal Date, falling
-              back to Decision Date. Missing, future and reversed date pairs are
-              excluded. Calendar days are used. Pending age uses Filing Date,
-              falling back to Registration Date. Today follows India time.
-            </p>
-            <p>
-              Monthly counts use the source dates on the current selected cases;
-              they do not reconstruct historical portfolio balances. Court
-              figures describe this company portfolio, not all cases in each
-              court.
-            </p>
-          </details>
-        </>
-      )}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
     </div>
   );
 }

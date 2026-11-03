@@ -60,6 +60,7 @@ function sortedCounts(map) {
     .map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
+export const filingYear = (item) => parseCourtDate(item.data?.filing_date)?.slice(0, 4);
 export function analyticsOptions(cases) {
   return {
     courts: [...new Set(cases.map(courtName))].sort(),
@@ -73,6 +74,7 @@ export function filterCases(cases, filters = {}) {
   const search = tidy(filters.search).toLowerCase();
   return cases.filter(
     (item) =>
+      (!filters.year || filingYear(item) === filters.year) &&
       (!filters.court || courtName(item) === filters.court) &&
       (!filters.type || caseType(item) === filters.type) &&
       (!filters.status ||
@@ -348,4 +350,20 @@ export function buildAnalytics(
         .filter((value) => Number.isFinite(Date.parse(value)))
         .sort((a, b) => Date.parse(b) - Date.parse(a))[0] || null,
   };
+}
+
+export function annualActivity(cases, today) {
+  const years = new Map();
+  function record(date, field) {
+    if (!date) return;
+    const year = date.slice(0, 4);
+    const row = years.get(year) || { year, filings: 0, disposals: 0 };
+    row[field]++;
+    years.set(year, row);
+  }
+  for (const item of cases) {
+    record(pastDate(item.data?.filing_date, today), "filings");
+    if (caseStatus(item) === "Disposed") record(closureDate(item, today), "disposals");
+  }
+  return [...years.values()].sort((a, b) => b.year.localeCompare(a.year));
 }
