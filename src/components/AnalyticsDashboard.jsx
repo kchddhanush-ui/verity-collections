@@ -332,15 +332,9 @@ export function AnalyticsDashboard({
       <Panel title="Pending cases by stage" note={model.pending
         ? `Share of ${count(model.pending)} pending cases`
         : "No pending cases match these filters."}>
-        <p className="muted">
-          Stage times estimate calendar days from the first observed hearing
-          purpose to a recorded change in purpose. Counts and shares describe
-          pending cases. Stage times use completed observations in the filtered cases.
-        </p>
         <div className="pending-stage-grid">
           {pendingStages.map(([stage, total]) => {
             const share = percentage(total, model.pending) ?? 0;
-            const duration = stageDurations.get(stage);
             return (
               <button className="pending-stage-card" key={stage} type="button"
                 disabled={!total || !onStageCases}
@@ -349,12 +343,24 @@ export function AnalyticsDashboard({
                 <strong>{count(total)} {total === 1 ? "case" : "cases"}</strong>
                 <small>{percent(share)}</small>
                 <progress max="100" value={share} aria-hidden="true" />
-                <span className="stage-time">
-                  <small>Average observed time</small>
-                  <strong>{duration ? `${count(duration.days / duration.samples)} days` : "—"}</strong>
-                  <small>{duration ? `${count(duration.samples)} completed observations` : "No recorded transition"}</small>
-                </span>
               </button>
+            );
+          })}
+        </div>
+      </Panel>
+      <Panel
+        title="Average turnaround by stage"
+        note="Estimated calendar days from the first recorded hearing purpose to a change in purpose, using completed observations in the filtered cases."
+      >
+        <div className="pending-stage-grid">
+          {pendingStages.map(([stage]) => {
+            const duration = stageDurations.get(stage);
+            return (
+              <article className="pending-stage-card stage-turnaround-card" key={stage}>
+                <span>{stage}</span>
+                <strong>{duration ? `${count(duration.days / duration.samples)} days` : "—"}</strong>
+                <small>{duration ? `${count(duration.samples)} completed observations` : "No recorded transition"}</small>
+              </article>
             );
           })}
         </div>

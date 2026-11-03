@@ -102,10 +102,13 @@ test("analytics shows pending stages, carries filing year into drill-down and co
       });
     };
     assert.equal(document.querySelectorAll(".analytics-metrics article").length, 5);
-    const cards = [...document.querySelectorAll(".pending-stage-card")];
+    const cards = [...document.querySelectorAll("button.pending-stage-card")];
     assert.match(cards[0].textContent, /SUMMONS.*12 cases.*100%/);
     assert.match(cards[1].textContent, /ARGUMENTS.*0 cases.*0%/);
-    assert.match(cards.find((card) => card.textContent.startsWith("NBW")).textContent, /20 days.*12 completed observations/);
+    assert.ok(cards.every((card) => !card.textContent.includes("days")));
+    const nbwTurnaround = [...document.querySelectorAll(".stage-turnaround-card")]
+      .find((card) => card.textContent.startsWith("NBW"));
+    assert.match(nbwTurnaround.textContent, /20 days.*12 completed observations/);
     await change("Filing year", "2025");
     await click(document.querySelector(".pending-stage-card"));
     assert.equal(opened.year, "2025");
@@ -119,7 +122,7 @@ test("analytics shows pending stages, carries filing year into drill-down and co
     assert.deepEqual(rows, [["2026", "0", "1"], ["2025", "13", "0"]]);
     await change("Status", "Disposed");
     assert.match(document.querySelector(".analytics-filter-heading").textContent, /1 of 13/);
-    assert.ok([...document.querySelectorAll(".pending-stage-card")].every((card) => card.disabled));
+    assert.ok([...document.querySelectorAll("button.pending-stage-card")].every((card) => card.disabled));
   } finally {
     if (root) await act(async () => root.unmount());
     if (server) await server.close();
