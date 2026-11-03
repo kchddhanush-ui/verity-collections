@@ -168,11 +168,11 @@
       if (previousPage === pageId) return { loading: true };
       const hasSelection = ids.some((_, index) => {
         const value = field(index)?.value;
-        return value && value !== "0";
+        return options(index).some(option => option.value === value);
       });
       if (hasSelection || document.getElementById("petres_name")?.value?.trim() ||
           document.getElementById("rgyearP")?.value?.trim() || document.querySelector("#res_party #dispTable"))
-        throw new Error("This court page already has a search in progress.");
+        throw new Error("The open eCourts tab already has a search on it. Reload that tab to start fresh.");
 
       if (selected.length || !document.getElementById("petres_name") || !options(0).length)
         throw new Error("The eCourts Party Name form is unavailable.");

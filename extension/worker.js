@@ -337,33 +337,42 @@ async function handle(message, sender) {
 function isCourtSearchPage(tab) {
   const url = new URL(tab.url || "about:blank");
   return url.origin === "https://services.ecourts.gov.in" &&
-    url.pathname === "/ecourtindia_v6/" && url.searchParams.get("p") === "casestatus/index";
+    (url.pathname === "/ecourtindia_v6/casestatus" ||
+      (url.pathname === "/ecourtindia_v6/" && url.searchParams.get("p") === "casestatus/index"));
 }
 
-async function claimCourtSearch(dashboardTabId, connectionId, key, request) {
+async function claimCourtSearch(dashboardTabId, connectionId, key, request, reloadExisting) {
   return await navigator.locks.request("verity-sync", async () => {
     const stored = await chrome.storage.local.get(null);
     if (!stored.config?.enabled || stored.config.connectionId !== connectionId)
       throw new Error("The extension connection changed. Reconnect and start again.");
     const previous = (await chrome.storage.session.get(key))[key];
     const tabs = await chrome.tabs.query({ url: "https://services.ecourts.gov.in/ecourtindia_v6/*" });
-    for (const tab of tabs) {
-      if (tab.id == null || !isCourtSearchPage(tab)) continue;
-      if (stored.batch?.tabId === tab.id && stored.batch.state !== "complete") continue;
-      if (Object.entries(stored).some(([name, item]) => name.startsWith("pending:") && item.tabId === tab.id)) continue;
+    const searchTabs = tabs.filter(tab => tab.id != null && isCourtSearchPage(tab));
+    let unavailable;
+    let busy = false;
+    for (const tab of searchTabs) {
+      if ((stored.batch?.tabId === tab.id && stored.batch.state !== "complete") ||
+          Object.entries(stored).some(([name, item]) => name.startsWith("pending:") && item.tabId === tab.id)) {
+        busy = true;
+        continue;
+      }
       const owner = `party-owner:${tab.id}`;
       const binding = `party-court:${tab.id}`;
       const state = await chrome.storage.session.get([owner, binding]);
       if ((state[owner] != null && state[owner] !== dashboardTabId) ||
           (state[binding] && state[binding] !== connectionId)) continue;
 
-      const reuse = previous?.tabId === tab.id && previous.connectionId === connectionId;
+      const reuse = reloadExisting || (previous?.tabId === tab.id && previous.connectionId === connectionId);
       let result;
       try {
         result = await chrome.tabs.sendMessage(tab.id, reuse
           ? { ...request, step: "identity" } : request);
-      } catch { continue; }
-      if (reuse ? !result?.pageId : !result?.options?.length) continue;
+      } catch { /* An open tab may still be loading or need the updated extension. */ }
+      if (!reloadExisting && (reuse ? !result?.pageId : !result?.options?.length)) {
+        unavailable = result?.error || "Chrome found an eCourts tab, but its search form did not respond. Let it finish loading or reload that tab here.";
+        continue;
+      }
 
       await chrome.storage.session.set({
         [key]: { tabId: tab.id, connectionId },
@@ -374,7 +383,10 @@ async function claimCourtSearch(dashboardTabId, connectionId, key, request) {
         await chrome.storage.session.remove(`party-owner:${previous.tabId}`);
       return { tabId: tab.id, reuse, result };
     }
-    throw new Error("No idle eCourts search page is available. Open eCourts once, or wait for the current capture to finish, then try again.");
+    if (unavailable) return { error: unavailable, canReload: true };
+    if (busy) throw new Error("The open eCourts tab is still needed by a capture. Finish or resume that capture before reusing it.");
+    if (searchTabs.length) throw new Error("The open eCourts tab belongs to another Lawcovery tab or workspace. Use that workspace or open a fresh Case Status tab.");
+    throw new Error("No eCourts Case Status tab is open. Click Open eCourts once, return here, then click Load court options.");
   });
 }
 
@@ -400,14 +412,16 @@ async function partySearch(dashboardTabId, connectionId, payload) {
     if (step === "open") {
       return await navigator.locks.request("verity-case-navigation", { ifAvailable: true }, async navigation => {
         if (!navigation) throw new Error("Wait for the current case to finish loading, then try again.");
-        const { tabId, reuse, result } = await claimCourtSearch(dashboardTabId, connectionId, key, request);
+        const claim = await claimCourtSearch(dashboardTabId, connectionId, key, request, payload.reloadExisting === true);
+        if (claim.error) return claim;
+        const { tabId, reuse, result } = claim;
         if (!reuse) return result;
         await chrome.tabs.reload(tabId);
         const deadline = Date.now() + 15000;
         while (Date.now() < deadline) {
           let response;
           try {
-            response = await chrome.tabs.sendMessage(tabId, { ...request, previousPage: result.pageId });
+            response = await chrome.tabs.sendMessage(tabId, { ...request, previousPage: result?.pageId });
           } catch { /* Wait for the refreshed content script. */ }
           if (response?.error) throw new Error(response.error);
           if (response?.options?.length) return response;
@@ -471,7 +485,7 @@ async function dashboard(message, sender) {
   const config = await dashboardConfig(origin);
   if (message.action === "PING")
     return {
-      version: "1.9.0", partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
+      version: "1.9.1", reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
       connected: Boolean(config?.enabled && Date.parse(config.expiresAt) > Date.now()),
       automaticFetchMode: "missing",
     };

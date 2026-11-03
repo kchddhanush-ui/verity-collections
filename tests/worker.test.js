@@ -7,6 +7,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     listeners = {},
     alarms = [],
     badges = [];
+  let courtScriptReady = true;
   let projectGranted = true, connectionCreates = 0, expiresAt = null;
   let offline = false,
     revoked = false,
@@ -102,9 +103,10 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         if (!tab) throw new Error("Tab unavailable");
         return tab;
       },
-      reload: async id => { reloadedTabs.push(id); },
+      reload: async id => { reloadedTabs.push(id); courtScriptReady = true; },
       sendMessage: async (_id, message) => {
         if (message.type === "PARTY_SEARCH_FORM") {
+          if (!courtScriptReady) throw new Error("No receiving end");
           formMessages.push(message);
           if (message.step === "identity") return { pageId: "previous-page" };
           if (message.step === "prepare") {
@@ -283,13 +285,13 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         action: "PARTY_SEARCH",
         payload: { ...payload, cnr: undefined, ...fields },
       }, sender);
-      assert.match((await party({ step: "open" })).error, /No idle eCourts/);
+      assert.match((await party({ step: "open" })).error, /No eCourts Case Status tab/);
       courtTabs = [{ id: 12, url: page.url, windowId: 20 }];
       assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
       assert.equal(openedWindows.length, 0);
       assert.equal(openedTabs.length, 0);
       assert.equal(reloadedTabs.length, 0);
-      assert.match((await party({ step: "open" }, { ...app, tab: { id: 5 } })).error, /No idle eCourts/);
+      assert.match((await party({ step: "open" }, { ...app, tab: { id: 5 } })).error, /another Lawcovery tab or workspace/);
       assert.match((await party({ step: 0, value: "3" }, { ...app, tab: { id: 5 } })).error, /Start a new search/);
       const prepared = await party({ step: "prepare", party: "Example", year: "2025", status: "Both" });
       assert.match(prepared.image, /^data:image\/png;base64,/);
@@ -318,7 +320,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       }
       const previousBatch = values.batch;
       values.batch = { tabId: 12, state: "waiting" };
-      assert.match((await party({ step: "open" })).error, /No idle eCourts/);
+      assert.match((await party({ step: "open" })).error, /still needed by a capture/);
       assert.deepEqual(reloadedTabs, [], "a running capture keeps its source page");
       values.batch = previousBatch;
       assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
@@ -326,6 +328,13 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       assert.equal(formMessages.at(-1).previousPage, "previous-page");
       assert.equal(openedWindows.length, 0);
       assert.equal(openedTabs.length, 0);
+      courtTabs = [{ id: 13, url: "https://services.ecourts.gov.in/ecourtindia_v6/casestatus" }];
+      courtScriptReady = false;
+      assert.equal((await party({ step: "open" })).canReload, true);
+      assert.deepEqual(reloadedTabs, [12]);
+      assert.equal((await party({ step: "open", reloadExisting: true })).options[0].label, "Karnataka");
+      assert.deepEqual(reloadedTabs, [12, 13]);
+      assert.equal(openedTabs.length + openedWindows.length, 0);
       courtTabs = [];
     });
     assert.ok(

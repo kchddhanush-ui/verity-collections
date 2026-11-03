@@ -116,3 +116,7 @@ Guided searches open eCourts in a minimized Chrome window. The user enters CAPTC
 ## Version 1.9.0 — 2026-11-03 (development draft)
 
 Guided court searches reuse an open eCourts tab without opening or focusing a browser window. The dashboard offers an explicit link if a fresh court tab is needed. Existing court and browser permissions cover this flow.
+
+## Version 1.9.1 — 2026-11-03 (development draft)
+
+Explains why an open eCourts tab is unavailable and lets users reload an eligible tab from Lawcovery without switching to it.

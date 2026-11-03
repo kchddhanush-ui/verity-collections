@@ -99,7 +99,7 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
   const { pageId } = await send({ step: "identity" });
   assert.equal((await send({ step: "open", previousPage: pageId })).loading, true);
   nameInput.value = "Unsubmitted manual search";
-  assert.match((await send({ step: "open" })).error, /search in progress/);
+  assert.match((await send({ step: "open" })).error, /already has a search/);
   nameInput.value = "";
   assert.match((await send({ step: 1, value: "99" })).error, /current eCourts list/);
   assert.equal((await send({ step: 0, value: "3" })).options[0].label, "Bengaluru");

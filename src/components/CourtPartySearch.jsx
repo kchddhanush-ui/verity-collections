@@ -8,6 +8,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
   const [selections, setSelections] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [canReload, setCanReload] = useState(false);
   const [captcha, setCaptcha] = useState(null);
   const [prepared, setPrepared] = useState(false);
   const [notice, setNotice] = useState("");
@@ -27,6 +28,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
   async function run(action) {
     setBusy(true);
     setError("");
+    setCanReload(false);
     try {
       await action();
     } catch (failure) {
@@ -36,7 +38,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     }
   }
 
-  function start() {
+  function start(reloadExisting = false) {
     setStarted(false);
     setCaptcha(null);
     setPrepared(false);
@@ -46,8 +48,14 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     setChoices([]);
     run(async () => {
       const ping = await extensionRequest("PING");
-      if (!ping?.reuseCourtTab) throw new Error("Reload Lawcovery Case Capture 1.9.0 in Chrome and refresh this page.");
-      const result = await request({ step: "open" });
+      if (!ping?.reloadCourtTab) throw new Error("Reload Lawcovery Case Capture 1.9.1 in Chrome and refresh Lawcovery.");
+      const result = await extensionRequest("PARTY_SEARCH", {
+        ...dashboardPayload(), step: "open", reloadExisting,
+      });
+      if (result?.error || !result?.options?.length) {
+        setCanReload(result?.canReload === true);
+        throw new Error(result?.error || "eCourts did not return court options.");
+      }
       setChoices(result.options || []);
       setStarted(true);
     });
@@ -149,7 +157,12 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
         <button className="btn" type="button" disabled={busy} onClick={() => run(() => request({ step: "focus" }))}>Show eCourts tab</button>
       )}
       {error && <p role="alert">{error}</p>}
-      <button className="btn" disabled={busy} type="button" onClick={start}>
+      {canReload && (
+        <button className="btn" disabled={busy} type="button" onClick={() => start(true)}>
+          Reload open eCourts tab
+        </button>
+      )}
+      <button className="btn" disabled={busy} type="button" onClick={() => start()}>
         {started ? "Start over" : "Load court options"}
       </button>
     </section>
