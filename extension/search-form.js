@@ -2,6 +2,7 @@
 (() => {
   const ids = ["sess_state_code", "sess_dist_code", "court_complex_code", "court_est_code"];
   const selected = [];
+  const pageId = crypto.randomUUID();
   const field = (index) => ids[index] ? document.getElementById(ids[index]) : null;
 
   function options(index) {
@@ -161,8 +162,18 @@
     }
   }
 
-  async function handle({ step, value, party, year, status, challengeId, answer }) {
+  async function handle({ step, value, party, year, status, challengeId, answer, previousPage }) {
+    if (step === "identity") return { pageId };
     if (step === "open") {
+      if (previousPage === pageId) return { loading: true };
+      const hasSelection = ids.some((_, index) => {
+        const value = field(index)?.value;
+        return value && value !== "0";
+      });
+      if (hasSelection || document.getElementById("petres_name")?.value?.trim() ||
+          document.getElementById("rgyearP")?.value?.trim() || document.querySelector("#res_party #dispTable"))
+        throw new Error("This court page already has a search in progress.");
+
       if (selected.length || !document.getElementById("petres_name") || !options(0).length)
         throw new Error("The eCourts Party Name form is unavailable.");
       return { options: options(0) };

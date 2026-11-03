@@ -21,7 +21,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     coverageHook = null;
   const storedCnrs = new Set(), loads = [];
   const sessionStorage = {}, openedTabs = [], focusedTabs = [], formMessages = [];
-  const courtWindows = new Map(), openedWindows = [], restoredWindows = [], removedTabs = [];
+  const openedWindows = [], restoredWindows = [], reloadedTabs = [];
   const originalChrome = globalThis.chrome,
     originalFetch = globalThis.fetch;
   const savedNavigator = Object.getOwnPropertyDescriptor(
@@ -51,7 +51,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     },
     storage: {
       session: {
-        get: async (key) => ({ [key]: sessionStorage[key] }),
+        get: async keys => Object.fromEntries([].concat(keys).map(key => [key, sessionStorage[key]])),
         set: async (data) => { Object.assign(sessionStorage, structuredClone(data)); },
         remove: async (keys) => {
           for (const key of [].concat(keys)) delete sessionStorage[key];
@@ -85,17 +85,9 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       },
     },
     windows: {
-      create: async (options) => {
-        const id = openedWindows.length + 20;
-        const tab = { id: openedWindows.length + 12, url: options.url, windowId: id };
-        openedWindows.push(options);
-        const win = { id, state: options.state, tabs: [tab] };
-        courtWindows.set(id, win);
-        return win;
-      },
-      get: async id => courtWindows.get(id),
+      create: async options => { openedWindows.push(options); },
+      get: async () => ({ state: "normal" }),
       update: async (id, options) => { restoredWindows.push({ id, ...options }); },
-      remove: async id => { courtWindows.delete(id); },
     },
     tabs: {
       onRemoved: { addListener: () => {} },
@@ -106,14 +98,15 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         return { id: 12, url: options.url };
       },
       get: async id => {
-        const tab = [...courtWindows.values()].flatMap(win => win.tabs).find(tab => tab.id === id);
+        const tab = courtTabs.find(tab => tab.id === id);
         if (!tab) throw new Error("Tab unavailable");
         return tab;
       },
-      remove: async id => { removedTabs.push(id); },
+      reload: async id => { reloadedTabs.push(id); },
       sendMessage: async (_id, message) => {
         if (message.type === "PARTY_SEARCH_FORM") {
           formMessages.push(message);
+          if (message.step === "identity") return { pageId: "previous-page" };
           if (message.step === "prepare") {
             return { challengeId: "00000000-0000-4000-8000-000000000042", image: "data:image/png;base64,AA==" };
           }
@@ -290,11 +283,13 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         action: "PARTY_SEARCH",
         payload: { ...payload, cnr: undefined, ...fields },
       }, sender);
+      assert.match((await party({ step: "open" })).error, /No idle eCourts/);
+      courtTabs = [{ id: 12, url: page.url, windowId: 20 }];
       assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
-      assert.deepEqual(openedWindows.at(-1), {
-        url: page.url, type: "popup", state: "minimized", focused: false,
-      });
+      assert.equal(openedWindows.length, 0);
       assert.equal(openedTabs.length, 0);
+      assert.equal(reloadedTabs.length, 0);
+      assert.match((await party({ step: "open" }, { ...app, tab: { id: 5 } })).error, /No idle eCourts/);
       assert.match((await party({ step: 0, value: "3" }, { ...app, tab: { id: 5 } })).error, /Start a new search/);
       const prepared = await party({ step: "prepare", party: "Example", year: "2025", status: "Both" });
       assert.match(prepared.image, /^data:image\/png;base64,/);
@@ -311,7 +306,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       assert.equal(JSON.stringify(sessionStorage).includes(prepared.image), false);
       assert.equal((await party({ step: "focus" })).focused, true);
       assert.equal(focusedTabs.at(-1), 12);
-      assert.deepEqual(restoredWindows.at(-1), { id: 20, state: "normal", focused: true });
+      assert.deepEqual(restoredWindows.at(-1), { id: 20, focused: true });
       const original = values.config;
       values.config = { ...original, connectionId: "connection-b" };
       try {
@@ -323,11 +318,15 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       }
       const previousBatch = values.batch;
       values.batch = { tabId: 12, state: "waiting" };
-      await party({ step: "open" });
-      assert.deepEqual(removedTabs, [], "starting another search leaves an active capture source open");
+      assert.match((await party({ step: "open" })).error, /No idle eCourts/);
+      assert.deepEqual(reloadedTabs, [], "a running capture keeps its source page");
       values.batch = previousBatch;
-      await party({ step: "open" });
-      assert.deepEqual(removedTabs, [13], "starting over closes the previous idle search page");
+      assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
+      assert.deepEqual(reloadedTabs, [12]);
+      assert.equal(formMessages.at(-1).previousPage, "previous-page");
+      assert.equal(openedWindows.length, 0);
+      assert.equal(openedTabs.length, 0);
+      courtTabs = [];
     });
     assert.ok(
       (

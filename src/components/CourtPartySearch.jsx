@@ -20,7 +20,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     if (["prepare", "refresh"].includes(fields.step) &&
         (typeof result.challengeId !== "string" || typeof result.image !== "string" ||
           result.image.length > 350000 || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(result.image)))
-      throw new Error("The eCourts CAPTCHA could not be displayed. Show the eCourts window to continue.");
+      throw new Error("The eCourts CAPTCHA could not be displayed. Show the eCourts tab to continue.");
     return result;
   }
 
@@ -46,7 +46,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     setChoices([]);
     run(async () => {
       const ping = await extensionRequest("PING");
-      if (!ping?.partyBackground) throw new Error("Reload Lawcovery Case Capture 1.8.0 in Chrome and refresh this page.");
+      if (!ping?.reuseCourtTab) throw new Error("Reload Lawcovery Case Capture 1.9.0 in Chrome and refresh this page.");
       const result = await request({ step: "open" });
       setChoices(result.options || []);
       setStarted(true);
@@ -102,7 +102,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     <section className="card sync-card court-party-search" aria-labelledby="court-party-title">
       <p className="panel-kicker">ECOURTS SEARCH</p>
       <h2 id="court-party-title">Search by party name</h2>
-      <p>Choose the court, enter the party name and type the eCourts CAPTCHA here. eCourts runs in a minimized Chrome window while results save to this workspace.</p>
+      <p>Choose the court, enter the party name and type the eCourts CAPTCHA here. Use Open eCourts once and keep that tab open. Lawcovery uses it in the background and saves results to this workspace.</p>
       {selections.length > 0 && (
         <dl>{selections.map((label, index) => (
           <div key={courtFields[index]}><dt>{courtFields[index]}</dt><dd>{label}</dd></div>
@@ -132,7 +132,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
         <div className="party-captcha">
           {captcha && (
             <form method="post" onSubmit={search}>
-              <img src={captcha.image} alt="eCourts CAPTCHA. For audio, show the eCourts window." />
+              <img src={captcha.image} alt="eCourts CAPTCHA. For audio, show the eCourts tab." />
               <label>
                 CAPTCHA
                 <input name="captcha" required maxLength={6} pattern="[A-Za-z0-9]{1,6}"
@@ -146,7 +146,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
       )}
       {notice && <p role="status">{notice}</p>}
       {started && (prepared || error) && (
-        <button className="btn" type="button" disabled={busy} onClick={() => run(() => request({ step: "focus" }))}>Show eCourts window</button>
+        <button className="btn" type="button" disabled={busy} onClick={() => run(() => request({ step: "focus" }))}>Show eCourts tab</button>
       )}
       {error && <p role="alert">{error}</p>}
       <button className="btn" disabled={busy} type="button" onClick={start}>

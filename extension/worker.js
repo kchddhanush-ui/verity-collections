@@ -334,14 +334,47 @@ async function handle(message, sender) {
   }
   throw new Error("Unsupported request");
 }
-async function closeIdleCourtSearch(draft) {
-  await navigator.locks.request("verity-sync", async () => {
+function isCourtSearchPage(tab) {
+  const url = new URL(tab.url || "about:blank");
+  return url.origin === "https://services.ecourts.gov.in" &&
+    url.pathname === "/ecourtindia_v6/" && url.searchParams.get("p") === "casestatus/index";
+}
+
+async function claimCourtSearch(dashboardTabId, connectionId, key, request) {
+  return await navigator.locks.request("verity-sync", async () => {
     const stored = await chrome.storage.local.get(null);
-    if (stored.batch?.tabId === draft.tabId && stored.batch.state !== "complete") return;
-    if (Object.entries(stored).some(([key, item]) => key.startsWith("pending:") && item.tabId === draft.tabId)) return;
-    const tab = await chrome.tabs.get(draft.tabId);
-    if (tab.windowId === draft.windowId && tab.url?.startsWith("https://services.ecourts.gov.in/ecourtindia_v6/"))
-      await chrome.tabs.remove(tab.id);
+    if (!stored.config?.enabled || stored.config.connectionId !== connectionId)
+      throw new Error("The extension connection changed. Reconnect and start again.");
+    const previous = (await chrome.storage.session.get(key))[key];
+    const tabs = await chrome.tabs.query({ url: "https://services.ecourts.gov.in/ecourtindia_v6/*" });
+    for (const tab of tabs) {
+      if (tab.id == null || !isCourtSearchPage(tab)) continue;
+      if (stored.batch?.tabId === tab.id && stored.batch.state !== "complete") continue;
+      if (Object.entries(stored).some(([name, item]) => name.startsWith("pending:") && item.tabId === tab.id)) continue;
+      const owner = `party-owner:${tab.id}`;
+      const binding = `party-court:${tab.id}`;
+      const state = await chrome.storage.session.get([owner, binding]);
+      if ((state[owner] != null && state[owner] !== dashboardTabId) ||
+          (state[binding] && state[binding] !== connectionId)) continue;
+
+      const reuse = previous?.tabId === tab.id && previous.connectionId === connectionId;
+      let result;
+      try {
+        result = await chrome.tabs.sendMessage(tab.id, reuse
+          ? { ...request, step: "identity" } : request);
+      } catch { continue; }
+      if (reuse ? !result?.pageId : !result?.options?.length) continue;
+
+      await chrome.storage.session.set({
+        [key]: { tabId: tab.id, connectionId },
+        [owner]: dashboardTabId,
+        [binding]: connectionId,
+      });
+      if (previous && previous.tabId !== tab.id)
+        await chrome.storage.session.remove(`party-owner:${previous.tabId}`);
+      return { tabId: tab.id, reuse, result };
+    }
+    throw new Error("No idle eCourts search page is available. Open eCourts once, or wait for the current capture to finish, then try again.");
   });
 }
 
@@ -365,54 +398,29 @@ async function partySearch(dashboardTabId, connectionId, payload) {
     const { step } = payload;
     const request = { type: "PARTY_SEARCH_FORM", step };
     if (step === "open") {
-      const { [key]: previous } = await chrome.storage.session.get(key);
-      const courtWindow = await chrome.windows.create({
-        url: source,
-        type: "popup",
-        state: "minimized",
-        focused: false,
-      });
-      if (courtWindow?.id == null) throw new Error("Could not open the background eCourts window.");
-
-      try {
-        const [tab] = courtWindow.tabs ?? await chrome.tabs.query({ windowId: courtWindow.id });
-        if (tab?.id == null) throw new Error("Could not find the background eCourts page.");
-        await chrome.storage.session.set({
-          [key]: { tabId: tab.id, windowId: courtWindow.id, connectionId },
-          [`party-court:${tab.id}`]: connectionId,
-        });
-        const deadline = Date.now() + 12000;
+      return await navigator.locks.request("verity-case-navigation", { ifAvailable: true }, async navigation => {
+        if (!navigation) throw new Error("Wait for the current case to finish loading, then try again.");
+        const { tabId, reuse, result } = await claimCourtSearch(dashboardTabId, connectionId, key, request);
+        if (!reuse) return result;
+        await chrome.tabs.reload(tabId);
+        const deadline = Date.now() + 15000;
         while (Date.now() < deadline) {
-          let result;
+          let response;
           try {
-            result = await chrome.tabs.sendMessage(tab.id, request);
-          } catch {
-            // The content script is injected when the court page is ready.
-          }
-          if (result?.error) throw new Error(result.error);
-          if (result) {
-            if (previous?.windowId != null) {
-              await closeIdleCourtSearch(previous).catch(() => {});
-            }
-            return result;
-          }
-          await new Promise((resolve) => setTimeout(resolve, 350));
+            response = await chrome.tabs.sendMessage(tabId, { ...request, previousPage: result.pageId });
+          } catch { /* Wait for the refreshed content script. */ }
+          if (response?.error) throw new Error(response.error);
+          if (response?.options?.length) return response;
+          await new Promise(resolve => setTimeout(resolve, 350));
         }
-        throw new Error("The background eCourts page did not load. Try loading court options again.");
-      } catch (error) {
-        await chrome.windows.remove(courtWindow.id).catch(() => {});
-        if (previous) await chrome.storage.session.set({ [key]: previous });
-        else await chrome.storage.session.remove(key);
-        throw error;
-      }
+        throw new Error("The open eCourts page did not finish reloading. Refresh it and try again.");
+      });
     }
     const { [key]: draft } = await chrome.storage.session.get(key);
     if (!draft || draft.connectionId !== connectionId)
       throw new Error("Start a new search from this connected Lawcovery tab.");
     const tab = await chrome.tabs.get(draft.tabId);
-    const url = new URL(tab.url || "about:blank");
-    if (url.origin !== "https://services.ecourts.gov.in" ||
-        url.pathname !== "/ecourtindia_v6/" || url.searchParams.get("p") !== "casestatus/index")
+    if (!isCourtSearchPage(tab))
       throw new Error("The eCourts tab navigated away. Start a new search.");
     if (step === "focus") {
       await focusCourtTab(tab);
@@ -463,7 +471,7 @@ async function dashboard(message, sender) {
   const config = await dashboardConfig(origin);
   if (message.action === "PING")
     return {
-      version: "1.8.0", partySearch: true, partyCaptcha: true, partyBackground: true, autoConnect: true,
+      version: "1.9.0", partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
       connected: Boolean(config?.enabled && Date.parse(config.expiresAt) > Date.now()),
       automaticFetchMode: "missing",
     };
@@ -601,8 +609,17 @@ async function dashboard(message, sender) {
     },
   );
 }
-chrome.tabs.onRemoved.addListener((tabId) => {
-  chrome.storage.session.remove([`party-search:${tabId}`, `party-court:${tabId}`]).catch(() => {});
+chrome.tabs.onRemoved.addListener(tabId => {
+  navigator.locks.request("verity-sync", async () => {
+    const key = `party-search:${tabId}`;
+    const { [key]: draft } = await chrome.storage.session.get(key);
+    await chrome.storage.session.remove([key, `party-court:${tabId}`, `party-owner:${tabId}`]);
+    if (draft) {
+      const owner = `party-owner:${draft.tabId}`;
+      if ((await chrome.storage.session.get(owner))[owner] === tabId)
+        await chrome.storage.session.remove(owner);
+    }
+  }).catch(() => {});
 });
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   (async () => {

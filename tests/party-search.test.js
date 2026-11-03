@@ -77,6 +77,7 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
     },
     querySelector(selector) {
       if (selector === "#div_captcha_party #captcha_image") return image;
+      if (selector === "#res_party #dispTable") return table;
       if (selector.includes("refreshCaptcha()")) return { click: () => image.dispatchEvent(new Event("load")) };
       if (selector.includes("submit_party_name();")) return submit;
       throw new Error("Unexpected selector: " + selector);
@@ -95,6 +96,11 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
     listener({ type: "PARTY_SEARCH_FORM", ...payload }, { id: "test" }, resolve);
   });
   assert.equal((await send({ step: "open" })).options[0].label, "Karnataka");
+  const { pageId } = await send({ step: "identity" });
+  assert.equal((await send({ step: "open", previousPage: pageId })).loading, true);
+  nameInput.value = "Unsubmitted manual search";
+  assert.match((await send({ step: "open" })).error, /search in progress/);
+  nameInput.value = "";
   assert.match((await send({ step: 1, value: "99" })).error, /current eCourts list/);
   assert.equal((await send({ step: 0, value: "3" })).options[0].label, "Bengaluru");
   assert.equal((await send({ step: 1, value: "20" })).options[0].label, "CMM Court Complex");

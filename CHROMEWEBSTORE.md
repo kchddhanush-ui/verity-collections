@@ -112,3 +112,7 @@ Connects Chrome from the signed-in Lawcovery workspace and keeps the capture cre
 ## Version 1.8.0 — 2026-11-03 (development draft)
 
 Guided searches open eCourts in a minimized Chrome window. The user enters CAPTCHA and sees search progress in Lawcovery, and can show the court window when needed.
+
+## Version 1.9.0 — 2026-11-03 (development draft)
+
+Guided court searches reuse an open eCourts tab without opening or focusing a browser window. The dashboard offers an explicit link if a fresh court tab is needed. Existing court and browser permissions cover this flow.

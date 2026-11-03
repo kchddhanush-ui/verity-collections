@@ -263,6 +263,6 @@ Overview shows the authenticated account name, current loaded portfolio, recorde
 
 The header search navigates to Cases and filters the existing loaded portfolio. Ctrl/Cmd+K focuses search; the small-screen fallback opens case search. Sync reloads the saved company portfolio, with success feedback only after a confirmed successful refresh. Profile settings and Workspace access show the signed-in account and available companies; sign-out uses the existing revocation/sign-out flow. Mobile navigation supports Escape, focus trapping and background inertness. Court sync remains exclusive to Connections. Case fetching, capture policies, RLS, calculations, audits and database schema are unchanged. Sign-in/recovery remain the existing flows because the supplied reference contains no sign-in screen.
 
-### Guided search in the background
+### Guided search using an open eCourts tab
 
-Reload Lawcovery Case Capture **1.8.0** in Chrome and refresh Lawcovery. **Search by party name** loads eCourts in a minimized Chrome window and keeps the court selection and CAPTCHA entry in Lawcovery. Choose **Show eCourts window** to inspect the live source or use its audio CAPTCHA. Keep the window open while case details are being captured.
+Reload Lawcovery Case Capture **1.9.0** in Chrome and refresh Lawcovery. Open an idle eCourts Case Status tab once and return to Lawcovery. **Load court options** uses that tab without bringing it forward. Enter the CAPTCHA in Lawcovery and keep the eCourts tab open while the capture queue runs. **Show eCourts tab** brings the source forward when you choose it. **Start over** can reuse the same source when its capture queue finishes.
