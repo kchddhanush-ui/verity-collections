@@ -8,7 +8,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     alarms = [],
     badges = [];
   let courtScriptReady = true;
-  let courtHasResults = false;
+  let courtNeedsReload = false;
   let projectGranted = true, connectionCreates = 0, expiresAt = null;
   let offline = false,
     revoked = false,
@@ -106,12 +106,12 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         if (!tab) throw new Error("Tab unavailable");
         return tab;
       },
-      reload: async id => { reloadedTabs.push(id); courtScriptReady = true; courtHasResults = false; },
+      reload: async id => { reloadedTabs.push(id); courtScriptReady = true; courtNeedsReload = false; },
       sendMessage: async (_id, message) => {
         if (message.type === "PARTY_SEARCH_FORM") {
           if (!courtScriptReady) throw new Error("No receiving end");
           formMessages.push(message);
-          if (message.step === "open" && courtHasResults) return { hasResults: true, pageId: "old-results" };
+          if (message.step === "open" && courtNeedsReload) return { needsReload: true, pageId: "old-draft" };
           if (message.step === "identity") return { pageId: "previous-page" };
           if (message.step === "prepare") {
             return { challengeId: "00000000-0000-4000-8000-000000000042", image: "data:image/png;base64,AA==" };
@@ -343,10 +343,10 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       assert.equal((await party({ step: "open", reloadExisting: true })).options[0].label, "Karnataka");
       assert.deepEqual(reloadedTabs, [12, 12, 13]);
       courtTabs = [{ id: 14, url: page.url }];
-      courtHasResults = true;
+      courtNeedsReload = true;
       assert.equal((await party({ step: "open" })).options[0].label, "Karnataka");
       assert.deepEqual(reloadedTabs, [12, 12, 13, 14]);
-      assert.equal(formMessages.at(-1).previousPage, "old-results");
+      assert.equal(formMessages.at(-1).previousPage, "old-draft");
       assert.equal(openedTabs.length + openedWindows.length, 1);
       courtTabs = [];
     });

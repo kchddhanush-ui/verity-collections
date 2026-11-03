@@ -367,7 +367,7 @@ async function claimCourtSearch(dashboardTab, connectionId, key, request, reload
       return { tabId, ...details };
     }
     let unavailable;
-    let previousResults;
+    let tabToReload;
     let busy = false;
     for (const tab of searchTabs) {
       const restoringOwnSearch = restoreSearch && previous?.tabId === tab.id &&
@@ -393,8 +393,8 @@ async function claimCourtSearch(dashboardTab, connectionId, key, request, reload
         result = await chrome.tabs.sendMessage(tab.id, reuse
           ? { ...request, step: "identity" } : request);
       } catch { /* An open tab may still be loading or need the updated extension. */ }
-      if (!reuse && result?.hasResults && result.pageId) {
-        previousResults ??= { tabId: tab.id, result };
+      if (!reuse && result?.needsReload && result.pageId) {
+        tabToReload ??= { tabId: tab.id, result };
         continue;
       }
       if (!forceReload && (reuse ? !result?.pageId : !result?.options?.length)) {
@@ -404,7 +404,7 @@ async function claimCourtSearch(dashboardTab, connectionId, key, request, reload
 
       return await claim(tab.id, { reuse, result });
     }
-    if (previousResults) return await claim(previousResults.tabId, { reuse: true, result: previousResults.result });
+    if (tabToReload) return await claim(tabToReload.tabId, { reuse: true, result: tabToReload.result });
     if (unavailable) return { error: unavailable, canReload: true };
     if (busy) throw new Error("The open eCourts tab is still needed by a capture. Finish or resume that capture before reusing it.");
     if (searchTabs.length) throw new Error("The open eCourts tab belongs to another Lawcovery tab or workspace. Use that workspace or open a fresh Case Status tab.");
@@ -444,18 +444,25 @@ async function partySearch(dashboardTab, connectionId, payload) {
         if (claim.error) return claim;
         const { tabId, reuse, loading, result } = claim;
         if (!reuse && !loading) return result;
-        if (reuse) await chrome.tabs.reload(tabId);
+        let reloaded = reuse;
+        let previousPage = result?.pageId;
+        if (reloaded) await chrome.tabs.reload(tabId);
         const deadline = Date.now() + 15000;
         while (Date.now() < deadline) {
           let response;
           try {
-            response = await chrome.tabs.sendMessage(tabId, { ...request, previousPage: result?.pageId });
+            response = await chrome.tabs.sendMessage(tabId, { ...request, previousPage });
           } catch { /* Wait for the refreshed content script. */ }
-          if (response?.error) throw new Error(response.error);
+          if (response?.error) return { error: response.error, canReload: true };
           if (response?.options?.length) return response;
+          if (response?.needsReload && !reloaded) {
+            previousPage = response.pageId;
+            await chrome.tabs.reload(tabId);
+            reloaded = true;
+          }
           await new Promise(resolve => setTimeout(resolve, 350));
         }
-        throw new Error("The background eCourts tab did not finish loading. Wait a moment and try Load court options again.");
+        return { error: "The background eCourts tab did not return court options. Try reloading it from here.", canReload: true };
       });
     }
     const { [key]: draft } = await chrome.storage.session.get(key);
@@ -519,7 +526,7 @@ async function dashboard(message, sender) {
   const config = await dashboardConfig(origin);
   if (message.action === "PING")
     return {
-      version: "1.10.1", editableCourtSearch: true, autoOpenCourtTab: true, reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
+      version: "1.10.2", editableCourtSearch: true, autoOpenCourtTab: true, reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
       connected: Boolean(config?.enabled && Date.parse(config.expiresAt) > Date.now()),
       automaticFetchMode: "missing",
     };
