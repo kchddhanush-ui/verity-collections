@@ -23,6 +23,7 @@ test("popup switches fetch modes and presents empty queues without a misleading 
   globalThis.document = document;
   globalThis.chrome = {
     storage: {
+      session: { get: async () => ({}) },
       local: { get: async () => structuredClone(values) },
       onChanged: { addListener() {} },
     },

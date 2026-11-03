@@ -7,6 +7,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     listeners = {},
     alarms = [],
     badges = [];
+  let projectGranted = true, connectionCreates = 0, expiresAt = null;
   let offline = false,
     revoked = false,
     courtTabs = [],
@@ -73,6 +74,10 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
         },
       },
     },
+    permissions: { contains: async ({ origins }) => {
+      assert.deepEqual(origins, ["https://example.supabase.co/*"]);
+      return projectGranted;
+    } },
     action: {
       setBadgeText: async (x) => {
         badges.push(x.text);
@@ -129,6 +134,13 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
       if (coverageHook) await coverageHook();
       return Response.json(badCoverage ? [] : p_cnrs.map(cnr => ({ cnr, has_details: storedCnrs.has(cnr) })));
     }
+    if (url.endsWith("/create_capture_connection")) {
+      if (options.headers.Authorization !== "Bearer dashboard-token")
+        return Response.json({ message: "Sign in required" }, { status: 401 });
+      connectionCreates++;
+      expiresAt = new Date(Date.now() + 86400000).toISOString();
+      return Response.json({ id: "connection-a", token: "a".repeat(64), expires_at: expiresAt });
+    }
     if (url.endsWith("/check_capture_connection"))
       return Response.json({
         id: "connection-a",
@@ -149,7 +161,7 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
           ? [
               {
                 id: "connection-a",
-                expires_at: new Date(Date.now() + 86400000).toISOString(),
+                expires_at: expiresAt || new Date(Date.now() + 86400000).toISOString(),
                 revoked_at: null,
               },
             ]
@@ -585,6 +597,38 @@ test("extension connection, automatic save, queue, pause and sender checks", asy
     );
     await send({ type: "DISCONNECT" }, popup);
     assert.equal(values.config, undefined);
+    await t.test("automatic setup awaits project permission, reuses credentials and honours disconnect", async () => {
+      revoked = false;
+      delete values.autoConnectDisabled;
+      projectGranted = false;
+      const request = { type: "DASHBOARD", action: "AUTO_CONNECT", payload: { ...payload, key: config.key } };
+      assert.ok((await send(request, { ...app, url: "http://localhost:8080/" })).error);
+      assert.ok((await send(request, { ...app, frameId: 1 })).error);
+      assert.equal((await send(request, app)).state, "permission");
+      assert.equal(connectionCreates, 0);
+      assert.equal(sessionStorage.connectionPermission, config.url);
+      projectGranted = true;
+      assert.match((await send({ ...request, payload: { ...request.payload, accessToken: "invalid" } }, app)).error, /Sign in required/);
+      assert.deepEqual(await send(request, app), { state: "connected", created: true });
+      assert.equal(values.config.workspaceId, payload.workspace);
+      assert.equal(sessionStorage.connectionPermission, undefined);
+      assert.ok(!JSON.stringify([values, sessionStorage]).includes(payload.accessToken));
+      assert.deepEqual(await send(request, app), { state: "connected" });
+      assert.equal(connectionCreates, 1);
+      assert.equal((await send({ ...request, payload: { ...request.payload, workspace: crypto.randomUUID() } }, app)).state, "different");
+      await send({ type: "TOGGLE" }, popup);
+      assert.equal((await send(request, app)).state, "paused");
+      await send({ type: "TOGGLE" }, popup);
+      expiresAt = new Date(Date.now() - 1000).toISOString();
+      values.config.expiresAt = expiresAt;
+      assert.equal((await send(request, app)).created, true);
+      assert.equal(connectionCreates, 2);
+      await send({ type: "DISCONNECT" }, popup);
+      assert.equal((await send(request, app)).state, "disconnected");
+      assert.equal(connectionCreates, 2);
+      assert.equal((await send({ ...request, payload: { ...request.payload, connect: true } }, app)).created, true);
+      assert.equal(connectionCreates, 3);
+    });
   } finally {
     globalThis.chrome = originalChrome;
     globalThis.fetch = originalFetch;

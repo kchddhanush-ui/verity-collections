@@ -4,6 +4,7 @@ import './styles.css';
 import './auth-layout.css';
 import { supabase } from './lib/supabase';
 import { useAuth } from './useAuth';
+import { extensionRequest } from './lib/extensionBridge';
 import { ResetRequest, RecoveryForm } from './PasswordRecovery';
 import { LawcoveryLogo } from './components/LawcoveryLogo';
 import { PublicLanding } from './components/PublicLanding';
@@ -64,6 +65,10 @@ function App() {
       if (revokeError && !['PGRST202', '42883'].includes(revokeError.code)) { setMessage('Could not revoke extension connections. Check your connection and try signing out again.'); return; }
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) { setMessage(error.message); return; }
+      await extensionRequest('RELEASE_CONNECTION', {
+        projectUrl: import.meta.env.VITE_SUPABASE_URL?.trim(),
+        accessToken: auth.session?.access_token,
+      }).catch(() => {});
       setDemo(false);
     } catch { setMessage('Unable to sign out. Please try again.'); }
     finally { setPending(false); }

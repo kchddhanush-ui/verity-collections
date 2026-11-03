@@ -7,12 +7,12 @@ export function extensionRequest(action, payload = {}) {
         reject(
           new Error(
             action === "PING"
-              ? "Reload Lawcovery Case Capture 1.6.0 and refresh this page."
+              ? "Reload Lawcovery Case Capture 1.7.0 and refresh this page."
               : "The extension did not finish. Check the eCourts tab and connection status before retrying.",
           ),
         );
       },
-      action === "PING" ? 2000 : 120000,
+      ["PING", "RELEASE_CONNECTION"].includes(action) ? 2000 : 120000,
     );
     function receive(event) {
       if (

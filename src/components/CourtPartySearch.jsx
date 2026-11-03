@@ -46,7 +46,7 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
     setChoices([]);
     run(async () => {
       const ping = await extensionRequest("PING");
-      if (!ping?.partyCaptcha) throw new Error("Reload Lawcovery Case Capture 1.6.0 in Chrome and refresh this page.");
+      if (!ping?.partyCaptcha) throw new Error("Reload Lawcovery Case Capture 1.7.0 in Chrome and refresh this page.");
       const result = await request({ step: "open" });
       setChoices(result.options || []);
       setStarted(true);

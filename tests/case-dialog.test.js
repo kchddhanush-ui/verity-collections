@@ -232,7 +232,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     assert.ok(document.querySelector(".batch-capture-panel"), "Court sync returns when opening Connections");
     assert.ok(
       [...document.querySelectorAll("button")].some(
-        (b) => b.textContent === "Create extension connection",
+        (b) => b.textContent === "Connect this workspace",
       ),
     );
     await act(async () =>

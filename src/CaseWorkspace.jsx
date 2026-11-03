@@ -130,11 +130,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     [captures, setCaptures] = useState([]),
     [query, setQuery] = useState(""),
     [tab, setTab] = useState("details");
+  const requestedConnection = useRef("");
+  const [connectionStatus, setConnectionStatus] = useState("");
+  const [connectionAttempt, setConnectionAttempt] = useState(0);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [loading, setLoading] = useState(true),
-    [settings, setSettings] = useState(""),
-    [notice, setNotice] = useState("");
+    [loading, setLoading] = useState(true);
   useEffect(() => {
     let active = true;
     (async () => {
@@ -212,8 +213,6 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     setSearches([]);
     setFetchStatus(null);
     setSelected(null);
-    setSettings("");
-    setNotice("");
     setConnections([]);
     if (!workspace) return;
     setBusy(true);
@@ -305,31 +304,10 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       setWorkspace(id);
     });
   }
-  async function connect() {
-    await perform(async () => {
-      const result = await call("create_capture_connection", {
-        p_workspace: workspace,
-        p_label: "Chrome desktop",
-      });
-      setSettings(
-        JSON.stringify(
-          {
-            url: import.meta.env.VITE_SUPABASE_URL,
-            key:
-              import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-              import.meta.env.VITE_SUPABASE_ANON_KEY,
-            token: result.token,
-            app_origin: window.location.origin,
-          },
-          null,
-          2,
-        ),
-      );
-      setNotice(
-        "Copy these settings into the extension. The secret is shown only now; it expires in 30 days.",
-      );
-      await refresh();
-    });
+  function connect() {
+    requestedConnection.current = workspace;
+    setConnectionStatus("Connecting Chrome…");
+    setConnectionAttempt(attempt => attempt + 1);
   }
   function dashboardPayload(cnr) {
     return {
@@ -342,19 +320,52 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   useEffect(() => {
     let active = true,
       timer,
-      lastProgress = "";
+      lastProgress = "",
+      connectionVerified = false;
     setBatch(null);
     setBatchError("");
     setCaptureUpdate("");
-    if (!workspace || !session.access_token) return;
+    if (requestedConnection.current !== workspace) setConnectionStatus("");
+    if (pending || !workspace || !session.access_token) return;
     async function poll() {
       try {
         const ping = await extensionRequest("PING");
+        if (!active) return;
+        if (!ping?.autoConnect) {
+          setConnectionStatus("Reload Lawcovery Case Capture 1.7.0 in Chrome, then refresh this page.");
+        } else if (!connectionVerified || !ping.connected) {
+          const result = await extensionRequest("AUTO_CONNECT", {
+            ...dashboardPayload(),
+            key: (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+              import.meta.env.VITE_SUPABASE_ANON_KEY)?.trim(),
+            connect: requestedConnection.current === workspace,
+          });
+          if (!active) return;
+          if (result.state !== "permission") requestedConnection.current = "";
+          const statuses = {
+            connected: "Chrome connected. Automatic capture is on.",
+            paused: "Capture is paused. Resume it in the extension popup.",
+            permission: "Open the Lawcovery extension popup and choose Allow project access.",
+            disconnected: "Chrome is disconnected. Choose Connect this workspace to reconnect.",
+            different: "Chrome is connected to a different account or workspace. Choose Connect this workspace to switch.",
+          };
+          setConnectionStatus(result.error || statuses[result.state] || "Chrome connection could not be verified.");
+          connectionVerified = result.state === "connected";
+          if (!connectionVerified) {
+            setBatch(null);
+            return;
+          }
+          if (result.created) {
+            const rows = await call("list_capture_connections", { p_workspace: workspace });
+            if (active) setConnections(rows);
+          }
+          ping.connected = true;
+        }
         if (ping?.connected && ping.automaticFetchMode !== "missing") {
           if (active) {
             setBatch(null);
             setCaptureUpdate(
-              `Chrome is running ${ping.version ? `Lawcovery Case Capture ${ping.version}` : "an older Lawcovery extension"}. Reload Lawcovery Case Capture 1.6.0 in chrome://extensions, then refresh Lawcovery and eCourts to use missing-only automatic fetches.`,
+              `Chrome is running ${ping.version ? `Lawcovery Case Capture ${ping.version}` : "an older Lawcovery extension"}. Reload Lawcovery Case Capture 1.7.0 in chrome://extensions, then refresh Lawcovery and eCourts to use missing-only automatic fetches.`,
             );
           }
           return;
@@ -384,10 +395,13 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                 lastProgress = progress;
               }
             }
-          } else if (active) setBatch(null);
+          } else if (active) {
+            setBatch(null);
+            connectionVerified = false;
+          }
         } else if (active) setBatch(null);
       } catch {
-        /* An uninstalled/disconnected extension does not block saved cases. */
+        if (active) setConnectionStatus("Open or reload Lawcovery Case Capture 1.7.0 in Chrome and refresh this page.");
       } finally {
         if (active) timer = setTimeout(poll, 6000);
       }
@@ -397,7 +411,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       active = false;
       clearTimeout(timer);
     };
-  }, [workspace, session.access_token]);
+  }, [workspace, session.access_token, connectionAttempt, pending]);
   async function batchControl(action, mode) {
     setBatchError("");
     setBatchBusy(true);
@@ -787,49 +801,16 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         <WorkspaceIcon name="connection" size={18} />
                         BROWSER CONNECTION
                       </div>
-                      <h2>Connect Chrome for automatic capture</h2>
+                      <h2>Chrome capture connection</h2>
                       <p>
-                        Connect Lawcovery Case Capture in Chrome to save your
-                        loaded eCourts cases automatically. Use Search by party name
-                        to enter the CAPTCHA and run the search in Lawcovery.
+                        Lawcovery connects the installed Chrome extension after you sign in.
+                        Chrome may ask you to allow access to your Supabase project once.
+                        Then use Search by party name to run an eCourts search and enter its CAPTCHA.
                       </p>
-                      <p>
-                        Connections stay active until paused, revoked, expired,
-                        or you sign out of Lawcovery. Each upload is attributed
-                        to the account that created the connection.
-                      </p>
+                      <p role="status">{connectionStatus || "Checking Chrome connection…"}</p>
                       <button disabled={busy} onClick={connect}>
-                        Create extension connection
+                        Connect this workspace
                       </button>
-                      {settings && (
-                        <div>
-                          <p role="status">{notice}</p>
-                          <label>
-                            Private connection settings
-                            <textarea
-                              readOnly
-                              value={settings}
-                              rows="7"
-                              onFocus={(e) => e.target.select()}
-                            />
-                          </label>
-                          <button
-                            onClick={() =>
-                              perform(async () => {
-                                await navigator.clipboard.writeText(settings);
-                                setNotice(
-                                  "Connection settings copied. Paste them in the extension.",
-                                );
-                              })
-                            }
-                          >
-                            Copy settings
-                          </button>
-                          <button onClick={() => setSettings("")}>
-                            Hide secret
-                          </button>
-                        </div>
-                      )}
                       <ul className="connection-list">
                         {connections.map((c) => (
                           <li key={c.id}>
@@ -849,7 +830,6 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                                     await call("revoke_capture_connection", {
                                       p_id: c.id,
                                     });
-                                    setSettings("");
                                     await refresh();
                                   })
                                 }

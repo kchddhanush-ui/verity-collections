@@ -64,22 +64,15 @@ Find workspace IDs in the `workspaces` table and the user's ID under Authenticat
 
 This is a development installation, not a Chrome Web Store release. Each teammate needs their own extension installation and their own account connection.
 
-## 5. Connect once
+## 5. Connect Chrome automatically
 
-1. In Lawcovery, select the receiving company workspace.
-2. Expand **Connect Chrome for automatic capture**.
-3. Click **Create extension connection**.
-4. Copy the private connection JSON shown there.
-5. Open the extension popup and paste it.
-6. Click **Connect and enable auto-save**.
-7. Chrome will request access to your exact Supabase project. Grant that access to allow uploads.
-8. Confirm the receiving company shown in the extension.
+1. Sign in to Lawcovery at the usual local address (localhost or 127.0.0.1 on port 5173) and select your company workspace.
+2. If Connections asks for project access, open the **Lawcovery Case Capture** popup and choose **Allow project access**. Confirm Chrome’s prompt for your exact Supabase project.
+3. Check the receiving workspace in the extension popup. You can now run an eCourts search and enter its CAPTCHA.
 
-There is no per-case Import button or approval step. Creating a connection enables automatic capture of opened case pages. Pause capture from the extension when browsing cases you do not want stored in that workspace.
+The extension creates and stores the workspace credential using your signed-in account. Supabase stores only its hash. An active connection can renew after its 30-day expiry. Paused capture can be resumed from the popup. If you disconnect, revoke the credential, or want to switch the receiving workspace, use **Connect this workspace** under Connections. Start a fresh search in a new eCourts tab after switching workspaces.
 
-Connection JSON is a secret: anyone who has it can submit captures to that workspace as the creating user. It does not permit reading records. Do not share it, commit it, paste it into court forms, or include it in screenshots. Only its SHA-256 hash is stored in the database. It expires after 30 days; use **Revoke** in Lawcovery to invalidate it earlier.
-
-Disconnect clears credentials/queued captures from this browser but does not revoke a copied credential. Revocation invalidates the credential server-side. Signing out through Lawcovery revokes **all** of that account's capture connections; create a new connection after signing in again. Changing the workspace in the website does not silently change the extension's destination: disconnect and create/connect the intended workspace credential.
+Signing out through Lawcovery revokes the account’s capture connections. Lawcovery also clears the local credential when the extension can verify the signed-out account owned it.
 
 ## 6. Use eCourts normally
 
@@ -164,7 +157,7 @@ No new database SQL is needed if both earlier migrations are already installed.
 1. Pull this branch and restart `npm run dev`.
 2. In `chrome://extensions`, reload Lawcovery Case Capture and confirm **1.2.0**. Chrome may ask you to allow the additional localhost dashboard access.
 3. Refresh **both** the Lawcovery page and the eCourts tab so their updated scripts load.
-4. Keep your existing valid extension connection. This release supports the local dashboard at `http://127.0.0.1:5173` or `http://localhost:5173`. For a different local port, create a new connection from that page; its settings include `app_origin`.
+4. Keep your existing valid extension connection. This release supports the local dashboard at `http://127.0.0.1:5173` or `http://localhost:5173`. Existing connections bound to a different local port continue to use that origin.
 5. On eCourts, complete CAPTCHA and run a search. Leave that tab open, then return to Lawcovery and refresh the listings once if needed.
 6. Click **View** on a listed-only case in Lawcovery. The extension uses the matching live View control in the existing eCourts tab. The dashboard displays fetching progress, saves the loaded details with the existing audit transaction, and reloads that case without a manual dashboard refresh after a confirmed save.
 7. Clicking View/the case number always requests a fresh load from eCourts, including already-saved cases. The Refresh from eCourts button can repeat that same action from the detail panel. Saved data is retained if the fetch fails.

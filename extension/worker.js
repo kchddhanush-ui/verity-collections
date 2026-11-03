@@ -108,6 +108,133 @@ async function deliver(key, item, config) {
     };
   }
 }
+function validateProject(cfg) {
+  if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(cfg?.url) ||
+      typeof cfg.key !== "string" || cfg.key.length > 4096)
+    throw new Error("Use your hosted Supabase project and publishable key");
+  if (!cfg.key.startsWith("sb_publishable_")) {
+    try {
+      const payload = cfg.key.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+      if (JSON.parse(atob(payload)).role !== "anon") throw new Error();
+    } catch {
+      throw new Error("Use only a Supabase publishable/anon key");
+    }
+  }
+}
+async function bindOpenCourtTabs(previousId, replacementId = previousId) {
+  const tabs = await chrome.tabs.query({
+    url: "https://services.ecourts.gov.in/ecourtindia_v6/*",
+  });
+  for (const tab of tabs) {
+    const key = `party-court:${tab.id}`;
+    const { [key]: bound } = await chrome.storage.session.get(key);
+    if (!bound || bound === previousId) await chrome.storage.session.set({ [key]: replacementId });
+  }
+}
+async function saveConnection(cfg, result, renewal = false) {
+  const all = await chrome.storage.local.get(null);
+  if (all.config && all.config.connectionId !== result.id) {
+    await bindOpenCourtTabs(all.config.connectionId, renewal ? result.id : all.config.connectionId);
+  }
+  await chrome.storage.local.remove(
+    Object.keys(all).filter((key) => key.startsWith("pending:") || key === "batch"),
+  );
+  await chrome.storage.local.set({
+    config: {
+      ...cfg,
+      fetchMode: "missing",
+      connectionId: result.id,
+      workspace: result.workspace,
+      enabled: true,
+      pausedByUser: false,
+      expiresAt: result.expires_at,
+    },
+    autoConnectDisabled: false,
+    lastStatus: "Connected · automatic capture enabled",
+  });
+  await chrome.storage.session.remove("connectionPermission").catch(() => {});
+  await badge("ON").catch(() => {});
+  await wakePages().catch(() => {});
+}
+async function autoConnect(payload, origin) {
+  const project = { url: payload?.projectUrl?.replace(/\/$/, ""), key: payload?.key };
+  validateProject(project);
+  if (typeof payload.accessToken !== "string" || !payload.accessToken ||
+      payload.accessToken.length > 12000 || !/^[a-f0-9-]{36}$/i.test(payload.workspace))
+    throw new Error("Sign in and select a workspace to connect Chrome.");
+
+  const { config, autoConnectDisabled } = await chrome.storage.local.get(["config", "autoConnectDisabled"]);
+  const explicit = payload.connect === true;
+  if (autoConnectDisabled && !explicit) return { state: "disconnected" };
+  if (config && config.url !== project.url && !explicit) return { state: "different" };
+
+  const origins = [`${project.url}/*`];
+  if (!(await chrome.permissions.contains({ origins }))) {
+    await chrome.storage.session.set({ connectionPermission: project.url });
+    return { state: "permission" };
+  }
+  const connections = await rpc(project, "list_capture_connections", {
+    p_workspace: payload.workspace,
+  }, payload.accessToken);
+  const current = config?.url === project.url
+    ? connections.find(connection => connection.id === config.connectionId)
+    : null;
+  if (config && config.url === project.url) {
+    if (!current && !explicit) return { state: "different" };
+    if (current && !current.revoked_at && Date.parse(current.expires_at) > Date.now()) {
+      if (!config.workspaceId) {
+        await chrome.storage.local.set({
+          config: { ...config, workspaceId: payload.workspace, pausedByUser: !config.enabled },
+        });
+      }
+      return { state: config.enabled ? "connected" : "paused" };
+    }
+    if (current?.revoked_at && !explicit) return { state: "disconnected" };
+    if (current && (config.pausedByUser ?? !config.enabled) && !explicit) return { state: "paused" };
+  }
+
+  // Only the extension receives the upload credential. The login token is transient.
+  const created = await rpc(project, "create_capture_connection", {
+    p_workspace: payload.workspace,
+    p_label: "Chrome desktop",
+  }, payload.accessToken);
+  try {
+    const checked = await rpc(project, "check_capture_connection", { p_token: created.token });
+    if (checked.id !== created.id) throw new Error("Connection identity could not be verified.");
+    await saveConnection({
+      ...project, token: created.token, app_origin: origin, workspaceId: payload.workspace,
+    }, checked, Boolean(current && !current.revoked_at));
+  } catch (error) {
+    try {
+      await rpc(project, "revoke_capture_connection", { p_id: created.id }, payload.accessToken);
+    } catch { /* The unused credential is never returned to the dashboard. */ }
+    throw error;
+  }
+  return { state: "connected", created: true };
+}
+async function releaseSignedOutConnection(payload) {
+  const { config } = await chrome.storage.local.get("config");
+  if (!config?.workspaceId || payload?.projectUrl?.replace(/\/$/, "") !== config.url ||
+      typeof payload.accessToken !== "string" || payload.accessToken.length > 12000)
+    return {};
+  const connections = await rpc(config, "list_capture_connections", {
+    p_workspace: config.workspaceId,
+  }, payload.accessToken);
+  const current = connections.find(connection => connection.id === config.connectionId);
+  if (current) {
+    if (!current.revoked_at) {
+      await rpc(config, "revoke_capture_connection", { p_id: config.connectionId }, payload.accessToken);
+    }
+    await bindOpenCourtTabs(config.connectionId);
+    const stored = await chrome.storage.local.get(null);
+    await chrome.storage.local.remove(Object.keys(stored).filter(
+      key => key === "config" || key === "batch" || key.startsWith("pending:"),
+    ));
+    await chrome.storage.local.remove("lastStatus");
+    await badge("OFF");
+  }
+  return {};
+}
 async function handle(message, sender) {
   await protectStorage();
   const internal =
@@ -116,51 +243,12 @@ async function handle(message, sender) {
     sender.url?.startsWith(chrome.runtime.getURL(""));
   if (message.type === "CONFIGURE" && internal) {
     const cfg = message.config;
-    if (
-      !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(cfg.url) ||
-      !/^[a-f0-9]{64}$/.test(cfg.token) ||
-      typeof cfg.key !== "string"
-    )
+    validateProject(cfg);
+    if (!/^[a-f0-9]{64}$/.test(cfg.token) ||
+        (cfg.app_origin && !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cfg.app_origin)))
       throw new Error("Invalid connection settings");
-    if (!cfg.key.startsWith("sb_publishable_")) {
-      try {
-        if (
-          JSON.parse(
-            atob(cfg.key.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
-          ).role !== "anon"
-        )
-          throw new Error();
-      } catch {
-        throw new Error("Use only a Supabase publishable/anon key");
-      }
-    }
-    if (
-      cfg.app_origin &&
-      !/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cfg.app_origin)
-    )
-      throw new Error(
-        "This release supports local Lawcovery dashboard origins only",
-      );
-    const result = await rpc(cfg, "check_capture_connection", {
-      p_token: cfg.token,
-    });
-    const all = await chrome.storage.local.get(null);
-    await chrome.storage.local.remove(
-      Object.keys(all).filter((k) => k.startsWith("pending:") || k === "batch"),
-    );
-    await chrome.storage.local.set({
-      config: {
-        ...cfg,
-        fetchMode: "missing",
-        connectionId: result.id,
-        workspace: result.workspace,
-        enabled: true,
-        expiresAt: result.expires_at,
-      },
-      lastStatus: "Connected · automatic capture enabled",
-    });
-    await badge("ON");
-    await wakePages();
+    const result = await rpc(cfg, "check_capture_connection", { p_token: cfg.token });
+    await saveConnection(cfg, result);
     return { ok: true };
   }
   if (message.type === "BATCH_START" && internal)
@@ -171,7 +259,7 @@ async function handle(message, sender) {
     const { config } = await chrome.storage.local.get("config");
     if (!config) throw new Error("Connect first");
     await chrome.storage.local.set({
-      config: { ...config, enabled: !config.enabled },
+      config: { ...config, enabled: !config.enabled, pausedByUser: config.enabled },
     });
     await badge(config.enabled ? "OFF" : "ON");
     await wakePages();
@@ -179,11 +267,14 @@ async function handle(message, sender) {
   }
   if (message.type === "DISCONNECT" && internal) {
     const all = await chrome.storage.local.get(null);
+    if (all.config) await bindOpenCourtTabs(all.config.connectionId);
     await chrome.storage.local.remove(
       Object.keys(all).filter(
         (k) => k.startsWith("pending:") || k === "config" || k === "batch",
       ),
     );
+    await chrome.storage.local.set({ autoConnectDisabled: true, lastStatus: "Disconnected in this browser" });
+    await chrome.storage.session.remove("connectionPermission");
     await badge("OFF");
     return { ok: true };
   }
@@ -303,21 +394,36 @@ async function partySearch(dashboardTabId, connectionId, payload) {
     return await chrome.tabs.sendMessage(tab.id, request);
   });
 }
-async function dashboard(message, sender) {
-  await protectStorage();
-  if (sender.id !== chrome.runtime.id || !sender.tab || !sender.url)
-    throw new Error("Invalid dashboard sender");
+async function dashboardConfig(origin) {
   const { config } = await chrome.storage.local.get("config");
-  const origin = new URL(sender.url).origin;
   const allowed = config?.app_origin
     ? [config.app_origin]
     : ["http://127.0.0.1:5173", "http://localhost:5173"];
   if (!allowed.includes(origin))
-    throw new Error(
-      "This dashboard origin is not connected. Reconnect from your Lawcovery dashboard.",
-    );
+    throw new Error("Open Lawcovery at the local address used to connect this browser.");
+  return config;
+}
+async function dashboard(message, sender) {
+  await protectStorage();
+  if (sender.id !== chrome.runtime.id || !sender.tab || !sender.url ||
+      (sender.frameId != null && sender.frameId !== 0))
+    throw new Error("Invalid dashboard sender");
+  const origin = new URL(sender.url).origin;
+  if (message.action === "AUTO_CONNECT" || message.action === "RELEASE_CONNECTION") {
+    return await navigator.locks.request("verity-sync", async () => {
+      await dashboardConfig(origin);
+      return message.action === "AUTO_CONNECT"
+        ? await autoConnect(message.payload, origin)
+        : await releaseSignedOutConnection(message.payload);
+    });
+  }
+  const config = await dashboardConfig(origin);
   if (message.action === "PING")
-    return { version: "1.6.0", partySearch: true, partyCaptcha: true, connected: Boolean(config?.enabled), automaticFetchMode: "missing" };
+    return {
+      version: "1.7.0", partySearch: true, partyCaptcha: true, autoConnect: true,
+      connected: Boolean(config?.enabled && Date.parse(config.expiresAt) > Date.now()),
+      automaticFetchMode: "missing",
+    };
   if (!config?.enabled)
     throw new Error(
       "Extension is paused or disconnected. Connect or resume Lawcovery Case Capture.",
