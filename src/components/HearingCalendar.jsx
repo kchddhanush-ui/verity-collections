@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   caseNumber,
   filterHearingEvents,
@@ -12,6 +12,7 @@ import {
 export function HearingCalendar({ cases, onOpenCase, today = indiaToday() }) {
   const [month, setMonth] = useState(today.slice(0, 7));
   const [selectedDay, setSelectedDay] = useState(today);
+  const agendaHeading = useRef(null);
   const [query, setQuery] = useState("");
   const events = useMemo(() => hearingEvents(cases), [cases]);
   const visible = useMemo(
@@ -41,6 +42,12 @@ export function HearingCalendar({ cases, onOpenCase, today = indiaToday() }) {
   function jump(day) {
     setMonth(day.slice(0, 7));
     setSelectedDay(day);
+  }
+  function showDay(day) {
+    setSelectedDay(day);
+    const heading = agendaHeading.current;
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView({ block: "start" });
   }
   const title = formatHearingDate(`${month}-01`, {
     month: "long",
@@ -180,7 +187,7 @@ export function HearingCalendar({ cases, onOpenCase, today = indiaToday() }) {
                             aria-pressed={day === selectedDay}
                             aria-current={day === today ? "date" : undefined}
                             aria-label={`${formatHearingDate(day)}, ${entries.length} case hearings`}
-                            onClick={() => setSelectedDay(day)}
+                            onClick={() => showDay(day)}
                           >
                             {Number(day.slice(-2))}
                             {day === today && <span>Today</span>}
@@ -189,7 +196,7 @@ export function HearingCalendar({ cases, onOpenCase, today = indiaToday() }) {
                             <button
                               className="hearing-mobile-count"
                               aria-label={`Show ${entries.length} cases on ${formatHearingDate(day)}`}
-                              onClick={() => setSelectedDay(day)}
+                              onClick={() => showDay(day)}
                             >
                               {entries.length} case
                               {entries.length === 1 ? "" : "s"}
@@ -216,7 +223,7 @@ export function HearingCalendar({ cases, onOpenCase, today = indiaToday() }) {
                           {entries.length > 3 && (
                             <button
                               className="hearing-more"
-                              onClick={() => setSelectedDay(day)}
+                              onClick={() => showDay(day)}
                             >
                               +{entries.length - 3} more · show all
                             </button>
@@ -234,7 +241,9 @@ export function HearingCalendar({ cases, onOpenCase, today = indiaToday() }) {
             aria-labelledby="hearing-day-title"
           >
             <p className="console-eyebrow">SELECTED DAY</p>
-            <h3 id="hearing-day-title">{formatHearingDate(selectedDay)}</h3>
+            <h3 id="hearing-day-title" ref={agendaHeading} tabIndex={-1}>
+              {formatHearingDate(selectedDay)}
+            </h3>
             <p role="status">
               {dayEvents.length} case{dayEvents.length === 1 ? "" : "s"}
             </p>

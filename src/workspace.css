@@ -1334,6 +1334,7 @@
 .hearing-agenda h3 {
   margin-block: 7px;
   font-size: 20px;
+  scroll-margin-block: 100px 24px;
 }
 .hearing-agenda > ul {
   list-style: none;

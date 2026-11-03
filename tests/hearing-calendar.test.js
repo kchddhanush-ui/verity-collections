@@ -33,6 +33,13 @@ test("calendar navigates months, shows crowded dates and opens a saved case", as
       value,
     });
   let server, root;
+  let focused, scrolled;
+  window.HTMLElement.prototype.focus = function () {
+    focused = this;
+  };
+  window.HTMLElement.prototype.scrollIntoView = function () {
+    scrolled = this;
+  };
   try {
     server = await createServer({
       configFile: false,
@@ -90,6 +97,12 @@ test("calendar navigates months, shows crowded dates and opens a saved case", as
     );
     assert.equal(document.querySelectorAll(".hearing-day-cases li").length, 3);
     await click(button("+2 more · show all"));
+    const agendaHeading = document.getElementById("hearing-day-title");
+    assert.equal(focused, agendaHeading);
+    assert.equal(scrolled, agendaHeading);
+    scrolled = undefined;
+    await click(button("+2 more · show all"));
+    assert.equal(scrolled, agendaHeading, "the selected date can be revealed again");
     assert.equal(document.querySelectorAll(".hearing-agenda li").length, 5);
     assert.equal(
       document.getElementById("hearing-day-title").textContent,
