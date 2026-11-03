@@ -108,3 +108,7 @@ Displays the live Party Name CAPTCHA in Lawcovery and submits the user’s answe
 ## Version 1.7.0 — 2026-11-03 (development draft)
 
 Connects Chrome from the signed-in Lawcovery workspace and keeps the capture credential in the extension. The current login token is used for connection setup and sign-out cleanup and is never stored by the extension. Chrome requests optional access to the individual Supabase project when needed. Refresh the popup setup screenshot before submission.
+
+## Version 1.8.0 — 2026-11-03 (development draft)
+
+Guided searches open eCourts in a minimized Chrome window. The user enters CAPTCHA and sees search progress in Lawcovery, and can show the court window when needed.
