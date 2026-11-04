@@ -381,7 +381,7 @@ export function AnalyticsDashboard({
                     <span>{stage}</span>
                     <strong>{duration ? `${count(duration.days / duration.samples)} days` : "—"}</strong>
                     <small>{duration
-                      ? `${count(duration.samples)} completed stage ${duration.samples === 1 ? "period" : "periods"}`
+                      ? `Based on ${count(duration.cases)} ${duration.cases === 1 ? "case" : "cases"}`
                       : "No recorded transition"}</small>
                   </article>
                 );

@@ -55,6 +55,8 @@ test("analytics shows pending stages, carries filing year into drill-down and co
           ["Judge", "01-01-2025", "11-01-2025", "NBW"],
           ["Judge", "11-01-2025", "21-01-2025", "NBW"],
           ["Judge", "21-01-2025", "31-01-2025", "SUMMONS"],
+          ["Judge", "31-01-2025", "20-02-2025", "NBW"],
+          ["Judge", "20-02-2025", "01-03-2025", "SUMMONS"],
         ],
         court: "Example Court",
         next_hearing_date: "16-11-2026",
@@ -108,7 +110,7 @@ test("analytics shows pending stages, carries filing year into drill-down and co
     assert.ok(cards.every((card) => !card.textContent.includes("days")));
     const nbwTurnaround = [...document.querySelectorAll(".stage-turnaround-card")]
       .find((card) => card.textContent.startsWith("NBW"));
-    assert.match(nbwTurnaround.textContent, /20 days.*12 completed stage periods/);
+    assert.match(nbwTurnaround.textContent, /20 days.*Based on 12 cases/);
     await change("Filing year", "2025");
     await click(document.querySelector(".pending-stage-card"));
     assert.equal(opened.year, "2025");

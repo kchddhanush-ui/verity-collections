@@ -380,6 +380,7 @@ export function observedStageDurations(cases, today) {
       if (!day) continue;
       dates.set(day, dates.has(day) && dates.get(day) !== stage ? null : stage);
     }
+    const contributedStages = new Set();
     let start = null;
     let previous = null;
     for (const [day, stage] of [...dates].sort(([a], [b]) => a.localeCompare(b))) {
@@ -389,9 +390,13 @@ export function observedStageDurations(cases, today) {
       }
       if (stage === previous) continue;
       if (previous) {
-        const total = totals.get(previous) || { days: 0, samples: 0 };
+        const total = totals.get(previous) || { days: 0, samples: 0, cases: 0 };
         total.days += dayNumber(day) - dayNumber(start);
         total.samples++;
+        if (!contributedStages.has(previous)) {
+          total.cases++;
+          contributedStages.add(previous);
+        }
         totals.set(previous, total);
       }
       start = day;
