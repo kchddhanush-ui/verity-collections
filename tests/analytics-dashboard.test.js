@@ -108,7 +108,7 @@ test("analytics shows pending stages, carries filing year into drill-down and co
     assert.ok(cards.every((card) => !card.textContent.includes("days")));
     const nbwTurnaround = [...document.querySelectorAll(".stage-turnaround-card")]
       .find((card) => card.textContent.startsWith("NBW"));
-    assert.match(nbwTurnaround.textContent, /20 days.*12 completed observations/);
+    assert.match(nbwTurnaround.textContent, /20 days.*12 completed stage periods/);
     await change("Filing year", "2025");
     await click(document.querySelector(".pending-stage-card"));
     assert.equal(opened.year, "2025");

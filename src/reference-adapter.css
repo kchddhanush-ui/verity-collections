@@ -1082,3 +1082,11 @@
   font-size: 1.55rem;
 }
 .verity-console .stage-turnaround-card > strong { color: #4d3ac6; }
+
+.stage-turnaround-panel > section + section {
+  margin-block-start: 22px;
+}
+.stage-turnaround-panel h3 {
+  margin-block: 12px;
+  font-size: 1rem;
+}

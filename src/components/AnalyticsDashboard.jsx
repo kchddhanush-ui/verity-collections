@@ -16,6 +16,16 @@ import {
 } from "../lib/hearings";
 import { WorkspaceIcon } from "./WorkspaceIcon";
 
+const turnaroundPhases = [
+  ["Pre-Summoning & Issue of Process", ["SWORN STATEMENT", "SUMMONS", "NOTICE", "FOR STEPS", "AWAIT", "NBW"]],
+  ["Appearance & Bail", ["APPEARANCE OF ACCUSED", "APPEARANCE OF ACCUSSED", "BAIL"]],
+  ["Settlement / Pre-Trial Steps", ["A.D.R.", "ADR", "LOK ADALATH", "LOK ADALAT", "OBJECTION"]],
+  ["Charge / Plea", ["FRAMING OF CHARGE OR PLEA"]],
+  ["Trial & Evidence", ["EVIDENCES", "HEARING", "ACCUSED STATEMENT U/S 313 CRPC", "ACCUSSED STATEMENT U/S 313 CRPC", "DEFENCE EVIDENCE"]],
+  ["Final Arguments & Decision", ["ARGUMENTS", "ARGUMENT", "TO HEAR ON", "CALL ON", "ORDERS", "JUDGEMENT", "JUDGEMENTS"]],
+];
+const mappedStages = new Set(turnaroundPhases.flatMap(([, stages]) => stages));
+
 const count = (value) =>
   value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
 const percent = (value) => (value === null ? "—" : `${count(value)}%`);
@@ -350,20 +360,35 @@ export function AnalyticsDashboard({
       </Panel>
       <Panel
         title="Average turnaround by stage"
-        note="Estimated calendar days from the first recorded hearing purpose to a change in purpose, using completed observations in the filtered cases."
+        className="stage-turnaround-panel"
+        note="Estimated calendar days from the first recorded hearing purpose to a change in purpose, using completed stage periods in the filtered cases."
       >
-        <div className="pending-stage-grid">
-          {pendingStages.map(([stage]) => {
-            const duration = stageDurations.get(stage);
-            return (
-              <article className="pending-stage-card stage-turnaround-card" key={stage}>
-                <span>{stage}</span>
-                <strong>{duration ? `${count(duration.days / duration.samples)} days` : "—"}</strong>
-                <small>{duration ? `${count(duration.samples)} completed observations` : "No recorded transition"}</small>
-              </article>
-            );
-          })}
-        </div>
+        {[
+          ...turnaroundPhases.map(([title, stages], index) => [
+            `${index + 1}. ${title}`,
+            stages.filter((stage) => pendingCounts.has(stage) || stageDurations.has(stage)),
+          ]),
+          ["Other recorded stages", pendingStages.map(([stage]) => stage)
+            .filter((stage) => !mappedStages.has(stage)).sort()],
+        ].map(([title, stages]) => stages.length > 0 && (
+          <section key={title}>
+            <h3>{title}</h3>
+            <div className="pending-stage-grid">
+              {stages.map((stage) => {
+                const duration = stageDurations.get(stage);
+                return (
+                  <article className="pending-stage-card stage-turnaround-card" key={stage}>
+                    <span>{stage}</span>
+                    <strong>{duration ? `${count(duration.days / duration.samples)} days` : "—"}</strong>
+                    <small>{duration
+                      ? `${count(duration.samples)} completed stage ${duration.samples === 1 ? "period" : "periods"}`
+                      : "No recorded transition"}</small>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </Panel>
       <div>
         <Panel
