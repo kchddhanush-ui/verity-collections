@@ -333,7 +333,7 @@ export function AnalyticsDashboard({
         ? `Share of ${count(model.pending)} pending cases`
         : "No pending cases match these filters."}>
         <div className="pending-stage-grid">
-          {pendingStages.map(([stage, total]) => {
+          {pendingStages.filter(([, total]) => total > 0).map(([stage, total]) => {
             const share = percentage(total, model.pending) ?? 0;
             return (
               <button className="pending-stage-card" key={stage} type="button"

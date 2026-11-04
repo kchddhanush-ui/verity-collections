@@ -104,7 +104,7 @@ test("analytics shows pending stages, carries filing year into drill-down and co
     assert.equal(document.querySelectorAll(".analytics-metrics article").length, 5);
     const cards = [...document.querySelectorAll("button.pending-stage-card")];
     assert.match(cards[0].textContent, /SUMMONS.*12 cases.*100%/);
-    assert.match(cards[1].textContent, /ARGUMENTS.*0 cases.*0%/);
+    assert.equal(cards.length, 1);
     assert.ok(cards.every((card) => !card.textContent.includes("days")));
     const nbwTurnaround = [...document.querySelectorAll(".stage-turnaround-card")]
       .find((card) => card.textContent.startsWith("NBW"));
@@ -122,7 +122,7 @@ test("analytics shows pending stages, carries filing year into drill-down and co
     assert.deepEqual(rows, [["2026", "0", "1"], ["2025", "13", "0"]]);
     await change("Status", "Disposed");
     assert.match(document.querySelector(".analytics-filter-heading").textContent, /1 of 13/);
-    assert.ok([...document.querySelectorAll("button.pending-stage-card")].every((card) => card.disabled));
+    assert.equal(document.querySelectorAll("button.pending-stage-card").length, 0);
   } finally {
     if (root) await act(async () => root.unmount());
     if (server) await server.close();
