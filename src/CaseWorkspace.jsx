@@ -6,6 +6,7 @@ import { mergePortfolio } from "./lib/portfolio";
 import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
 import { parseCourtDate } from "./lib/hearings";
+import { currentRecordedStage, previousRecordedStage } from "./lib/caseStages";
 import { caseCsv } from "./lib/csv";
 import { filterCases, courtName, filingYear } from "./lib/analytics";
 import { WorkspaceChrome } from "./components/WorkspaceChrome";
@@ -26,15 +27,6 @@ function partyColumns(values = []) {
   };
 }
 
-function previousRecordedStage(data) {
-  const current = data.case_stage?.trim().toUpperCase();
-  if (!current || !Array.isArray(data.history)) return "—";
-  const stages = data.history.filter(Array.isArray)
-    .map((row) => ({ day: parseCourtDate(row[1]), stage: typeof row[3] === "string" ? row[3].trim() : "" }))
-    .filter((row) => row.day && row.stage && !["-", "—"].includes(row.stage))
-    .sort((a, b) => b.day.localeCompare(a.day));
-  return stages.find((row) => row.stage.toUpperCase() !== current)?.stage || "—";
-}
 
 const date = (value) => (value ? new Date(value).toLocaleString() : "—");
 const show = (value) =>
@@ -573,7 +565,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       item.data.case_type || "", item.cnr, item.data.filing_number || "",
       item.data.filing_date || "", item.data.decision_date || "",
       partyColumns(item.data.respondents).names, petitioner.names,
-      petitioner.advocates, item.data.case_stage || "",
+      petitioner.advocates, currentRecordedStage(item.data),
       previousRecordedStage(item.data), item.data.next_hearing_date || "",
     ];
   };
@@ -1091,7 +1083,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                               respondent.names,
                               petitioner.names,
                               petitioner.advocates,
-                              c.data.case_stage || "—",
+                              currentRecordedStage(c.data),
                               previousRecordedStage(c.data),
                               c.data.next_hearing_date || "—",
                             ];
