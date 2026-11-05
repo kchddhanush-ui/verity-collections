@@ -1090,3 +1090,9 @@
   margin-block: 12px;
   font-size: 1rem;
 }
+
+.verity-console .portfolio-table-wrap .case-open {
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
