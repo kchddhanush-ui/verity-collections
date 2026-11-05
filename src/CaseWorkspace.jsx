@@ -5,6 +5,7 @@ import "./workspace-theme.css";
 import { mergePortfolio } from "./lib/portfolio";
 import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
+import { parseCourtDate } from "./lib/hearings";
 import { filterCases } from "./lib/analytics";
 import { WorkspaceChrome } from "./components/WorkspaceChrome";
 import { extensionRequest } from "./lib/extensionBridge";
@@ -14,6 +15,25 @@ const AnalyticsDashboard = lazy(() =>
     default: module.AnalyticsDashboard,
   })),
 );
+
+function partyColumns(values = []) {
+  const entries = (Array.isArray(values) ? values : []).filter((value) => typeof value === "string")
+    .map((value) => value.replace(/^\s*\d+\)\s*/, "").split(/\bAdvocate\s*[-:]\s*/i));
+  return {
+    names: entries.map(([name]) => name.trim()).filter(Boolean).join("; ") || "—",
+    advocates: entries.map(([, advocate]) => advocate?.trim()).filter(Boolean).join("; ") || "—",
+  };
+}
+
+function previousRecordedStage(data) {
+  const current = data.case_stage?.trim().toUpperCase();
+  if (!current || !Array.isArray(data.history)) return "—";
+  const stages = data.history.filter(Array.isArray)
+    .map((row) => ({ day: parseCourtDate(row[1]), stage: typeof row[3] === "string" ? row[3].trim() : "" }))
+    .filter((row) => row.day && row.stage && !["-", "—"].includes(row.stage))
+    .sort((a, b) => b.day.localeCompare(a.day));
+  return stages.find((row) => row.stage.toUpperCase() !== current)?.stage || "—";
+}
 
 const date = (value) => (value ? new Date(value).toLocaleString() : "—");
 const show = (value) =>
@@ -970,49 +990,34 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                           caseList
                           label="Saved court cases"
                           headers={[
-                            "Case / CNR",
-                            "Parties",
-                            "Stage / status",
-                            "Next hearing",
-                            "Capture coverage",
-                            "Last observed",
+                            "Case number", "Case type", "CNR number", "Filing number",
+                            "Filing date", "Decision date", "Respondent", "Petitioner",
+                            "Petitioner advocate", "Current stage", "Previous stage", "Next hearing",
                           ]}
-                          rows={filtered.map((c) => [
-                            <button
-                              className="case-open"
-                              disabled={busy || Boolean(fetching)}
-                              onClick={() => fetchCase(c)}
-                            >
-                              View ·{" "}
-                              {c.data.case_reference ||
-                                c.data.registration_number}
-                              <small>{c.cnr}</small>
-                            </button>,
-                            <>
-                              {c.data.petitioners?.join("; ") ||
-                                c.data.parties_text}
-                              <small>vs {c.data.respondents?.join("; ")}</small>
-                            </>,
-                            <>
-                              {c.data.case_stage || "—"}
-                              <small
-                                className={`status-badge status-${c.data.case_status === "Disposed" ? "disposed" : c.data.case_status === "Pending" ? "pending" : "unknown"}`}
+                          rows={filtered.map((c) => {
+                            const petitioner = partyColumns(c.data.petitioners);
+                            const respondent = partyColumns(c.data.respondents);
+                            return [
+                              <button
+                                className="case-open"
+                                disabled={busy || Boolean(fetching)}
+                                onClick={() => fetchCase(c)}
                               >
-                                {c.hasDetails
-                                  ? c.data.case_status || "Unknown"
-                                  : "Details not captured"}
-                              </small>
-                            </>,
-                            c.data.next_hearing_date || "—",
-                            <span
-                              className={`coverage-badge ${c.hasDetails ? "coverage-complete" : ""}`}
-                            >
-                              {c.hasDetails
-                                ? "Details captured"
-                                : "Listed only"}
-                            </span>,
-                            date(c.last_checked_at || c.last_listed_at),
-                          ])}
+                                View · {c.data.case_reference || c.data.registration_number || c.cnr}
+                              </button>,
+                              c.data.case_type || "—",
+                              c.cnr,
+                              c.data.filing_number || "—",
+                              c.data.filing_date || "—",
+                              c.data.decision_date || "—",
+                              respondent.names,
+                              petitioner.names,
+                              petitioner.advocates,
+                              c.data.case_stage || "—",
+                              previousRecordedStage(c.data),
+                              c.data.next_hearing_date || "—",
+                            ];
+                          })}
                         />
                       ) : (
                         <div className="console-empty">
