@@ -1104,3 +1104,42 @@
 .verity-console .portfolio-table-wrap .case-table tbody th {
   position: static;
 }
+
+.verity-console .case-register-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(100px, .6fr) repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 16px;
+  padding: 20px;
+  margin-block: 24px;
+  background: #f7f6fc;
+  border: 1px solid #e3dff0;
+  border-radius: 12px;
+}
+.verity-console .case-register-filters label { min-inline-size: 0; margin: 0; }
+.verity-console .case-register-filters input,
+.verity-console .case-register-filters select {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  margin-block-start: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dcd8ec;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-size: .875rem;
+}
+.verity-console .portfolio-table-wrap .case-table {
+  min-inline-size: 1900px;
+}
+.verity-console .portfolio-table-wrap .case-table :is(td, tbody th) {
+  padding: 16px 18px;
+  vertical-align: top;
+}
+@media (max-width: 1150px) {
+  .verity-console .case-register-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .verity-console .case-register-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+}

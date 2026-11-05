@@ -6,7 +6,8 @@ import { mergePortfolio } from "./lib/portfolio";
 import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
 import { parseCourtDate } from "./lib/hearings";
-import { filterCases } from "./lib/analytics";
+import { caseCsv } from "./lib/csv";
+import { filterCases, courtName, filingYear } from "./lib/analytics";
 import { WorkspaceChrome } from "./components/WorkspaceChrome";
 import { extensionRequest } from "./lib/extensionBridge";
 
@@ -143,6 +144,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const [batchBusy, setBatchBusy] = useState(false);
   const [captureUpdate, setCaptureUpdate] = useState("");
   const [searches, setSearches] = useState([]);
+  const [caseFilters, setCaseFilters] = useState(null);
   const [caseDrilldown, setCaseDrilldown] = useState(null);
   const [portfolioView, setPortfolioView] = useState("analytics");
   const [listingAudits, setListingAudits] = useState([]);
@@ -542,8 +544,50 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   }
   const filtered = filterCases(cases, {
     ...(caseDrilldown && caseDrilldown.workspace === workspace ? caseDrilldown.filters : {}),
+    ...(caseFilters?.workspace === workspace ? caseFilters.values : {}),
     search: query,
+  }).filter((item) => !caseFilters?.respondent ||
+    caseFilters.workspace !== workspace ||
+    partyColumns(item.data.respondents).names.toLowerCase().includes(caseFilters.respondent.toLowerCase().trim()));
+  const currentCaseFilters = caseFilters?.workspace === workspace ? caseFilters : { values: {}, respondent: "" };
+  const setCaseFilter = (key, value) => setCaseFilters((previous) => {
+    const current = previous?.workspace === workspace ? previous : { values: {}, respondent: "" };
+    return key === "respondent"
+      ? { ...current, workspace, respondent: value }
+      : { ...current, workspace, values: { ...current.values, [key]: value } };
   });
+  const clearCaseFilters = () => {
+    setCaseFilters(null);
+    setCaseDrilldown(null);
+    setQuery("");
+  };
+  const caseHeaders = [
+    "Case number", "Case type", "CNR number", "Filing number", "Filing date",
+    "Decision date", "Respondent", "Petitioner", "Petitioner advocate",
+    "Current stage", "Previous stage", "Next hearing",
+  ];
+  const caseValues = (item) => {
+    const petitioner = partyColumns(item.data.petitioners);
+    return [
+      item.data.case_reference || item.data.registration_number || item.cnr,
+      item.data.case_type || "", item.cnr, item.data.filing_number || "",
+      item.data.filing_date || "", item.data.decision_date || "",
+      partyColumns(item.data.respondents).names, petitioner.names,
+      petitioner.advocates, item.data.case_stage || "",
+      previousRecordedStage(item.data), item.data.next_hearing_date || "",
+    ];
+  };
+  const downloadCases = () => {
+    const blob = new Blob([caseCsv(caseHeaders, filtered.map(caseValues))], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Lawcovery-cases-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
   return (
     <WorkspaceChrome
       session={session}
@@ -807,6 +851,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       key={workspace}
                       cases={cases}
                       onStageCases={({ search, ...filters }) => {
+                        setCaseFilters(null);
                         setCaseDrilldown({ workspace, filters });
                         setQuery(search);
                         setPortfolioView("cases");
@@ -957,20 +1002,36 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                   <>
                     <section className="console-panel card cases-card">
                       <div className="section-heading cases-title">
-                        <h2>Cases</h2>
-                        <label>
-                          Search cases
-                          <div className="search-box">
-                            <WorkspaceIcon name="search" size={16} />
-                            <input
-                              type="search"
-                              value={query}
-                              onChange={(e) => setQuery(e.target.value)}
-                              id="workspace-case-search"
-                              placeholder="CNR, party, court or stage"
-                            />
-                          </div>
+                        <div><h2>Cases</h2><p className="muted">Find a case and export the results you are viewing.</p></div>
+                        <button className="btn btn-primary" type="button" disabled={!filtered.length} onClick={downloadCases}>
+                          Download CSV · {filtered.length}
+                        </button>
+                      </div>
+                      <div className="case-register-filters">
+                        <label>Court name
+                          <select value={currentCaseFilters.values.court ?? caseDrilldown?.filters.court ?? ""}
+                            onChange={(event) => setCaseFilter("court", event.target.value)}>
+                            <option value="">All courts</option>
+                            {[...new Set(cases.map(courtName))].sort().map((court) => <option key={court}>{court}</option>)}
+                          </select>
                         </label>
+                        <label>Filing year
+                          <select value={currentCaseFilters.values.year ?? caseDrilldown?.filters.year ?? ""}
+                            onChange={(event) => setCaseFilter("year", event.target.value)}>
+                            <option value="">All years</option>
+                            {[...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse().map((year) => <option key={year}>{year}</option>)}
+                          </select>
+                        </label>
+                        <label>Respondent name
+                          <input type="search" value={currentCaseFilters.respondent || ""}
+                            onChange={(event) => setCaseFilter("respondent", event.target.value)}
+                            placeholder="Search respondent" />
+                        </label>
+                        <label>Search cases
+                          <input type="search" value={query} onChange={(event) => setQuery(event.target.value)}
+                            id="workspace-case-search" placeholder="Case number, CNR, party or stage" />
+                        </label>
+                        <button className="btn" type="button" onClick={clearCaseFilters}>Clear filters</button>
                       </div>
                       {caseDrilldown && caseDrilldown.workspace === workspace && (
                         <p className="muted">
