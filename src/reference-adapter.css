@@ -1096,3 +1096,11 @@
   font-weight: 650;
   line-height: 1.5;
 }
+
+.verity-console .portfolio-table-wrap .case-table thead th:first-child,
+.verity-console .portfolio-table-wrap .case-table tbody th {
+  inset-inline-start: auto;
+}
+.verity-console .portfolio-table-wrap .case-table tbody th {
+  position: static;
+}
