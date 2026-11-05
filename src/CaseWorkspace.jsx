@@ -1024,10 +1024,13 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         </label>
                         <label>Case details
                           <select value={currentCaseFilters.values.details || ""}
-                            onChange={(event) => setCaseFilter("details", event.target.value)}>
+                            onChange={(event) => {
+                              setCaseFilter("details", event.target.value);
+                              perform(refresh);
+                            }}>
                             <option value="">All cases</option>
-                            <option value="available">Available</option>
-                            <option value="missing">Not available</option>
+                            <option value="available">Available · {cases.filter((item) => item.hasDetails).length}</option>
+                            <option value="missing">Not available · {cases.filter((item) => !item.hasDetails).length}</option>
                           </select>
                         </label>
                         <label>Respondent name
@@ -1041,6 +1044,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                         </label>
                         <button className="btn" type="button" onClick={clearCaseFilters}>Clear filters</button>
                       </div>
+                      <p className="muted">
+                        Case details available means a case-level record was saved after opening the case.
+                        Search-result rows appear under Not available.
+                        {currentCaseFilters.values.details === "missing" && (currentCaseFilters.values.year || caseDrilldown?.filters.year) &&
+                          " Your filing-year filter also applies. Search-only records may have no filing date."}
+                      </p>
                       {caseDrilldown && caseDrilldown.workspace === workspace && (
                         <p className="muted">
                           {Object.values(caseDrilldown.filters).filter(Boolean).join(" · ")}
