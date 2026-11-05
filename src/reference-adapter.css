@@ -1,0 +1,1145 @@
+/* Bind the supplied screen styles to the existing live controls and dialogs. */
+.verity-console.app-shell {
+  display: block;
+  --accent: var(--forest-light);
+  --canvas: var(--paper);
+  --surface: var(--white);
+  color: var(--text);
+  background: var(--paper);
+}
+.verity-console h1,
+.verity-console h2,
+.verity-console h3 {
+  color: var(--ink);
+}
+.verity-console button,
+.verity-console a {
+  -webkit-tap-highlight-color: transparent;
+}
+.verity-console :focus-visible {
+  outline: 3px solid #8c80ef;
+  outline-offset: 3px;
+}
+.verity-console button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.verity-console .btn {
+  text-decoration: none;
+}
+.verity-console .console-sidebar {
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  gap: 0;
+}
+.verity-console .console-sidebar .sidebar-nav {
+  display: grid;
+  gap: 6px;
+}
+/* Keep the supplied logo within the navigation's horizontal padding. */
+.verity-console .console-sidebar .console-brand {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 10px;
+  align-items: center;
+  margin: 0 12px 28px;
+  padding: 0;
+  font-size: 1.3125rem;
+  line-height: 1.1;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.verity-console .console-sidebar .console-brand::after {
+  content: none;
+}
+.verity-console .console-brand > .lawcovery-logo {
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+.verity-console .console-brand > small {
+  position: static;
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  padding-inline-start: 32px;
+  font-size: 0.5rem;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+}
+@media (max-width: 980px) {
+  .verity-console .console-sidebar .console-brand {
+    margin-block-start: 20px;
+  }
+}
+.verity-console .console-sidebar .nav-label {
+  margin: 0 12px 12px 44px;
+  line-height: 1.5;
+}
+.verity-console .sidebar-nav .nav-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  inline-size: 100%;
+  min-inline-size: 0;
+  height: auto;
+  min-block-size: 46px;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: start;
+}
+.verity-console .sidebar-nav .nav-item > svg {
+  inline-size: 20px;
+  block-size: 20px;
+  justify-self: center;
+}
+.verity-console .sidebar-nav .nav-item > span:not(.nav-badge) {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+.verity-console .sidebar-nav .nav-badge {
+  grid-column: 3;
+  justify-self: end;
+  margin: 0;
+  min-inline-size: 24px;
+  padding: 2px 7px;
+  font-size: 0.625rem;
+  line-height: 1.5;
+  text-align: center;
+}
+.verity-console .console-sidebar .audit-card {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 8px 12px;
+  align-items: start;
+  padding: 16px 12px;
+}
+.verity-console .audit-card > svg {
+  grid-column: 1;
+  grid-row: 1;
+  inline-size: 20px;
+  block-size: 20px;
+}
+.verity-console .audit-card > strong,
+.verity-console .audit-card > p {
+  grid-column: 2;
+  min-inline-size: 0;
+  margin: 0;
+}
+.verity-console .console-sidebar .workspace-status {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 12px;
+  margin: 16px 12px 0;
+  align-items: center;
+  line-height: 1.5;
+}
+.verity-console .workspace-status > span {
+  justify-self: center;
+}
+.verity-console .brand-law {
+  margin: 0;
+  border: 0;
+  letter-spacing: -0.6px;
+}
+.verity-console .console-header {
+  justify-content: initial;
+  flex-wrap: nowrap;
+}
+.verity-console .workspace-switcher {
+  max-width: 220px;
+  min-width: 140px;
+  margin: 0;
+}
+.verity-console .workspace-switcher select {
+  margin: 0;
+  padding: 3px 20px 0 0;
+  height: 26px;
+  border: 0;
+  background-color: transparent;
+  font-size: 14px;
+  font-weight: 700;
+}
+.verity-console .global-search {
+  margin: 0;
+  flex-shrink: 1;
+}
+.verity-console .global-search input {
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  height: auto;
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.verity-console .global-search input:focus-visible {
+  outline: none;
+}
+.verity-console .profile-trigger {
+  flex-shrink: 0;
+  box-shadow: none;
+}
+.verity-console .profile-menu {
+  max-width: calc(100vw - 24px);
+}
+.verity-console .profile-menu-head > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.verity-console .profile-menu-head .avatar {
+  display: grid;
+}
+.verity-console .profile-menu-head .avatar-large {
+  font-size: 13px;
+  color: #5545d1;
+}
+.verity-console .profile-context strong {
+  overflow-wrap: anywhere;
+}
+.verity-console .profile-menu > button {
+  justify-content: flex-start;
+}
+.verity-console .profile-trigger:focus-visible {
+  outline: 3px solid #8c80ef;
+}
+.verity-console .console-main {
+  min-width: 0;
+}
+.verity-console .console-title {
+  margin-top: 0;
+}
+.verity-console .console-eyebrow,
+.verity-console .panel-kicker {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 1.2px;
+}
+.verity-console .console-panel {
+  background: var(--white);
+  border-color: var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+.verity-console .console-error {
+  background: #fff0e8;
+  border-color: #f3b7a5;
+  color: #8d4539;
+}
+.verity-console .console-link.button-primary {
+  background: linear-gradient(135deg, #6658ed, #5142d3);
+  border-color: #5a4be7;
+  color: white;
+  box-shadow: 0 6px 16px #5a4be73b;
+}
+.verity-console .muted,
+.verity-console .fine-print {
+  color: var(--muted);
+}
+.verity-console .console-metrics {
+  margin-top: 0;
+}
+.verity-console .overview-metrics article {
+  display: block;
+}
+.verity-console .overview-metrics article > span {
+  padding-right: 35px;
+}
+.verity-console .overview-metrics article strong {
+  color: var(--ink);
+}
+.verity-console .activity-column {
+  position: relative;
+  padding-bottom: 18px;
+  height: 160px;
+}
+.verity-console .activity-column > small {
+  position: absolute;
+  bottom: -16px;
+  font-size: 9px;
+  color: var(--muted);
+}
+.verity-console .activity-column > .visually-hidden {
+  position: absolute;
+  height: 1px;
+}
+.verity-console .activity-chart {
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.verity-console .chart-footer {
+  flex-wrap: wrap;
+}
+.verity-console .hearing-row {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 12px 0;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.verity-console .hearing-row > div:nth-child(2) {
+  min-width: 0;
+}
+.verity-console .hearing-row > div:nth-child(2) strong,
+.verity-console .hearing-row > div:nth-child(2) span {
+  overflow-wrap: anywhere;
+}
+.verity-console .hearing-row:hover {
+  background: #f8f7ff;
+}
+.verity-console .recent-list button {
+  padding: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+.verity-console .company-brief-details {
+  margin-top: 20px;
+  padding: 18px 23px;
+}
+.verity-console .company-brief-details > summary {
+  color: var(--forest-light);
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+.verity-console .company-brief {
+  margin: 20px 0 0;
+  background: linear-gradient(145deg, #25205e, #17133f);
+}
+.verity-console .company-brief h2,
+.verity-console .company-brief h3 {
+  color: white;
+}
+.verity-console .brief-eyebrow {
+  color: #8fe9eb;
+}
+.verity-console .brief-intro,
+.verity-console .brief-method,
+.verity-console .company-brief small,
+.verity-console .brief-story p,
+.verity-console .brief-close p {
+  color: #d3d1ed;
+}
+.verity-console .brief-story span {
+  color: #8fe9eb;
+}
+.verity-console .brief-presenting {
+  margin: 0;
+}
+.verity-console .case-table-wrap {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 19px;
+}
+.verity-console .case-table th,
+.verity-console .case-table td {
+  padding: 15px 18px;
+}
+.verity-console .case-table tbody th {
+  background: white;
+  text-transform: none;
+  font-weight: 400;
+  letter-spacing: normal;
+  vertical-align: top;
+}
+.verity-console .case-table thead th {
+  background: #f1f0fa;
+}
+.verity-console .case-open {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: #5949dc;
+  text-align: left;
+  box-shadow: none;
+  white-space: normal;
+}
+.verity-console .case-open small {
+  color: var(--muted);
+}
+.verity-console .status-badge,
+.verity-console .coverage-badge {
+  background: #eeecff;
+  color: #5544bd;
+  border: 0;
+  border-radius: 20px;
+  padding: 4px 8px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.verity-console .status-pending {
+  background: #fff0e8;
+  color: #a74f3d;
+}
+.verity-console .status-unknown {
+  color: #72758a;
+  background: #f1f1f6;
+}
+.verity-console .case-table small {
+  color: var(--muted);
+}
+.verity-console .case-table .status-pending {
+  color: #a74f3d;
+}
+.verity-console .case-table .status-disposed {
+  color: #5544bd;
+}
+.verity-console .batch-capture-panel {
+  border-left: 3px solid #6253e7;
+}
+.verity-console .batch-fetch-modes {
+  border-color: var(--line);
+}
+.verity-console .batch-mode-options {
+  gap: 0;
+}
+.verity-console .batch-mode-options button {
+  border-radius: 0;
+  border-color: var(--line);
+  background: white;
+  color: var(--ink);
+}
+.verity-console .batch-mode-options button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+.verity-console .batch-mode-options button:last-child {
+  border-radius: 0 8px 8px 0;
+}
+.verity-console .batch-mode-options button[aria-pressed="true"] {
+  color: white;
+  background: #5a4be7;
+  border-color: #5a4be7;
+}
+.verity-console .batch-capture-panel p,
+.verity-console .batch-capture-panel .batch-summary p,
+.verity-console .batch-capture-panel details {
+  color: var(--muted);
+  font-size: 11px;
+}
+.verity-console progress {
+  accent-color: #6253e7;
+}
+.verity-console .connection-list {
+  padding: 0;
+  list-style: none;
+}
+.verity-console .connection-list li {
+  min-height: 50px;
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+}
+.verity-console .source-summary {
+  grid-column: 1 / -1;
+}
+.verity-console .connection-help svg {
+  color: #6253e7;
+}
+.verity-console .connection-help li {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+}
+.verity-console .connection-help ul {
+  display: block;
+}
+.verity-console .hearing-calendar {
+  padding: 25px 27px;
+}
+.verity-console .hearing-layout {
+  display: block;
+}
+.verity-console .hearing-month {
+  min-width: 740px;
+}
+.verity-console .hearing-month th {
+  text-align: center;
+  font-size: 10px;
+  padding: 13px;
+  background: #f1f0fa;
+}
+.verity-console .hearing-month td {
+  height: 142px;
+  padding: 10px 7px;
+  border-color: var(--line);
+}
+.verity-console .hearing-month .hearing-selected {
+  background: #efedff;
+  box-shadow: inset 0 0 0 2px #6b5de8;
+}
+.verity-console .hearing-month .hearing-blank {
+  background: #f8f8fc;
+}
+.verity-console .hearing-day {
+  padding: 0 0 7px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--ink);
+}
+.verity-console .hearing-today .hearing-day > span {
+  color: white;
+  background: #5a4be7;
+  border-radius: 14px;
+  padding: 4px 8px;
+}
+.verity-console .hearing-case {
+  background: #eeecff;
+  border: 1px solid #beb7fa;
+  border-radius: 5px;
+  color: #5544bd;
+  padding: 6px;
+}
+.verity-console .hearing-case strong {
+  font-size: 9px;
+}
+.verity-console .hearing-case span {
+  font-size: 8px;
+  color: #72758a;
+}
+.verity-console .hearing-agenda {
+  margin-top: 18px;
+  background: linear-gradient(145deg, #efedff, #f8fbff);
+  border: 1px solid #dfdcfa;
+  border-radius: 7px;
+  padding: 20px;
+}
+.verity-console .hearing-agenda ul {
+  margin: 0;
+}
+.verity-console .hearing-agenda li {
+  background: white;
+  border-color: #dfdcfa;
+}
+.verity-console .hearing-badge {
+  color: #5544bd;
+  border-color: #dfdcfa;
+  background: #eeecff;
+}
+.verity-console .hearing-month-nav h3 {
+  color: var(--ink);
+}
+.verity-console .analytics-metrics {
+  margin: 18px 0;
+}
+.verity-console .analytics-metrics article {
+  border: 1px solid #e4eae7;
+  border-radius: 13px;
+  padding: 21px;
+  box-shadow: var(--shadow);
+}
+.verity-console .analytics-metrics article:first-child {
+  background: linear-gradient(145deg, #6759ec, #4035af);
+  color: white;
+  border-color: #5949dc;
+}
+.verity-console .analytics-metrics article:not(:first-child) {
+  color: var(--ink);
+  background: white;
+}
+.verity-console .analytics-metrics small {
+  color: var(--muted);
+}
+.verity-console .analytics-metrics article:first-child small {
+  color: #e5e1ff;
+}
+.verity-console .analytics-track {
+  background: #eeecff;
+}
+.verity-console .analytics-track > span,
+.verity-console .legend-filings,
+.verity-console .trend-filings {
+  background: #6253e7;
+}
+.verity-console .analytics-bars-gold .analytics-track > span,
+.verity-console .legend-decisions,
+.verity-console .trend-decisions {
+  background: #ff9a7f;
+}
+.verity-console .analytics-bars dt,
+.verity-console .analytics-bars small,
+.verity-console .trend-columns span,
+.verity-console .trend-month {
+  color: var(--muted);
+}
+.verity-console .analytics-review-tabs [aria-pressed="true"] {
+  color: #5544bd;
+  background: #eeecff;
+  border-color: #beb7fa;
+}
+.verity-console .analytics-review-tabs button > span {
+  background: #eeecff;
+  color: #5544bd;
+}
+.verity-console .analytics-filters input,
+.verity-console .analytics-filters select {
+  border-color: #e6e7ef;
+  background: #fafaff;
+}
+.verity-console .analytics-panel,
+.verity-console .analytics-review {
+  padding: 25px 27px;
+}
+.verity-console .analytics-empty {
+  color: var(--muted);
+  background: #fafaff;
+  border-color: #dfdcfa;
+}
+.verity-console .analytics-primary > .analytics-wide {
+  grid-column: auto;
+}
+.verity-console .priority-list button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 2px;
+  text-align: left;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  border-radius: 0;
+  font-size: 12px;
+  color: var(--ink);
+}
+.verity-console .extended-insights {
+  padding: 22px 27px;
+  margin-bottom: 18px;
+}
+.verity-console .extended-insights > summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+.verity-console .extended-insights > .analytics-grid {
+  margin-top: 18px;
+}
+.verity-console .analytics-secondary article:first-child {
+  color: var(--ink);
+  background: white;
+  border-color: var(--line);
+}
+.verity-console .analytics-secondary article:first-child small {
+  color: var(--muted);
+}
+.verity-console .analytics-methodology summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 11px;
+}
+.verity-console .case-detail-dialog,
+.verity-console .account-dialog {
+  background: #fff;
+  border-color: #dfdcfa;
+  color: var(--ink);
+}
+.verity-console .account-dialog {
+  max-width: 480px;
+  padding: 28px;
+}
+.verity-console .account-dialog dd {
+  margin: 5px 0 18px;
+  overflow-wrap: anywhere;
+}
+.verity-console .account-dialog dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+/* Case viewing needs its own unlayered geometry: global auth-dialog defaults
+   otherwise override the layered workspace width and padding. */
+.verity-console .case-detail-dialog {
+  inline-size: min(1200px, calc(100vw - 48px));
+  max-inline-size: none;
+  max-block-size: calc(100dvh - 48px);
+  padding: 0;
+  margin: auto;
+  border-radius: 18px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  container: case-viewer / inline-size;
+}
+.verity-console .case-detail-dialog > .console-panel {
+  margin: 0;
+  padding: 28px 32px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.verity-console .case-dialog-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px 24px;
+  padding-block-end: 20px;
+}
+.verity-console .case-dialog-heading > div {
+  min-inline-size: 0;
+}
+.verity-console .case-dialog-heading h2 {
+  margin: 0;
+  font-size: clamp(20px, 2vw, 28px);
+  overflow-wrap: anywhere;
+}
+.verity-console .case-dialog-heading .console-eyebrow {
+  margin-block-end: 8px;
+  overflow-wrap: anywhere;
+}
+.verity-console .case-detail-dialog button {
+  font-size: 13px;
+}
+.verity-console .case-detail-dialog .case-tabs {
+  flex-wrap: nowrap;
+  max-inline-size: 100%;
+  overflow-x: auto;
+}
+.verity-console .case-detail-dialog .case-tabs button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.verity-console .case-detail-dialog .case-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-block: 24px;
+  align-items: stretch;
+}
+.verity-console .case-detail-dialog .case-facts > div {
+  min-inline-size: 0;
+  padding: 16px 18px;
+  border: 1px solid #e6e7ef;
+  border-radius: 10px;
+  text-align: start;
+}
+.verity-console .case-detail-dialog .case-facts > .case-fact-wide {
+  grid-column: 1 / -1;
+}
+.verity-console .case-detail-dialog .case-facts dt {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.verity-console .case-detail-dialog .case-facts dd {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@container case-viewer (width < 960px) {
+  .verity-console .case-detail-dialog .case-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container case-viewer (width < 640px) {
+  .verity-console .case-dialog-heading {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container case-viewer (width < 560px) {
+  .verity-console .case-detail-dialog .case-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .verity-console .case-detail-dialog {
+    inline-size: calc(100vw - 16px);
+    max-block-size: calc(100dvh - 16px);
+    border-radius: 12px;
+  }
+  .verity-console .case-detail-dialog > .console-panel {
+    padding: 20px 16px;
+  }
+}
+.verity-console .case-tabs button[aria-pressed="true"] {
+  color: #5544bd;
+  background: #eeecff;
+  border-color: #beb7fa;
+}
+.verity-console .case-facts > div {
+  background: #fafaff;
+  border-color: #e6e7ef;
+}
+.verity-console .case-facts dt {
+  color: var(--muted);
+}
+.verity-console .case-facts dd {
+  color: var(--ink);
+}
+.verity-console .console-footer {
+  color: var(--muted);
+}
+@media (max-width: 980px) {
+  .verity-console .sidebar {
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .verity-console .sidebar.sidebar-open {
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .verity-console .console-header {
+    gap: 10px;
+  }
+  .verity-console .workspace-switcher {
+    min-width: 120px;
+    max-width: 180px;
+  }
+  .verity-console .console-main {
+    padding-inline: 24px;
+  }
+}
+@media (max-width: 700px) {
+  .verity-console .global-search {
+    display: none;
+  }
+  .verity-console .console-main {
+    padding: 25px 16px 20px;
+  }
+  .verity-console .console-header {
+    padding: 0 16px;
+  }
+  .verity-console .case-table-wrap {
+    margin-top: 15px;
+  }
+  .verity-console .calendar-card,
+  .verity-console .analytics-panel,
+  .verity-console .analytics-review {
+    padding: 20px 16px;
+  }
+  .verity-console .cases-title label {
+    width: 100%;
+  }
+  .verity-console .section-heading {
+    flex-wrap: wrap;
+  }
+  .verity-console .overview-metrics article > span {
+    padding-right: 0;
+  }
+  .verity-console .batch-mode-options {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .verity-console .batch-mode-options button {
+    border-radius: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .verity-console *,
+  .verity-console *::before,
+  .verity-console *::after {
+    animation: none;
+    transition: none;
+    scroll-behavior: auto;
+  }
+}
+@media (forced-colors: active) {
+  .verity-console .nav-item.active,
+  .verity-console .batch-mode-options button[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+  }
+  .verity-console .analytics-track > span,
+  .verity-console .activity-column > span,
+  .verity-console .activity-column > i {
+    background: CanvasText;
+  }
+}
+.verity-console .search-box input {
+  margin: 0;
+  padding: 0;
+  height: auto;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+.verity-console .search-box input:focus-visible {
+  outline: none;
+}
+.verity-console .hearing-summary {
+  color: var(--ink);
+}
+.verity-console .analytics-primary {
+  align-items: stretch;
+}
+.verity-console .analytics-primary .analytics-panel {
+  align-self: stretch;
+}
+.verity-console .court-card {
+  margin-bottom: 18px;
+}
+.verity-console .analytics-filters .filter-grid {
+  margin-top: 0;
+}
+.verity-console .analytics-trend-window {
+  max-width: 170px;
+}
+.verity-console .console-header {
+  min-block-size: 76px;
+}
+.verity-console .workspace-switcher select {
+  min-block-size: 26px;
+}
+.verity-console .metric-icon svg {
+  color: inherit;
+}
+.verity-console .overview-metrics article {
+  color: var(--ink);
+}
+.verity-console .account-dialog h2 {
+  font:
+    700 24px Manrope,
+    sans-serif;
+}
+.verity-console .profile-menu {
+  overflow-wrap: anywhere;
+}
+.verity-console .hearing-case:hover {
+  background: #e2ddff;
+  border-color: #8d81ed;
+}
+.verity-console .hearing-day-cases {
+  margin: 0;
+}
+.verity-console .portfolio-table-wrap .case-table {
+  display: table;
+  min-inline-size: 980px;
+  border-spacing: 0;
+}
+.verity-console .portfolio-table-wrap .case-table thead {
+  display: table-header-group;
+}
+.verity-console .portfolio-table-wrap .case-table tbody {
+  display: table-row-group;
+}
+.verity-console .portfolio-table-wrap .case-table tr {
+  display: table-row;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.verity-console .portfolio-table-wrap .case-table td,
+.verity-console .portfolio-table-wrap .case-table th {
+  display: table-cell;
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 17px 18px;
+  text-align: left;
+}
+.verity-console .portfolio-table-wrap .case-table td::before,
+.verity-console .portfolio-table-wrap .case-table th::before {
+  content: none;
+}
+.verity-console .portfolio-table-wrap .case-table tbody th {
+  position: static;
+  min-width: 185px;
+}
+.verity-console .portfolio-table-wrap .case-table tbody td:nth-child(2) {
+  min-width: 290px;
+}
+.verity-console .portfolio-table-wrap .case-table tbody td:nth-child(3) {
+  min-width: 160px;
+}
+.verity-console .portfolio-table-wrap .table-cell-content {
+  display: block;
+}
+@media (max-width: 640px) {
+  .verity-console .console-header {
+    min-block-size: 72px;
+  }
+}
+.verity-console .skip-link:focus {
+  z-index: 1000;
+}
+.verity-console .case-detail-dialog::backdrop,
+.verity-console .account-dialog::backdrop {
+  background: #17133f80;
+  backdrop-filter: blur(4px);
+}
+.verity-console .hearing-mobile-count {
+  color: #5544bd;
+  background: #eeecff;
+}
+
+.verity-console .court-party-search {
+  display: grid;
+  gap: 12px;
+  container: court-search / inline-size;
+}
+.verity-console .court-party-search :is(p, h2, dl, dd, label) { margin: 0; }
+.verity-console .court-party-search > button { justify-self: start; }
+.verity-console .court-party-search :is(form, dl) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.verity-console .court-party-search label { display: grid; gap: 6px; }
+.verity-console .court-location-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+@container court-search (min-width: 40rem) {
+  .verity-console .court-location-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.verity-console .court-party-search :is(input, select) {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 42px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+}
+.verity-console .court-party-search dt { font-weight: 650; }
+.verity-console .court-party-search dd { overflow-wrap: anywhere; }
+
+.verity-console .party-captcha {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+}
+.verity-console .party-captcha img {
+  display: block;
+  max-inline-size: 100%;
+  min-inline-size: 120px;
+  background: white;
+  border: 1px solid #d9d6e6;
+  border-radius: 6px;
+}
+
+.pending-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+  gap: 12px;
+}
+.pending-stage-card {
+  display: grid;
+  gap: 8px;
+  min-inline-size: 0;
+  padding: 14px;
+  text-align: start;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #e0ddf0;
+  border-radius: 10px;
+}
+.pending-stage-card > span {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pending-stage-card > span svg { flex-shrink: 0; }
+.pending-stage-card > strong { font-size: 1.15rem; }
+.pending-stage-card progress {
+  inline-size: 100%;
+  block-size: 6px;
+  accent-color: #6658ed;
+}
+.verity-console .pending-stage-card:disabled { opacity: 1; }
+
+.verity-console .analytics-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+.verity-console .analytics-metrics .metric-card strong {
+  font-size: clamp(1.65rem, 2.8vw, 2.5rem);
+}
+.verity-console .pending-stage-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 205px), 1fr));
+}
+.verity-console .pending-stage-card {
+  padding: 18px;
+  background: #f8f7ff;
+  border-color: #dcd6ff;
+}
+.verity-console .pending-stage-card > strong {
+  font-size: 1.55rem;
+}
+.verity-console .stage-turnaround-card > strong { color: #4d3ac6; }
+
+.stage-turnaround-panel > section + section {
+  margin-block-start: 22px;
+}
+.stage-turnaround-panel h3 {
+  margin-block: 12px;
+  font-size: 1rem;
+}
+
+.verity-console .portfolio-table-wrap .case-open {
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.verity-console .portfolio-table-wrap .case-table thead th:first-child,
+.verity-console .portfolio-table-wrap .case-table tbody th {
+  inset-inline-start: auto;
+}
+.verity-console .portfolio-table-wrap .case-table tbody th {
+  position: static;
+}
+
+.verity-console .case-register-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(100px, .6fr) repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 16px;
+  padding: 20px;
+  margin-block: 24px;
+  background: #f7f6fc;
+  border: 1px solid #e3dff0;
+  border-radius: 12px;
+}
+.verity-console .case-register-filters label { min-inline-size: 0; margin: 0; }
+.verity-console .case-register-filters input,
+.verity-console .case-register-filters select {
+  inline-size: 100%;
+  min-inline-size: 0;
+  min-block-size: 44px;
+  margin-block-start: 8px;
+  padding: 10px 12px;
+  border: 1px solid #dcd8ec;
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-size: .875rem;
+}
+.verity-console .portfolio-table-wrap .case-table {
+  min-inline-size: 1900px;
+}
+.verity-console .portfolio-table-wrap .case-table :is(td, tbody th) {
+  padding: 16px 18px;
+  vertical-align: top;
+}
+@media (max-width: 1150px) {
+  .verity-console .case-register-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .verity-console .case-register-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+}
