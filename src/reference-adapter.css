@@ -1092,8 +1092,8 @@
 }
 
 .verity-console .portfolio-table-wrap .case-open {
-  font-size: 1rem;
-  font-weight: 650;
+  font-size: .875rem;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -1107,7 +1107,7 @@
 
 .verity-console .case-register-filters {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(100px, .6fr) repeat(2, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: end;
   gap: 16px;
   padding: 20px;
@@ -1142,4 +1142,11 @@
 }
 @media (max-width: 600px) {
   .verity-console .case-register-filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+}
+
+.verity-console .portfolio-table-wrap .case-table thead th {
+  font-size: .8125rem;
+  font-weight: 750;
+  color: #28223f;
+  letter-spacing: .025em;
 }

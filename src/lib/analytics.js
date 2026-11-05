@@ -74,6 +74,7 @@ export function filterCases(cases, filters = {}) {
   const search = tidy(filters.search).toLowerCase();
   return cases.filter(
     (item) =>
+      (!filters.details || Boolean(item.hasDetails) === (filters.details === "available")) &&
       (!filters.year || filingYear(item) === filters.year) &&
       (!filters.court || courtName(item) === filters.court) &&
       (!filters.type || caseType(item) === filters.type) &&

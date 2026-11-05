@@ -248,3 +248,14 @@ test("company priorities use confirmed pending status and a strict over-one-year
   assert.equal(scoped.pendingNbw.length, 0);
   assert.equal(scoped.pendingSummons.length, 2);
 });
+
+test("detail availability distinguishes listings and combines with case filters", () => {
+  const cases = [
+    { cnr: "detail", hasDetails: true, data: { filing_date: "01-01-2025" } },
+    { cnr: "listing", hasDetails: false, data: { filing_date: "01-01-2025" } },
+    { cnr: "older", hasDetails: true, data: { filing_date: "01-01-2024" } },
+  ];
+  assert.deepEqual(filterCases(cases, { details: "available", year: "2025" }).map(item => item.cnr), ["detail"]);
+  assert.deepEqual(filterCases(cases, { details: "missing" }).map(item => item.cnr), ["listing"]);
+  assert.equal(filterCases(cases, {}).length, 3);
+});

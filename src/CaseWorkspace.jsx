@@ -1022,6 +1022,14 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                             {[...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse().map((year) => <option key={year}>{year}</option>)}
                           </select>
                         </label>
+                        <label>Case details
+                          <select value={currentCaseFilters.values.details || ""}
+                            onChange={(event) => setCaseFilter("details", event.target.value)}>
+                            <option value="">All cases</option>
+                            <option value="available">Available</option>
+                            <option value="missing">Not available</option>
+                          </select>
+                        </label>
                         <label>Respondent name
                           <input type="search" value={currentCaseFilters.respondent || ""}
                             onChange={(event) => setCaseFilter("respondent", event.target.value)}
@@ -1064,7 +1072,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                                 disabled={busy || Boolean(fetching)}
                                 onClick={() => fetchCase(c)}
                               >
-                                View · {c.data.case_reference || c.data.registration_number || c.cnr}
+                                {c.data.case_reference || c.data.registration_number || c.cnr}
                               </button>,
                               c.data.case_type || "—",
                               c.cnr,

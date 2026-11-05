@@ -247,7 +247,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     );
     assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Cases");
     const view = [...document.querySelectorAll("button")].find((b) =>
-      b.textContent.includes("View ·"),
+      b.classList.contains("case-open"),
     );
     assert.ok(view, "listed case has a View control");
     await act(async () =>
@@ -275,7 +275,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       assert.equal(document.querySelector('.case-fetch-status[role="status"]'), null, `${label} does not repeat connection messages`);
     }
     simulatedSuccess = true;
-    const freshView = [...document.querySelectorAll("button")].find(b => b.textContent.includes("View ·"));
+    const freshView = [...document.querySelectorAll("button")].find(b => b.classList.contains("case-open"));
     await act(async () =>
       freshView.dispatchEvent(new window.Event("click", { bubbles: true })),
     );
