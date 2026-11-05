@@ -9,7 +9,7 @@ function validCaptcha(value) {
     value.image.length <= 350000 && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(value.image);
 }
 
-export function CourtPartySearch({ dashboardPayload, onSaved }) {
+export function CourtPartySearch({ dashboardPayload, onSaved, onCaptureChallenge }) {
   const [choices, setChoices] = useState([]);
   const [selections, setSelections] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -201,7 +201,16 @@ export function CourtPartySearch({ dashboardPayload, onSaved }) {
       {started && (prepared || error) && (
         <button className="btn" type="button" disabled={busy} onClick={() => run(() => request({ step: "focus" }))}>Show eCourts tab</button>
       )}
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <div>
+          <p role="alert">{error}</p>
+          {onCaptureChallenge && (
+            <button className="btn" type="button" disabled={busy} onClick={onCaptureChallenge}>
+              Show active capture / CAPTCHA
+            </button>
+          )}
+        </div>
+      )}
       {canReload && (
         <button className="btn" disabled={busy} type="button" onClick={() => start(true)}>
           Reload open eCourts tab

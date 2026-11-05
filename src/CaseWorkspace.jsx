@@ -508,7 +508,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     }
   }
   async function focusCourt() {
-    const cnr = selected?.cnr || requestedCnr.current;
+    const cnr = selected?.cnr || batch?.current || requestedCnr.current;
     if (!cnr) return;
     try {
       const result = await extensionRequest(
@@ -617,7 +617,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         )}
         {workspace && (
           <div hidden={portfolioView !== "connections"}>
-            <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} onSaved={() => perform(refresh)} />
+            <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} onCaptureChallenge={batch?.current ? focusCourt : undefined} onSaved={() => perform(refresh)} />
           </div>
         )}
         {portfolioView === "connections" && batch && (
@@ -714,6 +714,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               {batch.current && <p>Current case: {batch.current}</p>}
             </div>
             <p>{batch.message}</p>
+            {batch.current && (
+              <div className="capture-challenge-actions">
+                <p>If eCourts requests a CAPTCHA, open the capture tab below and enter it there. Then resume the queue.</p>
+                <button className="btn" type="button" onClick={focusCourt}>Show eCourts / CAPTCHA</button>
+              </div>
+            )}
             <details>
               <summary>Capture guidance</summary>
               <p>
