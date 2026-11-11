@@ -1,470 +1,71 @@
-import React, { useMemo, useState } from "react";
-import {
-  analyticsOptions,
-  buildAnalytics,
-  caseStage,
-  caseStatus,
-  filterCases,
-  filingYear,
-  annualActivity,
-  observedStageDurations,
-  percentage,
-} from "../lib/analytics";
-import {
-  formatHearingDate,
-  indiaToday,
-} from "../lib/hearings";
+import React, { useEffect, useMemo, useState } from "react";
+import { analyticsOptions, annualActivity, buildAnalytics, caseAdvocate, caseStage, courtPerformanceRows, filterCases, filingYear, observedStageDurations, pendingStageRows, percentage, portfolioDiagnostic } from "../lib/analytics";
+import { createAnalyticsReport } from "../lib/analyticsReport";
+import { caseCsv } from "../lib/csv";
+import { formatHearingDate, indiaToday } from "../lib/hearings";
 import { WorkspaceIcon } from "./WorkspaceIcon";
 
-const turnaroundPhases = [
-  ["Pre-Summoning & Issue of Process", ["SWORN STATEMENT", "SUMMONS", "NOTICE", "FOR STEPS", "AWAIT", "NBW"]],
-  ["Appearance & Bail", ["APPEARANCE OF ACCUSED", "APPEARANCE OF ACCUSSED", "BAIL"]],
-  ["Settlement / Pre-Trial Steps", ["A.D.R.", "ADR", "LOK ADALATH", "LOK ADALAT", "OBJECTION"]],
-  ["Charge / Plea", ["FRAMING OF CHARGE OR PLEA"]],
-  ["Trial & Evidence", ["EVIDENCES", "HEARING", "ACCUSED STATEMENT U/S 313 CRPC", "ACCUSSED STATEMENT U/S 313 CRPC", "DEFENCE EVIDENCE"]],
-  ["Final Arguments & Decision", ["ARGUMENTS", "ARGUMENT", "TO HEAR ON", "CALL ON", "ORDERS", "JUDGEMENT", "JUDGEMENTS"]],
-];
-const mappedStages = new Set(turnaroundPhases.flatMap(([, stages]) => stages));
+const phases = [["Pre-Summoning & Issue of Process", ["SWORN STATEMENT", "SUMMONS", "NOTICE", "FOR STEPS", "AWAIT", "NBW"]], ["Appearance & Bail", ["APPEARANCE OF ACCUSED", "APPEARANCE OF ACCUSSED", "BAIL"]], ["Settlement / Pre-Trial Steps", ["A.D.R.", "ADR", "LOK ADALATH", "LOK ADALAT", "OBJECTION"]], ["Charge / Plea", ["FRAMING OF CHARGE OR PLEA"]], ["Trial & Evidence", ["EVIDENCES", "HEARING", "ACCUSED STATEMENT U/S 313 CRPC", "DEFENCE EVIDENCE"]], ["Final Arguments & Decision", ["ARGUMENTS", "ARGUMENT", "TO HEAR ON", "CALL ON", "ORDERS", "JUDGEMENT", "JUDGEMENTS"]]];
+const phaseStages = new Set(phases.flatMap(([, values]) => values));
+const fmt = (value) => Number(value).toLocaleString("en-IN", { maximumFractionDigits: 1 });
+const pct = (value) => value === null || value === undefined ? "—" : `${fmt(value)}%`;
 
-const count = (value) =>
-  value.toLocaleString("en-IN", { maximumFractionDigits: 1 });
-const percent = (value) => (value === null ? "—" : `${count(value)}%`);
-function Panel({ title, note, children, className = "" }) {
-  return (
-    <section
-      className={`console-panel analytics-panel card chart-card ${className}`}
-    >
-      <h2>{title}</h2>
-      {note && <p className="muted">{note}</p>}
-      {children}
-    </section>
-  );
-}
-function Trend({ model }) {
-  const max = Math.max(
-    1,
-    ...model.trend.flatMap((row) => [row.filings, row.disposals]),
-  );
-  return (
-    <>
-      <div className="analytics-legend">
-        <span>
-          <i className="legend-filings" aria-hidden="true" />
-          Filings
-        </span>
-        <span>
-          <i className="legend-decisions" aria-hidden="true" />
-          Disposals
-        </span>
-      </div>
-      <div
-        className="analytics-trend-scroll"
-        tabIndex="0"
-        role="region"
-        aria-label="Monthly filings and recorded disposals"
-      >
-        <ol className="analytics-trend">
-          {model.trend.map((row) => (
-            <li key={row.month}>
-              <span className="visually-hidden">
-                {formatHearingDate(`${row.month}-01`, {
-                  month: "long",
-                  year: "numeric",
-                })}
-                : {row.filings} filings, {row.disposals} disposals.
-              </span>
-              <div className="trend-columns" aria-hidden="true">
-                <div>
-                  <span>{row.filings}</span>
-                  <i
-                    className="trend-filings"
-                    style={{ blockSize: `${(row.filings / max) * 140}px` }}
-                  />
-                </div>
-                <div>
-                  <span>{row.disposals}</span>
-                  <i
-                    className="trend-decisions"
-                    style={{ blockSize: `${(row.disposals / max) * 140}px` }}
-                  />
-                </div>
-              </div>
-              <span className="trend-month" aria-hidden="true">
-                {formatHearingDate(`${row.month}-01`, {
-                  month: "short",
-                  year: "2-digit",
-                })}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </div>
-      {!model.trend.some((row) => row.filings || row.disposals) && (
-        <p className="analytics-empty">
-          No valid filing or disposal dates fall in this window.
-        </p>
-      )}
-      <p className="muted">
-        Filings and disposals belong to the currently selected case portfolio.
-        Disposals use Disposal Date, falling back to Decision Date on disposed
-        cases.
-      </p>
-      <details className="analytics-chart-data">
-        <summary>View monthly counts</summary>
-        <div
-          className="case-table-wrap"
-          role="region"
-          tabIndex="0"
-          aria-label="Monthly trend data"
-        >
-          <table className="case-table">
-            <caption>Monthly filings and disposals</caption>
-            <thead>
-              <tr>
-                <th scope="col">Month</th>
-                <th scope="col">Filings</th>
-                <th scope="col">Disposals</th>
-              </tr>
-            </thead>
-            <tbody>
-              {model.trend.map((row) => (
-                <tr key={row.month}>
-                  <th scope="row">
-                    {formatHearingDate(`${row.month}-01`, {
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </th>
-                  <td>{row.filings}</td>
-                  <td>{row.disposals}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
-    </>
-  );
-}
-export function AnalyticsDashboard({
-  cases,
-  onStageCases,
-  today = indiaToday(),
-}) {
-  const [filters, setFilters] = useState({
-    court: "",
-    type: "",
-    status: "",
-    stage: "",
-    search: "",
-    year: "",
-  });
-  const [months, setMonths] = useState(6);
+function Panel({ title, note, className = "", children, action, id }) { return <section id={id} className={`console-panel analytics-panel card chart-card ${className}`}><div className="analytics-section-title"><div><h2>{title}</h2>{note && <p className="muted">{note}</p>}</div>{action}</div>{children}</section>; }
+function CaseButton({ children, cases, onOpen, className = "", title }) { const enabled = Boolean(cases?.length && onOpen); return <button type="button" className={className} disabled={!enabled} title={title} onClick={() => onOpen(cases)}>{children}</button>; }
+function Bars({ rows, max, onOpen, suffix = "cases", className = "" }) { if (!rows.length) return <p className="analytics-empty">No matching recorded data.</p>; return <div className={`analytics-bars ${className}`}>{rows.map((row) => <CaseButton key={row.label} cases={row.cases} onOpen={onOpen} className="analytics-bar-button"><span className="analytics-bar-label">{row.label}</span><span className="analytics-track"><i style={{ inlineSize: `${Math.max(3, (row.count / Math.max(1, max)) * 100)}%` }} /></span><strong>{fmt(row.count)} <small>{suffix}</small></strong></CaseButton>)}</div>; }
+function Trend({ rows, label }) { const max = Math.max(1, ...rows.flatMap((row) => [row.filings, row.disposals])); return <><div className="analytics-legend"><span><i className="legend-filings" />Filings</span><span><i className="legend-decisions" />Disposals</span></div><div className="analytics-trend-scroll" role="region" tabIndex="0" aria-label={label}><ol className="analytics-trend">{rows.map((row) => <li key={row.month}><span className="visually-hidden">{row.month}: {row.filings} filings, {row.disposals} disposals.</span><div className="trend-columns" aria-hidden="true"><div><span>{row.filings}</span><i className="trend-filings" style={{ blockSize: `${row.filings / max * 140}px` }} /></div><div><span>{row.disposals}</span><i className="trend-decisions" style={{ blockSize: `${row.disposals / max * 140}px` }} /></div></div><span className="trend-month" aria-hidden="true">{formatHearingDate(`${row.month}-01`, { month: "short", year: "2-digit" })}</span></li>)}</ol></div></>; }
 
+export function AnalyticsDashboard({ cases, onStageCases, company = "Company", today = indiaToday() }) {
+  const [filters, setFilters] = useState({ court: "", type: "", status: "", stage: "", search: "", year: "", advocate: "" });
+  const [presenting, setPresenting] = useState(false); const [assumptions, setAssumptions] = useState({ exposure: "", rate: "10", years: "1", reviewDays: "365" });
+  const [proxyAcknowledged, setProxyAcknowledged] = useState(false); const [priorityPage, setPriorityPage] = useState(0); const [prioritySearch, setPrioritySearch] = useState("");
+  const [windowSize, setWindowSize] = useState(12); const [courtSort, setCourtSort] = useState("total");
   const options = useMemo(() => analyticsOptions(cases), [cases]);
   const filtered = useMemo(() => filterCases(cases, filters), [cases, filters]);
-  const model = useMemo(
-    () => buildAnalytics(filtered, { today, months }),
-    [filtered, today, months],
-  );
-  const setFilter = (name, value) =>
-    setFilters((old) => ({ ...old, [name]: value }));
-  const years = [...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse();
-  const pendingCounts = new Map(options.stages.map((stage) => [stage, 0]));
-  for (const item of filtered) {
-    if (caseStatus(item) === "Pending") {
-      const stage = caseStage(item);
-      pendingCounts.set(stage, pendingCounts.get(stage) + 1);
-    }
-  }
-  const pendingStages = [...pendingCounts].sort(([a, first], [b, second]) =>
-    second - first || a.localeCompare(b),
-  );
-  const stageDurations = useMemo(
-    () => observedStageDurations(filtered, today),
-    [filtered, today],
-  );
-  for (const stage of stageDurations.keys()) {
-    if (!pendingCounts.has(stage)) pendingStages.push([stage, 0]);
-  }
-  const annualRows = months === "annual"
-    ? annualActivity(filterCases(cases, { ...filters, year: "" }), today)
-    : [];
-  const metrics = [
-    [
-      "Cases in view",
-      count(model.total),
-      "Current selected portfolio",
-      "cases",
-    ],
-    ["Pending", count(model.pending), "Confirmed pending cases", "clock"],
-    ["Disposed", count(model.disposed), "Confirmed disposed cases", "check"],
-    [
-      "Disposed share",
-      percent(model.disposalRate),
-      `${model.known} cases with a known status`,
-      "analytics",
-    ],
-    [
-      "Average filing to disposal",
-      model.averageTat === null ? "—" : `${count(model.averageTat)} days`,
-      `${count(model.tatSamples)} of ${count(model.disposed)} disposed cases with valid dates`,
-      "clock",
-    ],
-  ];
-  const activeFilters = Object.values(filters).some(Boolean);
-  return (
-    <div className="analytics-dashboard">
-      <section
-        className="console-panel analytics-filters card filters"
-        aria-label="Analytics filters"
-      >
-        <div className="analytics-filter-heading card-title-row">
-          <div>
-            <p className="panel-kicker">COMPANY PERFORMANCE</p>
-            <p role="status">
-              <strong>{model.total}</strong> of {cases.length} loaded cases
-              {activeFilters ? " · filtered" : ""}
-            </p>
-          </div>
-          <button
-            disabled={!activeFilters}
-            onClick={() =>
-              setFilters({
-                court: "",
-                type: "",
-                status: "",
-                stage: "",
-                search: "",
-                year: "",
-              })
-            }
-          >
-            Clear filters
-          </button>
-        </div>
-        <div className="analytics-filter-grid filter-grid">
-          <label>
-            Court
-            <select
-              value={filters.court}
-              onChange={(e) => setFilter("court", e.target.value)}
-            >
-              <option value="">All courts</option>
-              {options.courts.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Case type
-            <select
-              value={filters.type}
-              onChange={(e) => setFilter("type", e.target.value)}
-            >
-              <option value="">All case types</option>
-              {options.types.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Status
-            <select
-              value={filters.status}
-              onChange={(e) => setFilter("status", e.target.value)}
-            >
-              <option value="">All statuses</option>
-              {["Pending", "Disposed", "Status unavailable"].map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Case stage
-            <select
-              value={filters.stage}
-              onChange={(e) => setFilter("stage", e.target.value)}
-            >
-              <option value="">All stages</option>
-              {options.stages.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Filing year
-            <select value={filters.year} onChange={(e) => setFilter("year", e.target.value)}>
-              <option value="">All years</option>
-              {years.map((year) => <option key={year}>{year}</option>)}
-            </select>
-          </label>
-          <label>
-            Search portfolio
-            <div className="search-box">
-              <WorkspaceIcon name="search" size={16} />
-              <input
-                type="search"
-                value={filters.search}
-                onChange={(e) => setFilter("search", e.target.value)}
-                placeholder="Case, CNR, party or court"
-              />
-            </div>
-          </label>
-        </div>
-        <p className="muted">
-          Scope: the currently loaded company portfolio. Portfolio totals follow your filters. As of {formatHearingDate(today)} (India).
-        </p>
-      </section>
-      <div className="analytics-metrics metric-grid">
-        {metrics.map(([label, value, note, icon], index) => (
-          <article
-            className={`metric-card ${index === 0 ? "highlight" : ""}`}
-            key={label}
-          >
-            <div>
-              <span>{label}</span>
-              <WorkspaceIcon name={icon} size={18} />
-            </div>
-            <strong>{value}</strong>
-            <small>{note}</small>
-          </article>
-        ))}
-      </div>
-      <Panel title="Pending cases by stage" note={model.pending
-        ? `Share of ${count(model.pending)} pending cases`
-        : "No pending cases match these filters."}>
-        <div className="pending-stage-grid">
-          {pendingStages.filter(([, total]) => total > 0).map(([stage, total]) => {
-            const share = percentage(total, model.pending) ?? 0;
-            return (
-              <button className="pending-stage-card" key={stage} type="button"
-                disabled={!total || !onStageCases}
-                onClick={() => onStageCases({ ...filters, status: "Pending", stage })}>
-                <span>{stage} {total > 0 && <WorkspaceIcon name="arrow" size={16} />}</span>
-                <strong>{count(total)} {total === 1 ? "case" : "cases"}</strong>
-                <small>{percent(share)}</small>
-                <progress max="100" value={share} aria-hidden="true" />
-              </button>
-            );
-          })}
-        </div>
-      </Panel>
-      <Panel
-        title="Average turnaround by stage"
-        className="stage-turnaround-panel"
-        note="Estimated calendar days from the first recorded hearing purpose to a change in purpose, using completed stage periods in the filtered cases."
-      >
-        {[
-          ...turnaroundPhases.map(([title, stages], index) => [
-            `${index + 1}. ${title}`,
-            stages.filter((stage) => pendingCounts.has(stage) || stageDurations.has(stage)),
-          ]),
-          ["Other recorded stages", pendingStages.map(([stage]) => stage)
-            .filter((stage) => !mappedStages.has(stage)).sort()],
-        ].map(([title, stages]) => stages.length > 0 && (
-          <section key={title}>
-            <h3>{title}</h3>
-            <div className="pending-stage-grid">
-              {stages.map((stage) => {
-                const duration = stageDurations.get(stage);
-                return (
-                  <article className="pending-stage-card stage-turnaround-card" key={stage}>
-                    <span>{stage}</span>
-                    <strong>{duration ? `${count(duration.days / duration.samples)} days` : "—"}</strong>
-                    <small>{duration
-                      ? `Based on ${count(duration.cases)} ${duration.cases === 1 ? "case" : "cases"}`
-                      : "No recorded transition"}</small>
-                  </article>
-                );
-              })}
-            </div>
-          </section>
-        ))}
-      </Panel>
-      <div>
-        <Panel
-          title="Filings & disposals"
-          className="analytics-primary-trend"
-          note="Recorded filings and disposals by month for the selected portfolio."
-        >
-          <label className="analytics-trend-window">
-            Trend window
-            <select
-              value={months}
-              onChange={(e) => setMonths(e.target.value === "annual" ? "annual" : Number(e.target.value))}
-            >
-              <option value={6}>Last 6 months</option>
-              <option value={12}>Last 12 months</option>
-              <option value="annual">Year on year</option>
-            </select>
-          </label>
-          {months === "annual" ? (
-            <div className="case-table-wrap">
-              <p>All filing years. Events count in the year they occurred. Other filters still apply.</p>
-              {annualRows.length ? (
-                <table className="case-table">
-                  <caption>Annual filings and disposals</caption>
-                  <thead><tr><th scope="col">Year</th><th scope="col">Filings</th><th scope="col">Disposals</th></tr></thead>
-                  <tbody>{annualRows.map((row) => (
-                    <tr key={row.year}><th scope="row">{row.year}</th><td>{row.filings}</td><td>{row.disposals}</td></tr>
-                  ))}</tbody>
-                </table>
-              ) : <p>No dated filings or disposals match these filters.</p>}
-            </div>
-          ) : <Trend model={model} />}
-        </Panel>
-      </div>
-      <Panel
-        title="Court breakdown"
-        className="court-card"
-        note="Case totals by court for the filtered portfolio."
-      >
-        <div
-          className="case-table-wrap analytics-table-wrap"
-          role="region"
-          tabIndex="0"
-          aria-label="Court portfolio breakdown"
-        >
-          <table className="case-table">
-            <caption>Court workload in the filtered portfolio</caption>
-            <thead>
-              <tr>
-                {[
-                  "Court",
-                  "Cases",
-                  "Pending",
-                  "Disposed",
-                  "Hearings · 7 days",
-                ].map((label) => (
-                  <th scope="col" key={label}>
-                    {label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {model.courts.map((row) => (
-                <tr key={row.label}>
-                  <th scope="row">{row.label}</th>
-                  <td>{row.total}</td>
-                  <td>{row.pending}</td>
-                  <td>{row.disposed}</td>
-                  <td>{row.next7}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+  const model = useMemo(() => buildAnalytics(filtered, { today, months: windowSize }), [filtered, today, windowSize]);
+  const pendingRows = useMemo(() => pendingStageRows(filtered), [filtered]);
+  const diagnostic = useMemo(() => portfolioDiagnostic(filtered, today, Number(assumptions.reviewDays) || 365), [filtered, today, assumptions.reviewDays]);
+  const durations = useMemo(() => observedStageDurations(filtered, today), [filtered, today]);
+  const courtRows = useMemo(() => courtPerformanceRows(filtered, today).sort((a, b) => (b[courtSort] ?? -1) - (a[courtSort] ?? -1) || a.label.localeCompare(b.label)), [filtered, today, courtSort]);
+  const years = useMemo(() => [...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse(), [cases]);
+  const annual = useMemo(() => annualActivity(filterCases(cases, { ...filters, year: "" }), today), [cases, filters, today]);
+  const set = (key, value) => setFilters((old) => ({ ...old, [key]: value }));
+  const open = (records, extra = {}) => onStageCases?.({ ...filters, ...extra, caseIds: records.map((item) => item.cnr) });
+  const exportFiltered = () => { const headers = ["Case number", "CNR number", "Court", "Case type", "Status", "Stage", "Filing date", "Disposal date", "Decision date", "Advocate"]; const rows = filtered.map((item) => [item.data?.case_reference || item.data?.registration_number || item.cnr, item.cnr, item.data?.court || "", item.data?.case_type || "", item.data?.case_status || "", item.data?.case_stage || "", item.data?.filing_date || "", item.data?.disposal_date || "", item.data?.decision_date || "", caseAdvocate(item)]); const link = document.createElement("a"); const url = URL.createObjectURL(new Blob([caseCsv(headers, rows)], { type: "text/csv;charset=utf-8" })); link.href = url; link.download = `Lawcovery-analytics-${today}.csv`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+  const exportReport = () => { const link = document.createElement("a"); const url = URL.createObjectURL(new Blob([createAnalyticsReport({ company, cases: filtered, filters, today, assumptions: { ...assumptions, proxyAcknowledged } })], { type: "text/html;charset=utf-8" })); link.href = url; link.download = `${company.replace(/[^a-z0-9]+/gi, "-")}-legal-portfolio-report.html`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+  const metrics = [["Cases in view", fmt(model.total), "All filtered records", filtered], ["Pending", fmt(model.pending), "Confirmed pending; unknown is separate", pendingRows.flatMap((row) => row.cases)], ["Disposed", fmt(model.disposed), "Confirmed disposed", model.closedCases.map((row) => row.item)], ["Disposal percentage", pct(model.disposalRate), `${fmt(model.disposed)} of ${fmt(model.known)} known-status cases`, model.closedCases.map((row) => row.item)], ["Avg filing → disposal", model.averageTat === null ? "—" : `${fmt(model.averageTat)} days`, `${fmt(model.tatSamples)} valid filing-to-closure samples`, []]];
+  const phaseGroups = [...phases.map(([label, stageList]) => [label, stageList.filter((stage) => durations.has(stage))]), ["Other recorded stages", [...durations.keys()].filter((stage) => !phaseStages.has(stage)).sort()]];
+  const currentFilters = Object.entries(filters).filter(([, value]) => value).map(([key, value]) => `${key === "year" ? "Filing year" : key}: ${value}`);
+  const caseTypes = model.types.map((row) => ({ ...row, cases: filtered.filter((item) => item.data?.case_type?.trim().toUpperCase().startsWith(row.label) || (!item.data?.case_type && row.label === "TYPE NOT RECORDED")) }));
+  const outcomes = model.disposalTypes.map((row) => ({ ...row, cases: model.closedCases.map((entry) => entry.item).filter((item) => (item.data?.nature_of_disposal || "Not recorded").trim().toUpperCase() === row.label) }));
+  const advocates = useMemo(() => [...new Set(cases.map(caseAdvocate))].sort(), [cases]);
+  useEffect(() => { document.body.classList.toggle("lawcovery-presentation", presenting); return () => document.body.classList.remove("lawcovery-presentation"); }, [presenting]);
+  const oldShare = model.pending ? percentage(diagnostic.old.length, model.pending) : null;
+  const cohortRows = useMemo(() => diagnostic.yearRows.map((row) => ({ ...row, backlogShare: percentage(row.pending.length, model.pending), disposalShare: percentage(row.disposed.length, row.pending.length + row.disposed.length) })), [diagnostic.yearRows, model.pending]);
+  const heatmap = useMemo(() => pendingRows.map((row) => ({ ...row, cells: cohortRows.map((cohort) => ({ label: cohort.label, cases: row.cases.filter((item) => (filingYear(item) || "Filing year unavailable") === cohort.label) })) })), [pendingRows, cohortRows]);
+  const ageBuckets = useMemo(() => [{ label: "Under 6 months", min: 0, max: 182 }, { label: "6–12 months", min: 183, max: 365 }, { label: "1–2 years", min: 366, max: 730 }, { label: "Over 2 years", min: 731, max: Infinity }, { label: "Filing date unavailable", missing: true }].map((bucket) => ({ ...bucket, cases: bucket.missing ? diagnostic.pending.filter((item) => !item.data?.filing_date) : diagnostic.dated.filter((row) => row.days >= bucket.min && row.days <= bucket.max).map((row) => row.item) })), [diagnostic]);
+  const stageAge = useMemo(() => pendingRows.map((row) => ({ ...row, cells: ageBuckets.map((bucket) => ({ label: bucket.label, cases: row.cases.filter((item) => bucket.cases.includes(item)) })) })), [pendingRows, ageBuckets]);
+  const rankedDurations = useMemo(() => [...durations].map(([label, row]) => ({ label, ...row })).sort((a, b) => b.days / b.samples - a.days / a.samples), [durations]);
+  const priorityRows = useMemo(() => [...diagnostic.dated.filter((row) => row.days > Number(assumptions.reviewDays || 365)), ...diagnostic.pending.filter((item) => !item.data?.filing_date).map((item) => ({ item, days: null }))].filter(({ item }) => !prioritySearch || JSON.stringify(item.data).toLowerCase().includes(prioritySearch.toLowerCase()) || item.cnr.toLowerCase().includes(prioritySearch.toLowerCase())).sort((a,b) => (b.days || -1) - (a.days || -1)), [diagnostic, assumptions.reviewDays, prioritySearch]);
+  return <main className={`analytics-dashboard diagnostic-report ${presenting ? "diagnostic-presenting" : ""}`}>
+    <header className="diagnostic-hero" id="diagnosis"><div><p className="panel-kicker">LAWCOVERY · CLIENT PORTFOLIO DIAGNOSTIC</p><h1>{company} — Legal Portfolio Review</h1><p>Report date {formatHearingDate(today)} · {fmt(model.total)} loaded records in scope · Data load may be capped at 1,000 detailed and 1,000 listing records.</p></div><div className="analytics-filter-actions"><button type="button" onClick={() => setPresenting((value) => !value)}>{presenting ? "Exit presentation" : "Presentation mode"}</button><button type="button" disabled={!filtered.length} onClick={exportReport}>Download report</button></div></header>
+    <nav className="diagnostic-nav" aria-label="Report sections"><a href="#diagnosis">Summary</a><a href="#backlog">Backlog</a><a href="#concentration">Stages</a><a href="#age">Age</a><a href="#turnaround">Turnaround</a><a href="#advocates">Advocates</a><a href="#courts">Courts</a><a href="#financial">Financial impact</a><a href="#priority">Priority cases</a></nav>
+    {!presenting && <section className="console-panel analytics-filters card filters" aria-label="Analytics filters"><div className="analytics-filter-heading card-title-row"><div><p className="panel-kicker">FILTERED REPORT SCOPE</p><p role="status"><strong>{fmt(model.total)}</strong> of {fmt(cases.length)} loaded cases</p></div><div className="analytics-filter-actions"><button type="button" disabled={!filtered.length} onClick={exportFiltered}>Export CSV</button><button type="button" disabled={!currentFilters.length} onClick={() => setFilters({ court: "", type: "", status: "", stage: "", search: "", year: "", advocate: "" })}>Clear filters</button></div></div><div className="analytics-filter-grid filter-grid">{[["Court", "court", options.courts, "All courts"], ["Filing year", "year", years, "All filing years"], ["Case type", "type", options.types, "All case types"], ["Status", "status", ["Pending", "Disposed", "Status unavailable"], "All statuses"], ["Current stage", "stage", options.stages, "All stages"], ["Advocate", "advocate", advocates, "All recorded advocates"]].map(([label, key, values, empty]) => <label key={key}>{label}<select value={filters[key]} onChange={(e) => set(key, e.target.value)}><option value="">{empty}</option>{values.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>)}<label>Search portfolio<div className="search-box"><WorkspaceIcon name="search" size={16} /><input type="search" value={filters.search} onChange={(e) => set("search", e.target.value)} placeholder="Case, CNR, party or court" /></div></label></div><p className="muted">{currentFilters.length ? `Active: ${currentFilters.join(" · ")}. ` : "No active filters. "}Filing year uses Filing Date only. Scope is the loaded company portfolio.</p></section>}
+    <section className="diagnostic-findings" aria-label="Executive diagnosis"><article><small>PRIMARY FINDING</small><strong>{oldShare === null ? "Age cannot be assessed without filing dates." : `${pct(oldShare)} of pending cases are older than 12 months.`}</strong><span>{diagnostic.old.length} of {model.pending} pending cases; missing filing dates are excluded.</span></article><article><small>CONCENTRATION</small><strong>{pendingRows[0] ? `${pendingRows[0].label} is the largest recorded pending stage.` : "No pending stage is recorded."}</strong><span>{pendingRows[0] ? `${pendingRows[0].count} cases · ${pct(percentage(pendingRows[0].count, model.pending))} of pending` : ""}</span></article><article><small>REVIEW SIGNAL</small><strong>{diagnostic.oldest ? `Oldest dated pending case: ${fmt(diagnostic.oldest.days)} days.` : "No dated pending case is available."}</strong><span>{diagnostic.oldest ? `Currently at ${caseStage(diagnostic.oldest.item)} — this is total case age, not time in stage.` : ""}</span></article></section>
+    <section className="analytics-metrics metric-grid" aria-label="Portfolio summary">{metrics.map(([label, value, note, records], index) => <article key={label} className={index === 0 ? "highlight" : ""}><CaseButton className="metric-card" cases={value === "—" ? [] : records} onOpen={open}><span>{label}</span><strong>{value}</strong><small>{note}</small></CaseButton></article>)}</section>
+    <section className="diagnostic-kpis metric-grid" aria-label="Age summary"><article><div className="metric-card"><span>Pending over 12 months</span><strong>{fmt(diagnostic.old.length)}</strong><small>{pct(oldShare)} of pending cases</small></div></article><article><div className="metric-card"><span>Unknown status</span><strong>{fmt(model.unknown + model.listed)}</strong><small>Excluded from disposal percentage</small></div></article><article><div className="metric-card"><span>Average pending age</span><strong>{diagnostic.averageAge == null ? "—" : `${fmt(diagnostic.averageAge)}d`}</strong><small>Filing-date samples only</small></div></article><article><div className="metric-card"><span>Median pending age</span><strong>{diagnostic.medianAge == null ? "—" : `${fmt(diagnostic.medianAge)}d`}</strong><small>Filing-date samples only</small></div></article></section>
+    <Panel id="backlog" title="Year-wise backlog" className="analytics-wide diagnostic-section" note="Filing-year cohort view. Missing dates are kept separate; filing year is never inferred from the case number."><div className="cohort-chart" role="img" aria-label="Pending cases by filing year and case type">{cohortRows.map((row) => <CaseButton key={row.label} className="cohort-column" cases={row.pending} onOpen={open}><span className="cohort-stack">{[...row.types].map(([type, count]) => <i key={type} title={`${type}: ${count}`} style={{ blockSize: `${Math.max(4, count / Math.max(1, ...cohortRows.map((item) => item.cases.length)) * 150)}px` }} />)}</span><strong>{row.pending.length}</strong><small>{row.label}</small></CaseButton>)}</div><p className="diagnostic-finding">{cohortRows[0]?.pending.length ? `${cohortRows[0].label} contributes ${pct(cohortRows[0].backlogShare)} of the filtered pending backlog.` : "No filing-date cohort is available in this scope."}</p><div className="case-table-wrap analytics-table-wrap"><table className="case-table"><caption>Filing-year backlog cohorts</caption><thead><tr><th>Filing year</th><th>Case types</th><th>Pending</th><th>Backlog share</th><th>Disposed</th><th>Cohort disposal share</th></tr></thead><tbody>{cohortRows.map((row) => <tr key={row.label}><th><CaseButton className="table-link" cases={row.cases} onOpen={open}>{row.label}</CaseButton></th><td>{[...row.types].map(([type,count]) => `${type} ${count}`).join(" · ")}</td><td>{row.pending.length}</td><td>{pct(row.backlogShare)}</td><td>{row.disposed.length}</td><td>{pct(row.disposalShare)}</td></tr>)}</tbody></table></div></Panel>
+    <div className="analytics-grid">
+      <Panel id="concentration" title="Stage concentration" note={model.pending ? `Share of ${fmt(model.pending)} filtered pending cases` : "No confirmed pending cases match these filters."}><div className="pending-stage-grid">{pendingRows.map((row) => <CaseButton key={row.label} className="pending-stage-card" cases={row.cases} onOpen={(records) => open(records, { status: "Pending", stage: row.label })}><span>{row.label}<WorkspaceIcon name="arrow" size={16} /></span><strong>{fmt(row.count)} {row.count === 1 ? "case" : "cases"}</strong><small>{pct(percentage(row.count, model.pending))} of pending</small><progress max="100" value={percentage(row.count, model.pending) || 0} /></CaseButton>)}</div><p className="diagnostic-finding">{pendingRows[0] ? `${pendingRows[0].label} accounts for ${pct(percentage(pendingRows[0].count, model.pending))} of pending cases.` : "No pending stages are recorded."}</p><div className="heatmap" role="region" tabIndex="0" aria-label="Pending cases by stage and filing year"><div className="heatmap-row heatmap-head"><b>Stage × filing year</b>{cohortRows.map((row) => <b key={row.label}>{row.label}</b>)}</div>{heatmap.map((row) => <div className="heatmap-row" key={row.label}><strong>{row.label}</strong>{row.cells.map((cell) => <CaseButton key={cell.label} className="heatmap-cell" cases={cell.cases} onOpen={open} style={{ "--heat": cell.cases.length / Math.max(1, row.count) }}><span>{cell.cases.length || "–"}</span></CaseButton>)}</div>)}</div></Panel>
+      <Panel id="age" title="Backlog age" note="Total case age from Filing Date to today; it is not time in the current stage."><Bars rows={ageBuckets.map((row) => ({ label: row.label, count: row.cases.length, cases: row.cases }))} max={Math.max(...ageBuckets.map((row) => row.cases.length), 1)} onOpen={open} suffix="pending" /><p className="diagnostic-finding">{diagnostic.oldest ? `The oldest dated pending case is ${fmt(diagnostic.oldest.days)} days old and is currently at ${caseStage(diagnostic.oldest.item)}.` : "No dated pending cases are available."}</p><div className="heatmap" role="region" tabIndex="0" aria-label="Pending cases by stage and age"><div className="heatmap-row heatmap-head"><b>Stage × age</b>{ageBuckets.map((row) => <b key={row.label}>{row.label}</b>)}</div>{stageAge.map((row) => <div className="heatmap-row" key={row.label}><strong>{row.label}</strong>{row.cells.map((cell) => <CaseButton key={cell.label} className="heatmap-cell" cases={cell.cases} onOpen={open} style={{ "--heat": cell.cases.length / Math.max(1, row.count) }}><span>{cell.cases.length || "–"}</span></CaseButton>)}</div>)}</div></Panel>
+      <Panel id="turnaround" title="Turnaround and bottlenecks" className="analytics-wide" note={`Overall filing-to-disposal: ${model.averageTat == null ? "—" : `${fmt(model.averageTat)} days average`} · ${model.medianTat == null ? "—" : `${fmt(model.medianTat)} days median`} · n=${model.tatSamples}.`}><p className="analytics-tooltip" title="The average uses all completed stage periods. ‘Based on N cases’ counts distinct cases that contributed at least one completed period.">ⓘ Stage TAT is period-weighted from saved stage history, not an exact legal milestone duration.</p><Bars rows={rankedDurations.map((row) => ({ label: row.label, count: Math.round(row.days / row.samples), cases: [] }))} max={Math.max(...rankedDurations.map((row) => row.days / row.samples), 1)} suffix="days" /><div className="phase-grid">{phaseGroups.map(([label, stages]) => stages.length ? <section className="stage-phase" key={label}><h3>{label}</h3><div className="pending-stage-grid">{stages.map((stage) => { const row = durations.get(stage); return <article className="pending-stage-card stage-turnaround-card" key={stage}><span>{stage}</span><strong>{row ? `${fmt(row.days / row.samples)} days` : "—"}</strong><small>{row ? `Based on ${fmt(row.cases)} ${row.cases === 1 ? "case" : "cases"}` : "No completed transition"}</small></article>; })}</div></section> : null)}</div></Panel>
+      <Panel title="Filings & disposals over time" className="analytics-primary-trend" note="Event activity: each filing and closure belongs to the date it occurred." action={<label className="analytics-trend-window">Trend window<select value={windowSize} onChange={(e) => setWindowSize(e.target.value === "annual" ? "annual" : Number(e.target.value))}><option value={6}>6 months</option><option value={12}>12 months</option><option value="annual">Yearly</option></select></label>}>{windowSize === "annual" ? <div className="case-table-wrap"><p className="muted">Calendar-year activity. Filing-year filtering is intentionally ignored here so years can be compared; all other filters apply.</p><table className="case-table"><caption>Annual filings and disposals</caption><thead><tr><th>Year</th><th>Filings</th><th>Disposals</th></tr></thead><tbody>{annual.map((row) => <tr key={row.year}><th>{row.year}</th><td>{row.filings}</td><td>{row.disposals}</td></tr>)}</tbody></table></div> : <Trend rows={model.trend} label="Monthly filings and disposals" />}</Panel>
+      <Panel id="advocates" title="Advocate portfolio review" className="analytics-wide" note={`Derived from saved petitioner advocate text. Coverage: ${pct(diagnostic.advocateCoverage)} of dated pending cases; “not recorded” is not a claim that no advocate was assigned.`}><Bars rows={diagnostic.advocates.map((row) => ({ label: row.label, count: row.old12, cases: row.cases }))} max={Math.max(...diagnostic.advocates.map((row) => row.old12), 1)} onOpen={open} suffix="over 12m" /><div className="case-table-wrap analytics-table-wrap"><table className="case-table"><caption>Advocate workload and age review</caption><thead><tr><th>Advocate</th><th>Pending</th><th>Share</th><th>Avg age</th><th>Median age</th><th>&gt;12m</th><th>&gt;24m</th><th>Stage concentration</th><th>Review queue</th></tr></thead><tbody>{diagnostic.advocates.map((row) => <tr key={row.label}><th><CaseButton className="table-link" cases={row.cases} onOpen={open}>{row.label}</CaseButton></th><td>{row.cases.length}</td><td>{pct(percentage(row.cases.length, model.pending))}</td><td>{fmt(row.averageAge)}d</td><td>{fmt(row.medianAge)}d</td><td>{row.old12}</td><td>{row.old24}</td><td>{row.dominantStage}</td><td>{row.review} over {assumptions.reviewDays || 365}d</td></tr>)}</tbody></table></div></Panel>
+      <Panel id="financial" title="Financial impact scenario" note="No verified balances or unique loan/account identifiers are present in the saved case model. This calculator is illustrative, never an actual loss or recovery statement."><div className="scenario-controls"><label>Assumed exposure per case (₹)<input type="number" min="0" value={assumptions.exposure} onChange={(e) => setAssumptions((old) => ({ ...old, exposure: e.target.value }))} placeholder="Enter only if case count is an accepted proxy" /></label><label>Annual cost of capital (%)<input type="number" min="0" max="100" value={assumptions.rate} onChange={(e) => setAssumptions((old) => ({ ...old, rate: e.target.value }))} /></label><label>Scenario duration (years)<input type="number" min="0" value={assumptions.years} onChange={(e) => setAssumptions((old) => ({ ...old, years: e.target.value }))} /></label></div><label className="scenario-ack"><input type="checkbox" checked={proxyAcknowledged} onChange={(e) => setProxyAcknowledged(e.target.checked)} /> I confirm that, for this illustration only, each pending case may be treated as a unique account.</label><p className="scenario-result">{Number(assumptions.exposure) > 0 && proxyAcknowledged ? `Illustrative exposure: ₹${fmt(Number(assumptions.exposure) * model.pending)}; estimated annual carrying cost: ₹${fmt(Number(assumptions.exposure) * model.pending * Number(assumptions.rate || 0) / 100)}; ${assumptions.years || 0}-year illustration: ₹${fmt(Number(assumptions.exposure) * model.pending * Number(assumptions.rate || 0) / 100 * Number(assumptions.years || 0))}.` : "Enter assumptions and explicitly acknowledge the case-count proxy to model an illustrative scenario."}</p></Panel>
+      <Panel id="priority" title="Priority cases" className="analytics-wide" note="Evidence behind the review findings. Cases are flagged by explicit age and missing-date rules."><div className="priority-toolbar"><label>Search priority cases<input type="search" value={prioritySearch} onChange={(e) => { setPrioritySearch(e.target.value); setPriorityPage(0); }} placeholder="Case, party, stage or advocate" /></label><button type="button" disabled={!priorityRows.length} onClick={() => { const headers=["Case","Respondent","Filing date","Pending age","Stage","Advocate","Reason"]; const values=priorityRows.map(({item,days})=>[item.data?.case_reference||item.cnr,(item.data?.respondents||[]).join("; "),item.data?.filing_date||"",days==null?"":days,caseStage(item),caseAdvocate(item),days==null?"Filing date unavailable.":days>730?"Pending over 24 months.":"Older than configured review threshold."]); const url=URL.createObjectURL(new Blob([caseCsv(headers,values)],{type:"text/csv;charset=utf-8"})); const link=document.createElement("a"); link.href=url;link.download=`Lawcovery-priority-cases-${today}.csv`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000); }}>Export {priorityRows.length} cases</button></div><div className="case-table-wrap analytics-table-wrap"><table className="case-table"><caption>{priorityRows.length} priority cases</caption><thead><tr><th>Case</th><th>Respondent</th><th>Filing date</th><th>Pending age</th><th>Current stage</th><th>Advocate</th><th>Reason flagged</th></tr></thead><tbody>{priorityRows.slice(priorityPage * 10, priorityPage * 10 + 10).map(({item,days}) => <tr key={item.cnr}><th><CaseButton className="table-link" cases={[item]} onOpen={open}>{item.data?.case_reference || item.cnr}</CaseButton></th><td>{(item.data?.respondents || []).join("; ") || "—"}</td><td>{item.data?.filing_date || "—"}</td><td>{days == null ? "—" : `${fmt(days)} days`}</td><td>{caseStage(item)}</td><td>{caseAdvocate(item)}</td><td>{days == null ? "Filing date unavailable." : days > 730 ? "Pending over 24 months." : "Older than configured review threshold."}</td></tr>)}</tbody></table></div><div className="analytics-pagination"><span>Showing {priorityRows.length ? priorityPage * 10 + 1 : 0}–{Math.min(priorityRows.length, priorityPage * 10 + 10)} of {priorityRows.length}</span><button type="button" disabled={!priorityPage} onClick={() => setPriorityPage((value) => value - 1)}>Previous</button><button type="button" disabled={(priorityPage + 1) * 10 >= priorityRows.length} onClick={() => setPriorityPage((value) => value + 1)}>Next</button></div></Panel>
+      <Panel id="courts" title="Court comparison" className="analytics-wide" note="Comparative workload only — these measures do not establish that one court is better or worse."><div className="case-table-wrap analytics-table-wrap"><table className="case-table"><caption>Filtered court portfolio</caption><thead><tr>{[["Court", "label"], ["Total", "total"], ["Pending", "pending"], ["Disposed", "disposed"], ["Disposal %", "disposalRate"], ["Avg TAT", "averageTat"], ["Common pending stage", "commonPendingStage"]].map(([label, key]) => <th key={key}><button type="button" className="table-sort" onClick={() => setCourtSort(key)}>{label}{courtSort === key ? " ↓" : ""}</button></th>)}</tr></thead><tbody>{courtRows.map((row) => <tr key={row.label}><th><CaseButton cases={row.cases} onOpen={open} className="table-link">{row.label}</CaseButton></th><td>{row.total}</td><td>{row.pending}</td><td>{row.disposed}</td><td>{pct(row.disposalRate)}</td><td>{row.averageTat === null ? "—" : `${fmt(row.averageTat)}d · n=${row.tatSamples}`}</td><td>{row.commonPendingStage}</td></tr>)}</tbody></table></div></Panel>
+      <Panel title="Case mix & disposal outcomes" note="Reliable fields recorded in the selected cases."><Bars rows={caseTypes} max={Math.max(...caseTypes.map((row) => row.count), 1)} onOpen={open} /><h3 className="mini-heading">Nature of disposal</h3><Bars rows={outcomes} max={Math.max(...outcomes.map((row) => row.count), 1)} onOpen={open} /></Panel>
+      <Panel title="Management takeaways" note="Rule-based review actions, not predictions."><div className="insight-list"><CaseButton cases={model.longPending.map((row) => row.item)} onOpen={open}><strong>Review older pending cases</strong><span>{fmt(diagnostic.old.length)} cases are older than 12 months.</span></CaseButton><CaseButton cases={pendingRows[0]?.cases || []} onOpen={open}><strong>Review the largest concentration</strong><span>{pendingRows[0] ? `${pendingRows[0].label} · ${fmt(pendingRows[0].count)} pending` : "No pending cases"}</span></CaseButton></div></Panel>
     </div>
-  );
+  </main>;
 }

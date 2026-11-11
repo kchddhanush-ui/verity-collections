@@ -84,6 +84,7 @@ export function filterCases(cases, filters = {}) {
           : caseStatus(item) === filters.status)) &&
       (!filters.stage ||
         (item.hasDetails && caseStage(item) === filters.stage)) &&
+      (!filters.advocate || caseAdvocate(item) === filters.advocate) &&
       (!search ||
         JSON.stringify([item.cnr, item.data]).toLowerCase().includes(search)),
   );
@@ -144,9 +145,13 @@ export function buildAnalytics(
     "Date not recorded",
   ];
   const age = new Map(ageLabels.map((label) => [label, 0]));
+  const ageCases = new Map(ageLabels.map((label) => [label, []]));
   const longPending = [];
   for (const item of pending) {
-    const start = startDate(item, today);
+    // Case age is explicitly filing-date based. Registration dates are useful
+    // elsewhere in the product, but are not a substitute for an unknown filing
+    // date in this metric.
+    const start = pastDate(item.data?.filing_date, today);
     const days = start ? dayNumber(today) - dayNumber(start) : null;
     const label =
       days === null
@@ -163,8 +168,13 @@ export function buildAnalytics(
                     : 4
           ];
     age.set(label, age.get(label) + 1);
-    if (days !== null && days > 365)
-      longPending.push({ item, day: start, days });
+    ageCases.get(label).push(item);
+    // Keep the established review queue's registration-date fallback separate
+    // from the filing-date-only age buckets shown above.
+    const priorityStart = startDate(item, today);
+    const priorityDays = priorityStart ? dayNumber(today) - dayNumber(priorityStart) : null;
+    if (priorityDays !== null && priorityDays > 365)
+      longPending.push({ item, day: priorityStart, days: priorityDays });
   }
   longPending.sort((a, b) => b.days - a.days || a.item.cnr.localeCompare(b.item.cnr));
   const freshness = new Map(
@@ -322,7 +332,7 @@ export function buildAnalytics(
     courts: [...courts.values()].sort(
       (a, b) => b.total - a.total || a.label.localeCompare(b.label),
     ),
-    age: [...age].map(([label, count]) => ({ label, count })),
+    age: [...age].map(([label, count]) => ({ label, count, cases: ageCases.get(label) })),
     freshness: [...freshness].map(([label, count]) => ({ label, count })),
     trend,
     filingDates,
@@ -405,4 +415,103 @@ export function observedStageDurations(cases, today) {
     }
   }
   return totals;
+}
+
+// A small, deliberately data-only layer for dashboard interactions. Keeping the
+// case records with each row lets the UI open precisely the cases represented by
+// a metric without reverse-engineering a label into an imprecise filter.
+export function pendingStageRows(cases) {
+  const rows = new Map();
+  for (const item of cases) {
+    if (caseStatus(item) !== "Pending") continue;
+    const label = caseStage(item);
+    const row = rows.get(label) || { label, count: 0, cases: [] };
+    row.count++;
+    row.cases.push(item);
+    rows.set(label, row);
+  }
+  return [...rows.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+export function courtPerformanceRows(cases, today = indiaToday()) {
+  const groups = new Map();
+  for (const item of cases) {
+    const label = courtName(item);
+    const row = groups.get(label) || {
+      label, cases: [], total: 0, pending: 0, disposed: 0, tatDays: [], pendingStages: new Map(),
+    };
+    row.cases.push(item);
+    row.total++;
+    const status = caseStatus(item);
+    if (status === "Pending") {
+      row.pending++;
+      const stage = caseStage(item);
+      row.pendingStages.set(stage, (row.pendingStages.get(stage) || 0) + 1);
+    }
+    if (status === "Disposed") {
+      row.disposed++;
+      const filing = pastDate(item.data?.filing_date, today);
+      const closed = closureDate(item, today);
+      if (filing && closed && closed >= filing) row.tatDays.push(dayNumber(closed) - dayNumber(filing));
+    }
+    groups.set(label, row);
+  }
+  return [...groups.values()].map((row) => {
+    const common = [...row.pendingStages].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+    return {
+      ...row,
+      disposalRate: percentage(row.disposed, row.pending + row.disposed),
+      averageTat: row.tatDays.length ? row.tatDays.reduce((sum, value) => sum + value, 0) / row.tatDays.length : null,
+      tatSamples: row.tatDays.length,
+      commonPendingStage: common?.[0] || "—",
+    };
+  });
+}
+
+export function caseAdvocate(item) {
+  const values = Array.isArray(item.data?.petitioners) ? item.data.petitioners : [];
+  const names = values.flatMap((value) => String(value).split(/\bAdvocate\s*[-:]\s*/i).slice(1))
+    .map((value) => tidy(value).replace(/^\d+\)\s*/, "")).filter(Boolean);
+  return names.length ? names.join("; ") : "Advocate not recorded";
+}
+
+export function portfolioDiagnostic(cases, today = indiaToday(), reviewDays = 365) {
+  const pending = cases.filter((item) => caseStatus(item) === "Pending");
+  const dated = pending.flatMap((item) => {
+    const filing = pastDate(item.data?.filing_date, today);
+    return filing ? [{ item, days: dayNumber(today) - dayNumber(filing) }] : [];
+  });
+  const age = (items) => items.map(({ days }) => days);
+  const averageAge = age(dated).length ? age(dated).reduce((sum, day) => sum + day, 0) / dated.length : null;
+  const medianAge = median(age(dated));
+  const old = dated.filter((row) => row.days > 365);
+  const oldest = [...dated].sort((a, b) => b.days - a.days)[0] || null;
+  const byAdvocate = new Map();
+  for (const row of dated) {
+    const label = caseAdvocate(row.item);
+    const value = byAdvocate.get(label) || { label, cases: [], ages: [], old12: 0, old24: 0, stages: new Map() };
+    value.cases.push(row.item); value.ages.push(row.days);
+    if (row.days > 365) value.old12++;
+    if (row.days > 730) value.old24++;
+    const stage = caseStage(row.item); value.stages.set(stage, (value.stages.get(stage) || 0) + 1);
+    byAdvocate.set(label, value);
+  }
+  const advocates = [...byAdvocate.values()].map((row) => {
+    const dominant = [...row.stages].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
+    return { ...row, averageAge: row.ages.reduce((s, v) => s + v, 0) / row.ages.length, medianAge: median(row.ages), dominantStage: dominant?.[0] || "—", review: row.ages.filter((day) => day > reviewDays).length };
+  }).sort((a, b) => b.cases.length - a.cases.length || a.label.localeCompare(b.label));
+  const years = new Map();
+  for (const item of cases) {
+    const label = filingYear(item) || "Filing year unavailable";
+    const row = years.get(label) || { label, cases: [], pending: [], disposed: [], types: new Map() };
+    row.cases.push(item);
+    if (caseStatus(item) === "Pending") {
+      row.pending.push(item);
+      const type = caseType(item); row.types.set(type, (row.types.get(type) || 0) + 1);
+    }
+    if (caseStatus(item) === "Disposed") row.disposed.push(item);
+    years.set(label, row);
+  }
+  const yearRows = [...years.values()].sort((a, b) => b.label.localeCompare(a.label));
+  return { pending, dated, averageAge, medianAge, old, oldest, advocates, yearRows, advocateCoverage: percentage(dated.filter((row) => caseAdvocate(row.item) !== "Advocate not recorded").length, dated.length) };
 }

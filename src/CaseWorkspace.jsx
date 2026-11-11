@@ -534,13 +534,14 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       setFetchStatus({ message: e.message, actionNeeded: true });
     }
   }
+  const drilldown = caseDrilldown && caseDrilldown.workspace === workspace ? caseDrilldown : null;
   const filtered = filterCases(cases, {
-    ...(caseDrilldown && caseDrilldown.workspace === workspace ? caseDrilldown.filters : {}),
+    ...(drilldown?.filters || {}),
     ...(caseFilters?.workspace === workspace ? caseFilters.values : {}),
     search: query,
-  }).filter((item) => !caseFilters?.respondent ||
+  }).filter((item) => (!drilldown?.caseIds || drilldown.caseIds.includes(item.cnr)) && (!caseFilters?.respondent ||
     caseFilters.workspace !== workspace ||
-    partyColumns(item.data.respondents).names.toLowerCase().includes(caseFilters.respondent.toLowerCase().trim()));
+    partyColumns(item.data.respondents).names.toLowerCase().includes(caseFilters.respondent.toLowerCase().trim())));
   const currentCaseFilters = caseFilters?.workspace === workspace ? caseFilters : { values: {}, respondent: "" };
   const setCaseFilter = (key, value) => setCaseFilters((previous) => {
     const current = previous?.workspace === workspace ? previous : { values: {}, respondent: "" };
@@ -842,9 +843,10 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     <AnalyticsDashboard
                       key={workspace}
                       cases={cases}
-                      onStageCases={({ search, ...filters }) => {
+                      company={workspaces.find((item) => item.id === workspace)?.name || "Company"}
+                      onStageCases={({ search, caseIds, ...filters }) => {
                         setCaseFilters(null);
-                        setCaseDrilldown({ workspace, filters });
+                        setCaseDrilldown({ workspace, filters, caseIds });
                         setQuery(search);
                         setPortfolioView("cases");
                         window.scrollTo?.(0, 0);
