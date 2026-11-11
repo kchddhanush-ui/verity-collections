@@ -15,7 +15,7 @@
 .diagnostic-report .analytics-track,.diagnostic-report .analytics-bar-button:not(:disabled):hover { background:#e8f0fb; }.diagnostic-report .analytics-track i{background:var(--diagnostic-blue)}
 .diagnostic-report .pending-stage-card progress { accent-color:var(--diagnostic-blue); }.diagnostic-report .table-link,.diagnostic-report .insight-link { color:#1559c1; }
 .diagnostic-report .analytics-panel h2,.diagnostic-report .stage-phase h3 { color:var(--diagnostic-navy); }
-.cohort-chart { display:flex; gap:18px; align-items:end; min-block-size:205px; padding:14px 4px; overflow-x:auto; }.cohort-column{display:grid; justify-items:center; gap:6px; min-inline-size:72px; border:0;background:transparent;color:#19324b}.cohort-stack{display:flex;align-items:end;gap:2px;min-block-size:150px}.cohort-stack i{inline-size:16px;background:#2164d8;border-radius:3px 3px 0 0}.cohort-stack i:nth-child(2n){background:#75a7ff}.cohort-stack i:nth-child(3n){background:#a9c7ff}.diagnostic-finding{margin:14px 0;padding:10px 12px;border-left:3px solid #b46908;background:#fff8e8;color:#5d3b09;font-size:12px}.heatmap{display:grid;gap:3px;overflow:auto;max-inline-size:100%;margin-top:16px}.heatmap-row{display:grid;grid-template-columns:minmax(160px,1.5fr) repeat(6,minmax(52px,1fr));gap:3px;min-inline-size:500px}.heatmap-row>strong,.heatmap-row>b{font-size:11px;padding:7px;color:#486581}.heatmap-cell{min-block-size:34px;border:0;border-radius:4px;background:rgb(33 100 216 / calc(.08 + var(--heat) * .72));color:#102a43;font-weight:700}.heatmap-cell:disabled{color:#627d98;background:#f0f4f8}.phase-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.scenario-ack{display:flex;gap:8px;align-items:start;font-size:12px;color:#486581}.priority-toolbar{display:flex;justify-content:space-between;gap:14px;align-items:end;margin-bottom:14px}.priority-toolbar label{display:grid;gap:5px;font-size:12px;color:#486581}.priority-toolbar input{min-inline-size:260px;min-block-size:36px;border:1px solid #bcccdc;border-radius:6px;padding:7px}
+.cohort-chart { display:flex; gap:18px; align-items:end; min-block-size:205px; padding:14px 4px; overflow-x:auto; }.cohort-column{display:grid; justify-items:center; gap:6px; min-inline-size:72px; border:0;background:transparent;color:#19324b}.cohort-stack{display:flex;align-items:end;gap:2px;min-block-size:150px}.cohort-stack i{inline-size:16px;background:#2164d8;border-radius:3px 3px 0 0}.cohort-stack i:nth-child(2n){background:#75a7ff}.cohort-stack i:nth-child(3n){background:#a9c7ff}.diagnostic-finding{margin:14px 0;padding:10px 12px;border-left:3px solid #b46908;background:#fff8e8;color:#5d3b09;font-size:12px}.heatmap{display:grid;gap:3px;overflow:auto;max-inline-size:100%;margin-top:16px}.heatmap-row{display:grid;grid-template-columns:minmax(160px,1.5fr) repeat(var(--heatmap-columns, 6),minmax(52px,1fr));gap:3px;min-inline-size:500px}.heatmap-row>strong,.heatmap-row>b{font-size:11px;padding:7px;color:#486581}.heatmap-cell{min-block-size:34px;border:0;border-radius:4px;background:rgb(33 100 216 / calc(.08 + var(--heat) * .72));color:#102a43;font-weight:700}.heatmap-cell:disabled{color:#627d98;background:#f0f4f8}.phase-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.scenario-ack{display:flex;gap:8px;align-items:start;font-size:12px;color:#486581}.priority-toolbar{display:flex;justify-content:space-between;gap:14px;align-items:end;margin-bottom:14px}.priority-toolbar label{display:grid;gap:5px;font-size:12px;color:#486581}.priority-toolbar input{min-inline-size:260px;min-block-size:36px;border:1px solid #bcccdc;border-radius:6px;padding:7px}
 .lawcovery-presentation .workspace-navigation,.lawcovery-presentation .workspace-sidebar,.lawcovery-presentation .workspace-header nav,.lawcovery-presentation .console-sidebar{display:none!important}.lawcovery-presentation .workspace-main{max-inline-size:1440px;margin-inline:auto}
 @media (prefers-reduced-motion: reduce){.diagnostic-report *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 .diagnostic-hero { display:flex; justify-content:space-between; gap:24px; align-items:start; padding:32px; border-radius:16px; background:#102a43; color:#fff; margin-block-end:14px; }
@@ -460,3 +460,129 @@
     outline: 2px solid Highlight;
   }
 }
+
+/* Client-facing diagnostic polish. Kept at the end so shared workspace styles
+   cannot leak the older console palette into the report. */
+.verity-console .diagnostic-report {
+  --surface: #fff;
+  --surface-muted: #f7f9fc;
+  --ink: #102a43;
+  --body: #334e68;
+  --muted: #627d98;
+  --line: #d9e2ec;
+  --blue: #2164d8;
+  --blue-soft: #e9f1ff;
+  --amber: #a85a00;
+  --amber-soft: #fff6e5;
+  color: var(--body);
+  font-variant-numeric: tabular-nums;
+  scroll-behavior: smooth;
+}
+.verity-console .diagnostic-report :where(button, a, input, select):focus-visible {
+  outline: 3px solid #1559c1;
+  outline-offset: 3px;
+}
+.verity-console .diagnostic-report .diagnostic-hero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(24px, 3vw, 44px);
+  border: 0;
+  border-radius: 20px;
+  background: linear-gradient(125deg, #102a43 0%, #173f68 58%, #1d5ea8 145%);
+  box-shadow: 0 18px 36px rgb(16 42 67 / 16%);
+}
+.verity-console .diagnostic-report .diagnostic-hero::after {
+  position: absolute;
+  content: "";
+  inline-size: 280px;
+  aspect-ratio: 1;
+  inset: -150px -100px auto auto;
+  border: 1px solid rgb(255 255 255 / 18%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 46px rgb(255 255 255 / 5%), 0 0 0 92px rgb(255 255 255 / 3%);
+  pointer-events: none;
+}
+.verity-console .diagnostic-report .diagnostic-hero > * { position: relative; z-index: 1; }
+.verity-console .diagnostic-report .diagnostic-hero h1 { max-inline-size: 720px; line-height: 1.04; }
+.verity-console .diagnostic-report .diagnostic-hero .analytics-filter-actions { align-items: center; }
+.verity-console .diagnostic-report .diagnostic-hero button {
+  min-block-size: 38px;
+  border-color: rgb(255 255 255 / 32%);
+  background: rgb(255 255 255 / 12%);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+.verity-console .diagnostic-report .diagnostic-hero button:hover { background: rgb(255 255 255 / 22%); }
+.verity-console .diagnostic-report .diagnostic-nav {
+  position: sticky;
+  inset-block-start: 8px;
+  z-index: 5;
+  margin-block: 12px 20px;
+  padding: 7px;
+  border: 1px solid rgb(217 226 236 / 86%);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 88%);
+  box-shadow: 0 7px 20px rgb(16 42 67 / 7%);
+  backdrop-filter: blur(14px);
+}
+.verity-console .diagnostic-report .diagnostic-nav a {
+  min-block-size: 30px;
+  padding: 6px 10px;
+  border: 0;
+  color: #486581;
+  font-weight: 650;
+}
+.verity-console .diagnostic-report .diagnostic-nav a:hover { color: #1559c1; background: var(--blue-soft); }
+.verity-console .diagnostic-report :is(.analytics-filters, .analytics-panel) {
+  padding: clamp(18px, 2vw, 28px);
+  border-color: var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgb(16 42 67 / 4%);
+}
+.verity-console .diagnostic-report [id] { scroll-margin-block-start: 86px; }
+.verity-console .diagnostic-report .diagnostic-nav a[aria-current="location"] { color: #fff; background: #1559c1; }
+.verity-console .diagnostic-report .analytics-grid { gap: 24px; margin-block-start: 24px; }
+.verity-console .diagnostic-report .analytics-section-title { gap: 18px; padding-block-end: 14px; border-block-end: 1px solid #edf2f7; }
+.verity-console .diagnostic-report .analytics-section-title h2 { font-size: clamp(18px, 1.4vw, 22px); letter-spacing: -.02em; }
+.verity-console .diagnostic-report .analytics-section-title .muted { max-inline-size: 620px; line-height: 1.55; }
+.verity-console .diagnostic-report .diagnostic-findings { gap: 16px; margin-block: 20px; }
+.verity-console .diagnostic-report .diagnostic-findings article { min-block-size: 142px; padding: 20px; border-color: var(--line); box-shadow: 0 4px 12px rgb(16 42 67 / 4%); }
+.verity-console .diagnostic-report .diagnostic-findings article:first-child { background: linear-gradient(145deg, #fffaf0, #fff); }
+.verity-console .diagnostic-report .analytics-metrics { gap: 12px; margin-block: 16px; }
+.verity-console .diagnostic-report .analytics-metrics .metric-card { min-block-size: 138px; padding: 18px; border-radius: 13px; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+.verity-console .diagnostic-report .analytics-metrics .metric-card:not(:disabled):hover { border-color: #8ab3f6; box-shadow: 0 9px 22px rgb(33 100 216 / 12%); transform: translateY(-2px); }
+.verity-console .diagnostic-report .analytics-metrics .metric-card > strong { color: var(--ink); }
+.verity-console .diagnostic-report .analytics-metrics article:first-child .metric-card > strong { color: #fff; }
+.verity-console .diagnostic-report .diagnostic-kpis { gap: 12px; margin-block: 12px 22px; }
+.verity-console .diagnostic-report .diagnostic-kpis .metric-card { min-block-size: 110px; border-radius: 13px; box-shadow: 0 4px 12px rgb(16 42 67 / 3%); }
+.verity-console .diagnostic-report .pending-stage-grid { gap: 10px; }
+.verity-console .diagnostic-report .pending-stage-card { min-block-size: 116px; padding: 14px; border-color: var(--line); background: var(--surface-muted); }
+.verity-console .diagnostic-report .pending-stage-card:not(:disabled):hover { border-color: #86acee; background: #f2f7ff; }
+.verity-console .diagnostic-report .pending-stage-card span { color: var(--ink); font-weight: 700; }
+.verity-console .diagnostic-report .pending-stage-card strong { color: var(--ink); font-size: 21px; }
+.verity-console .diagnostic-report .analytics-bar-button { min-block-size: 34px; padding-inline: 8px; border-radius: 8px; }
+.verity-console .diagnostic-report .analytics-bar-button:not(:disabled):hover { background: #f0f6ff; }
+.verity-console .diagnostic-report .analytics-track { block-size: 8px; background: #e7eef7; }
+.verity-console .diagnostic-report .heatmap { padding: 8px; border: 1px solid #e7eef7; border-radius: 11px; background: #fbfcfe; }
+.verity-console .diagnostic-report .heatmap-row > :first-child { display: grid; align-items: center; color: var(--ink); font-weight: 700; }
+.verity-console .diagnostic-report .heatmap-cell:not(:disabled):hover { box-shadow: inset 0 0 0 2px #1559c1; }
+.verity-console .diagnostic-report .case-table-wrap { border: 1px solid #e3eaf2; border-radius: 11px; }
+.verity-console .diagnostic-report .case-table thead th { position: sticky; inset-block-start: 0; z-index: 2; padding-block: 12px; background: #eef4fb; color: var(--ink); }
+.verity-console .diagnostic-report .case-table tbody tr:hover { background: #f7faff; }
+.verity-console .diagnostic-report .case-table td, .verity-console .diagnostic-report .case-table th { border-color: #e6edf5; }
+.verity-console .diagnostic-report .table-sort { min-block-size: 30px; color: var(--ink); }
+.verity-console .diagnostic-report .scenario-controls input, .verity-console .diagnostic-report .priority-toolbar input { min-block-size: 42px; border-color: #bcccdc; border-radius: 8px; background: #fff; }
+.verity-console .diagnostic-report .scenario-result { border-radius: 8px; }
+.verity-console .diagnostic-report .analytics-pagination { padding-block-start: 6px; }
+.verity-console .diagnostic-report .analytics-pagination button { min-block-size: 34px; }
+@container analytics (width < 980px) { .verity-console .diagnostic-report .analytics-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@container analytics (width < 640px) {
+  .verity-console .diagnostic-report .diagnostic-hero { padding: 24px 20px; border-radius: 14px; }
+  .verity-console .diagnostic-report .diagnostic-nav { position: static; margin-block: 10px 16px; }
+  .verity-console .diagnostic-report .analytics-metrics, .verity-console .diagnostic-report .diagnostic-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .verity-console .diagnostic-report .analytics-metrics .metric-card, .verity-console .diagnostic-report .diagnostic-kpis .metric-card { min-block-size: 116px; padding: 14px; }
+  .verity-console .diagnostic-report :is(.analytics-filters, .analytics-panel) { padding: 16px; border-radius: 13px; }
+  .verity-console .diagnostic-report .diagnostic-findings article { min-block-size: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .verity-console .diagnostic-report * { transition-duration: .01ms !important; } }
