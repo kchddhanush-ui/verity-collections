@@ -25,15 +25,17 @@ export function RecoveryScene({ chapters }) {
     const stage = stageRef.current;
     const video = videoRef.current;
     const progress = progressRef.current;
-    const experience = stage.closest(".lp-experience");
-    const panels = [...experience.querySelectorAll("[data-recovery-frame]")];
+    const timeline = stage.closest(".lp-workflow-timeline");
+    const panels = [...timeline.querySelectorAll("[data-recovery-frame]")];
     const motion = window.matchMedia("(prefers-reduced-motion: no-preference) and (min-height: 590px)");
+    let nearby = typeof window.IntersectionObserver !== "function";
     let stops = [];
     let scheduledFrame = 0;
     let lastRequestedFrame = 0;
 
     function updateFrame() {
       scheduledFrame = 0;
+      if (!nearby || !motion.matches) return;
       const frame = frameAtScroll(stops, window.scrollY);
       progress.style.transform = `scaleX(${(frame - 1) / (frameCount - 1)})`;
       if (video.readyState < HTMLMediaElement.HAVE_METADATA || video.seeking || frame === lastRequestedFrame) return;
@@ -43,26 +45,26 @@ export function RecoveryScene({ chapters }) {
     }
 
     function scheduleFrame() {
-      if (motion.matches && !scheduledFrame) scheduledFrame = window.requestAnimationFrame(updateFrame);
+      if (nearby && motion.matches && !scheduledFrame) scheduledFrame = window.requestAnimationFrame(updateFrame);
     }
 
     function measureStops() {
-      if (!motion.matches) return;
-      const page = experience.getBoundingClientRect();
+      if (!nearby || !motion.matches) return;
+      const area = timeline.getBoundingClientRect();
       const scrollY = window.scrollY;
       const viewport = window.innerHeight;
       const header = Number.parseFloat(getComputedStyle(stage).insetBlockStart) || 0;
       stops = [
-        { scroll: scrollY + page.top - header, frame: 1 },
+        { scroll: scrollY + area.top - header, frame: 1 },
         ...panels.map(panel => {
           const rect = panel.getBoundingClientRect();
           const visibleTop = Number.parseFloat(getComputedStyle(panel).scrollMarginBlockStart) || 0;
           return {
-            scroll: scrollY + rect.top + (rect.height - viewport - visibleTop) / 2,
+            scroll: scrollY + rect.top - visibleTop,
             frame: Number(panel.dataset.recoveryFrame),
           };
         }),
-        { scroll: scrollY + page.bottom - viewport, frame: frameCount },
+        { scroll: scrollY + area.bottom - viewport, frame: frameCount },
       ];
       scheduleFrame();
     }
@@ -89,6 +91,7 @@ export function RecoveryScene({ chapters }) {
 
     function syncMotion() {
       if (motion.matches) {
+        if (!nearby) return;
         measureStops();
         if (!video.hasAttribute("src")) video.src = recoveryClip;
       } else {
@@ -96,8 +99,14 @@ export function RecoveryScene({ chapters }) {
       }
     }
 
-    const observer = new window.ResizeObserver(measureStops);
-    observer.observe(experience);
+    const sizes = new window.ResizeObserver(measureStops);
+    sizes.observe(timeline);
+    sizes.observe(timeline.closest("main"));
+    const visibility = nearby ? null : new window.IntersectionObserver(([entry]) => {
+      nearby = entry.isIntersecting;
+      if (nearby) syncMotion();
+    }, { rootMargin: "500px 0px" });
+    visibility?.observe(timeline);
     window.addEventListener("scroll", scheduleFrame, { passive: true });
     window.addEventListener("resize", measureStops);
     motion.addEventListener("change", syncMotion);
@@ -108,7 +117,8 @@ export function RecoveryScene({ chapters }) {
     syncMotion();
 
     return () => {
-      observer.disconnect();
+      sizes.disconnect();
+      visibility?.disconnect();
       window.removeEventListener("scroll", scheduleFrame);
       window.removeEventListener("resize", measureStops);
       motion.removeEventListener("change", syncMotion);
@@ -130,7 +140,8 @@ export function RecoveryScene({ chapters }) {
             alt="Illustrated recovery centre with overdue loan files, legal scales, and checked recovery folders."
             width={1280}
             height={720}
-            fetchPriority="high"
+            loading="lazy"
+            decoding="async"
           />
           <video className="lp-scene-video" ref={videoRef} width={1280} height={720} preload="auto" muted playsInline aria-hidden="true"/>
         </div>
