@@ -15,11 +15,22 @@ const partners = [
   { name: "LSPs & fintechs", focus: "Digital loan defaults", title: "A legal recovery path for digital loan defaults.", description: "Support overdue digital lending portfolios with an integrated legal and recovery approach, backed by shared case visibility.", tags: ["Digital lending", "Deep-default portfolios", "Integrated recovery"] },
 ];
 
-const steps = [
-  ["Understand the portfolio", "Start with the account context, available records and the recovery challenges in your portfolio."],
-  ["Plan the legal approach", "Bring the legal and recovery teams together around a structured course of action."],
-  ["Coordinate execution", "Follow through on the ground, across the jurisdictions relevant to your cases."],
-  ["Keep progress visible", "Track legal stages, upcoming hearings and the history behind case updates."],
+const journey = [
+  {
+    label: "Portfolio intake", stop: "Intake", icon: "cases", tone: "violet",
+    title: "Start with the overdue account.",
+    description: "Bring together the records and recovery history for accounts that are more than 90 days past due.",
+  },
+  {
+    label: "Legal review", stop: "Legal review", icon: "shield", tone: "gold",
+    title: "Turn review into a plan of action.",
+    description: "Legal and recovery teams assess the case, decide the next step, and coordinate work in the relevant jurisdiction.",
+  },
+  {
+    label: "Recovery tracking", stop: "Recovery", icon: "check", tone: "mint",
+    title: "Keep progress visible as the case moves.",
+    description: "Follow recorded court updates, hearings, and recovery outcomes so your team knows what needs attention next.",
+  },
 ];
 
 function RecoveryVisual() {
@@ -67,6 +78,47 @@ function RecoveryVisual() {
   </figure>;
 }
 
+function RecoveryJourney() {
+  return <section id="process" className="lp-section lp-process" aria-labelledby="process-title">
+    <div className="lp-container">
+      <div className="lp-section-heading">
+        <div><p className="lp-eyebrow">HOW IT WORKS</p><h2 id="process-title">Follow an account through legal recovery.</h2></div>
+        <p>See how Lawcovery connects portfolio intake, legal action, and recovery tracking.</p>
+      </div>
+      <div className="lp-journey-layout">
+        <div className="lp-journey-board" aria-hidden="true">
+          <div className="lp-board-header"><span>Case journey</span><span>Illustrative case</span></div>
+          <div className="lp-board-map">
+            <div className="lp-board-route"><span/></div>
+            <div className="lp-board-stops">
+              {journey.map(({ stop, icon, tone }) => <div className="lp-board-stop" key={stop} data-tone={tone}>
+                <div className="lp-board-platform"><Icon name={icon} size={21}/></div>
+                <span>{stop}</span>
+              </div>)}
+            </div>
+            <div className="lp-board-token-lane">
+              <div className="lp-board-token">
+                <span><Icon name="cases" size={15}/> Case file</span>
+                <strong>90+ DPD</strong>
+                <i/><i/>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ol className="lp-journey-steps">
+          {journey.map(({ label, title, description, tone }, index) => <li key={label} className="lp-journey-step" data-tone={tone}>
+            <div className="lp-journey-step-copy">
+              <p className="lp-journey-label"><span>{String(index + 1).padStart(2, "0")}</span>{label}</p>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </div>
+          </li>)}
+        </ol>
+      </div>
+    </div>
+  </section>;
+}
+
 export function PublicLanding() {
   const [partner, setPartner] = useState(0);
   useEffect(() => {
@@ -81,7 +133,7 @@ export function PublicLanding() {
     <header className="lp-header">
       <a className="brand lp-brand" href="?view=home" aria-label="Lawcovery home"><LawcoveryLogo/></a>
       <nav className="lp-nav" aria-label="Main navigation">
-        <a href="#services">What we do</a><a href="#results">Our results</a><a href="#partners">Partners</a>
+        <a href="#process">How it works</a><a href="#results">Our results</a><a href="#partners">Partners</a>
         <a className="lp-login" href="?view=login">Client login <Icon name="arrow" size={17}/></a>
       </nav>
     </header>
@@ -92,7 +144,7 @@ export function PublicLanding() {
             <p className="lp-kicker"><span/> LEGAL RECOVERY FOR 90+ DPD PORTFOLIOS</p>
             <h1 id="public-title">Overdue portfolios.<br/><em>A clear way forward.</em></h1>
             <p className="lp-hero-intro">Specialised legal recovery for the accounts that need more than another reminder. We bring legal action, on-ground execution and case visibility together.</p>
-            <div className="lp-actions"><a className="lp-button lp-button-accent" href="#services">Explore our approach <Icon name="arrow" size={18}/></a><a className="lp-text-link" href="#results">See our track record <span aria-hidden="true">↗</span></a></div>
+            <div className="lp-actions"><a className="lp-button lp-button-accent" href="#process">See how it works <Icon name="arrow" size={18}/></a><a className="lp-text-link" href="#results">See our track record <span aria-hidden="true">↗</span></a></div>
             <p className="lp-affiliation">A recovery arm of <strong>ninjacart</strong></p>
           </div>
           <RecoveryVisual/>
@@ -100,16 +152,18 @@ export function PublicLanding() {
         <div className="lp-container lp-hero-strip"><span><Icon name="briefcase"/> Banks, NBFCs & fintechs</span><span><Icon name="shield"/> Pan-India execution</span><span><Icon name="cases"/> End-to-end legal visibility</span></div>
       </section>
 
+      <RecoveryJourney/>
+
       <section id="services" className="lp-section lp-services" aria-labelledby="services-title">
         <div className="lp-container lp-services-grid">
-          <div className="lp-section-intro"><p className="lp-eyebrow">01 / WHAT WE DO</p><h2 id="services-title">A focused response to difficult recoveries.</h2><p>Deep-default portfolios need a coordinated approach. Lawcovery connects the legal process with the people and information needed to move it forward.</p><a className="lp-inline-link" href="#process">How our approach works <Icon name="arrow" size={18}/></a></div>
+          <div className="lp-section-intro"><p className="lp-eyebrow">WHAT WE DO</p><h2 id="services-title">A focused response to difficult recoveries.</h2><p>Deep-default portfolios need a coordinated approach. Lawcovery connects the legal process with the people and information needed to move it forward.</p><a className="lp-inline-link" href="#process">How our approach works <Icon name="arrow" size={18}/></a></div>
           <div className="lp-service-list">{services.map(([icon, title, description], i) => <article key={title}><div className="lp-service-icon"><Icon name={icon} size={24}/></div><div><span className="lp-small-index">0{i + 1}</span><h3>{title}</h3><p>{description}</p></div></article>)}</div>
         </div>
       </section>
 
       <section id="results" className="lp-section lp-results" aria-labelledby="results-title">
         <div className="lp-container">
-          <div className="lp-section-heading"><div><p className="lp-eyebrow">02 / OUR TRACK RECORD</p><h2 id="results-title">Recovery is the goal.<br/>Execution makes the difference.</h2></div><p>A specialist focus on hard-to-recover portfolios, supported by integrated legal and recovery teams.</p></div>
+          <div className="lp-section-heading"><div><p className="lp-eyebrow">OUR TRACK RECORD</p><h2 id="results-title">Recovery is the goal.<br/>Execution makes the difference.</h2></div><p>A specialist focus on hard-to-recover portfolios, supported by integrated legal and recovery teams.</p></div>
           <div className="lp-results-grid">
             <div className="lp-primary-result"><span className="lp-result-label">REPORTED PORTFOLIO PERFORMANCE</span><strong>50%<span>+</span></strong><h3>Recovery clearance rate</h3><p>As reported in Lawcovery’s company profile for hard-to-recover portfolios.</p></div>
             <dl className="lp-result-facts"><div><dt>90+ DPD</dt><dd>Specialised focus on deep-default portfolios.</dd></div><div><dt>Pan-India</dt><dd>Execution across urban and rural jurisdictions.</dd></div><div><dt>End-to-end</dt><dd>Visibility throughout the legal recovery process.</dd></div><div><dt>Integrated</dt><dd>Legal and recovery teams working together.</dd></div></dl>
@@ -118,13 +172,8 @@ export function PublicLanding() {
         </div>
       </section>
 
-      <section id="process" className="lp-section lp-process" aria-labelledby="process-title"><div className="lp-container">
-        <p className="lp-eyebrow">03 / THE RECOVERY APPROACH</p><div className="lp-section-heading"><h2 id="process-title">From portfolio context<br/>to visible progress.</h2><p>A coordinated approach that keeps legal action, execution and your team connected.</p></div>
-        <ol className="lp-steps">{steps.map(([title, description], i) => <li key={title}><span className="lp-step-number">0{i + 1}</span><h3>{title}</h3><p>{description}</p></li>)}</ol>
-      </div></section>
-
       <section id="partners" className="lp-section lp-partners" aria-labelledby="partners-title"><div className="lp-container">
-        <p className="lp-eyebrow">04 / OUR LENDING ECOSYSTEM</p><div className="lp-section-heading"><h2 id="partners-title">Built for lending partners.</h2><p>Specialised recovery support for the institutions and platforms that power credit.</p></div>
+        <p className="lp-eyebrow">OUR LENDING ECOSYSTEM</p><div className="lp-section-heading"><h2 id="partners-title">Built for lending partners.</h2><p>Specialised recovery support for the institutions and platforms that power credit.</p></div>
         <div className="lp-partner-layout"><aside className="lp-ninjacart"><span>A recovery arm of</span><strong>ninjacart<span>.</span></strong><p>Legal recovery expertise, connected to the broader lending ecosystem.</p><Icon name="connection" size={38}/></aside>
           <div className="lp-partner-detail"><div className="lp-partner-options" role="group" aria-label="Choose your institution type">{partners.map((item, i) => <button type="button" key={item.name} aria-pressed={partner === i} onClick={() => setPartner(i)}>{item.name}</button>)}</div>
             <div className="lp-partner-copy" aria-live="polite" aria-atomic="true"><span className="lp-partner-focus">{current.focus}</span><h3>{current.title}</h3><p>{current.description}</p><ul>{current.tags.map(tag => <li key={tag}><Icon name="check" size={16}/>{tag}</li>)}</ul></div>
