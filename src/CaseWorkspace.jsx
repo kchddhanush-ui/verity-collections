@@ -1,5 +1,5 @@
 import { CourtPartySearch } from "./components/CourtPartySearch";
-import React, { Suspense, lazy, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace-theme.css";
 import { mergePortfolio } from "./lib/portfolio";
@@ -11,12 +11,6 @@ import { caseCsv } from "./lib/csv";
 import { filterCases, courtName, filingYear } from "./lib/analytics";
 import { WorkspaceChrome } from "./components/WorkspaceChrome";
 import { extensionRequest } from "./lib/extensionBridge";
-
-const AnalyticsDashboard = lazy(() =>
-  import("./components/AnalyticsDashboard").then((module) => ({
-    default: module.AnalyticsDashboard,
-  })),
-);
 
 function partyColumns(values = []) {
   const entries = (Array.isArray(values) ? values : []).filter((value) => typeof value === "string")
@@ -137,8 +131,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const [captureUpdate, setCaptureUpdate] = useState("");
   const [searches, setSearches] = useState([]);
   const [caseFilters, setCaseFilters] = useState(null);
-  const [caseDrilldown, setCaseDrilldown] = useState(null);
-  const [portfolioView, setPortfolioView] = useState("analytics");
+  const [portfolioView, setPortfolioView] = useState("cases");
   const [listingAudits, setListingAudits] = useState([]);
   const [selected, setSelected] = useState(null),
     [audits, setAudits] = useState([]),
@@ -534,15 +527,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       setFetchStatus({ message: e.message, actionNeeded: true });
     }
   }
-  const drilldown = caseDrilldown && caseDrilldown.workspace === workspace ? caseDrilldown : null;
-  const filtered = filterCases(cases, {
-    ...(drilldown?.filters || {}),
-    ...(caseFilters?.workspace === workspace ? caseFilters.values : {}),
-    search: query,
-  }).filter((item) => (!drilldown?.caseIds || drilldown.caseIds.includes(item.cnr)) && (!caseFilters?.respondent ||
-    caseFilters.workspace !== workspace ||
-    partyColumns(item.data.respondents).names.toLowerCase().includes(caseFilters.respondent.toLowerCase().trim())));
   const currentCaseFilters = caseFilters?.workspace === workspace ? caseFilters : { values: {}, respondent: "" };
+  const respondentQuery = currentCaseFilters.respondent.trim().toLowerCase();
+  const filtered = filterCases(cases, { ...currentCaseFilters.values, search: query }).filter(
+    (item) => !respondentQuery || partyColumns(item.data.respondents).names.toLowerCase().includes(respondentQuery),
+  );
+  const showingConnections = portfolioView === "connections";
   const setCaseFilter = (key, value) => setCaseFilters((previous) => {
     const current = previous?.workspace === workspace ? previous : { values: {}, respondent: "" };
     return key === "respondent"
@@ -551,7 +541,6 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   });
   const clearCaseFilters = () => {
     setCaseFilters(null);
-    setCaseDrilldown(null);
     setQuery("");
   };
   const caseHeaders = [
@@ -586,7 +575,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       session={session}
       workspaces={workspaces}
       workspace={workspace}
-      onWorkspace={(id) => { setCaseDrilldown(null); setWorkspace(id); }}
+      onWorkspace={setWorkspace}
       busy={busy}
       loading={loading}
       pending={pending}
@@ -610,45 +599,20 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         id="workspace-content"
         tabIndex="-1"
       >
-        {portfolioView !== "calendar" && (portfolioView !== "analytics" || !workspace) && (
+        {portfolioView !== "calendar" && (
           <div className="console-title page-heading">
             <div>
               <p className="console-eyebrow">
-                YOUR WORKSPACE /{" "}
-                {
-                  {
-                    analytics: "ANALYTICS",
-                    cases: "CASES",
-                    calendar: "COURT DIARY",
-                    connections: "CONNECTIONS",
-                  }[portfolioView]
-                }
+                YOUR WORKSPACE / {showingConnections ? "CONNECTIONS" : "CASES"}
               </p>
-              <h1>
-                {
-                  {
-                    analytics: "Legal Portfolio Review",
-                    cases: "Your case portfolio.",
-                    calendar: "Your hearing diary.",
-                    connections: "Connected to your workflow.",
-                  }[portfolioView]
-                }
-              </h1>
+              <h1>{showingConnections ? "Connected to your workflow." : "Your case portfolio."}</h1>
               <p>
-                {
-                  {
-                    analytics: "Choose a company workspace to view its portfolio.",
-                    cases:
-                      "Find a case, review its progress, and see the latest saved details.",
-                    calendar:
-                      "Plan around your court dates and see what’s coming next.",
-                    connections:
-                      "Manage your company workspace and automatic eCourts capture.",
-                  }[portfolioView]
-                }
+                {showingConnections
+                  ? "Manage your company workspace and automatic eCourts capture."
+                  : "Find a case, review its progress, and see the latest saved details."}
               </p>
             </div>
-            {portfolioView === "connections" && (
+            {showingConnections && (
               <a
                 className="console-link button-primary btn btn-primary"
                 href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index"
@@ -837,22 +801,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                     cases={cases}
                     onOpenCase={openSavedCase}
                   />
-                ) : portfolioView === "analytics" ? (
-                  <Suspense fallback={<p role="status">Loading analytics…</p>}>
-                    <AnalyticsDashboard
-                      key={workspace}
-                      cases={cases}
-                      company={workspaces.find((item) => item.id === workspace)?.name || "Company"}
-                      onStageCases={({ search, caseIds, ...filters }) => {
-                        setCaseFilters(null);
-                        setCaseDrilldown({ workspace, filters, caseIds });
-                        setQuery(search);
-                        setPortfolioView("cases");
-                        window.scrollTo?.(0, 0);
-                      }}
-                    />
-                  </Suspense>
-                ) : portfolioView === "connections" ? (
+                ) : showingConnections ? (
                   <div className="connections-layout connections-grid">
                     {" "}
                     <section className="console-panel connection-panel card browser-card">
@@ -1002,14 +951,14 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       </div>
                       <div className="case-register-filters">
                         <label>Court name
-                          <select value={currentCaseFilters.values.court ?? caseDrilldown?.filters.court ?? ""}
+                          <select value={currentCaseFilters.values.court || ""}
                             onChange={(event) => setCaseFilter("court", event.target.value)}>
                             <option value="">All courts</option>
                             {[...new Set(cases.map(courtName))].sort().map((court) => <option key={court}>{court}</option>)}
                           </select>
                         </label>
                         <label>Filing year
-                          <select value={currentCaseFilters.values.year ?? caseDrilldown?.filters.year ?? ""}
+                          <select value={currentCaseFilters.values.year || ""}
                             onChange={(event) => setCaseFilter("year", event.target.value)}>
                             <option value="">All years</option>
                             {[...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse().map((year) => <option key={year}>{year}</option>)}
@@ -1040,15 +989,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       <p className="muted">
                         Case details available means a case-level record was saved after opening the case.
                         Search-result rows appear under Not available.
-                        {currentCaseFilters.values.details === "missing" && (currentCaseFilters.values.year || caseDrilldown?.filters.year) &&
+                        {currentCaseFilters.values.details === "missing" && currentCaseFilters.values.year &&
                           " Your filing-year filter also applies. Search-only records may have no filing date."}
                       </p>
-                      {caseDrilldown && caseDrilldown.workspace === workspace && (
-                        <p className="muted">
-                          {Object.values(caseDrilldown.filters).filter(Boolean).join(" · ")}
-                          {" "}<button type="button" className="btn" onClick={() => setCaseDrilldown(null)}>Clear stage filters</button>
-                        </p>
-                      )}
                       <p className="muted">
                         {filtered.length} matching of {cases.length} loaded
                         cases · up to 1,000 detail records and 1,000 listing

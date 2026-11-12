@@ -154,7 +154,7 @@ Navigate months, jump to Today or Next scheduled hearing, and search by case/CNR
 
 ## Workspace layout
 
-The workspace opens on **Overview**, with aligned case totals, stage counts and the latest search coverage. Desktop navigation stays in the sidebar; it becomes a compact navigation area on smaller screens. **Cases** contains the searchable case register, **Hearing calendar** contains court dates, and **Connections** contains company creation and browser connection settings. The selected company and refresh action stay in the workspace header.
+The workspace opens on **Cases**, with the searchable case register and CSV export. Desktop navigation stays in the sidebar and opens from the menu on smaller screens. **Hearing calendar** contains court dates, and **Connections** contains company creation, eCourts search and browser connection settings. The selected company and refresh action stay in the workspace header.
 
 At narrow table widths, the case register becomes labelled cards with the case identity first. Other data tables retain keyboard-accessible scrolling and sticky headers. The mobile calendar shows case counts on each day and the full case list below. Native case dialogs, visible keyboard focus and a skip-to-content link support keyboard use. Typography, forms, buttons, spacing and status colours are shared across the workspace, with sign-in/recovery alignment refinements. No new dependencies, SQL migrations or extension permissions are needed for this UI update.
 
@@ -165,17 +165,6 @@ Decision Date is captured as `data.decision_date`, independently of `data.dispos
 ## Lawcovery branding — extension 1.3.2
 
 The product, website titles, sign-in/demo screens, workspace, extension popup and capture notices now use **Lawcovery**. Pull the feature branch, restart Vite, reload **Lawcovery Case Capture 1.3.2**, then refresh the website and eCourts tabs. Existing connection credentials, queues, saved cases and audit history continue to work. No new SQL or package installation is needed. GitHub repository URLs and existing local folder paths remain valid; internal message/storage identifiers are retained for compatibility with installed connections.
-
-## Portfolio analytics
-
-Select **Analytics** in the workspace navigation. It uses the same saved, CNR-merged portfolio as Cases, updates when that portfolio refreshes, and adds no new database writes or SQL migration. The analytics view loads separately from the main app.
-
-Filter by court, case type, current status, stage or search text. Analytics is designed for company leadership and portfolio discussions. Eight headline metrics cover cases in view, pending/disposed counts, disposed share, average/median disposal TAT, pending cases over one year, and hearings within seven days. Charts cover status, stages, disposal-duration bands, monthly filings/disposals, pending age, next-30-day hearing workload, case types and disposal descriptions. The court table combines workload and average disposal TAT with its sample size. Portfolio priorities provide paginated lists for upcoming hearings, pending cases over one year, confirmed pending NBW/SUMMONS stages, and disposed cases; links open saved details.
-
-Date-completeness, capture-recency, detail-coverage and judge/courtroom-distribution panels are excluded from this company-facing view. Technical follow-up categories (missing dates, stale checks and incomplete capture) are also removed from Analytics. Existing records and audits are retained. Court sync remains in Connections.
-
-**Definitions:** status-unavailable includes records without a confirmed status, including listings awaiting details. Disposed share = disposed ÷ (pending + disposed); it does not indicate recovery or success. Average and median disposal TAT use the **same** sample of confirmed disposed cases with a valid Filing Date and Disposal Date, falling back to a valid Decision Date. Registration Date is not substituted for Filing Date in disposal TAT. Missing, future and reversed pairs are excluded; same-day disposal is zero days. Calendar days and sample sizes are explicit. Pending age uses Filing Date, falling back to Registration Date; “over one year” means more than 365 days. Monthly disposals use valid closure dates only on disposed records, independently of whether a filing date is usable for TAT. Trends describe the current selected cohort and do not reconstruct historical portfolio balances. Court counts describe the loaded portfolio, not all cases in a court. Report basis and methodology are available below the case lists; all calendar cutoffs use India time.
-
 
 ## Missing details and existing-case refresh — extension 1.4.1
 
@@ -195,9 +184,7 @@ Pull, reload **Lawcovery Case Capture 1.4.1**, and refresh both tabs. The dashbo
 
 ## UI from the supplied redesign
 
-The workspace uses the final indigo design from `Modernize and Redesign App.zip`, adapted to the existing live application. `src/reference-ui.css` contains scoped reference styles; `src/workspace-theme.css` layers existing table/dialog/calendar structure beneath them, and `src/reference-adapter.css` binds the design to working controls. `WorkspaceChrome` reproduces the sidebar, header search, account dropdown and mobile drawer. `WorkspaceOverview` binds the reference cards and charts to the existing company portfolio. The provided favicon and local SVG icon paths are reused. No prototype datasets, fixed account identities, Figma build plugins or new runtime dependencies are added.
-
-Overview, Analytics, Cases, Hearing calendar and Connections keep their existing data flow. Analytics presents four primary cards, the monthly trend, priorities and court workload first; its existing TAT/stage breakdowns remain in Detailed portfolio insights. Company presentation remains available from Overview. Header search, navigation, profile/account information and successful-sync feedback are functional; backend integration and the sign-in flow are retained. See docs/SETUP.md for usage.
+The workspace uses the indigo design from `Modernize and Redesign App.zip`. `WorkspaceChrome` provides the sidebar, header search, account dropdown and mobile drawer for Cases, Hearing calendar and Connections. See docs/SETUP.md for usage.
 
 ### Start a Party Name search in Lawcovery
 

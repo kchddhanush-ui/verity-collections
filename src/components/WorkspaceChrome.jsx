@@ -3,7 +3,6 @@ import { WorkspaceIcon as Icon } from "./WorkspaceIcon";
 import { LawcoveryLogo } from "./LawcoveryLogo";
 
 const nav = [
-  ["analytics", "Analytics", "analytics"],
   ["cases", "Cases", "cases"],
   ["calendar", "Hearing calendar", "calendar"],
   ["connections", "Connections", "connection"],

@@ -89,7 +89,6 @@
 .verity-console .metric-card small { color: var(--muted); font-size: 10px; }
 .verity-console .metric-card.highlight { background: #15553d; color: var(--white); border-color: #15553d; }
 .verity-console .metric-card.highlight small { color: rgba(255,255,255,.7); }
-.verity-console .analytics-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 18px; margin-bottom: 18px; }
 .verity-console .chart-card, .verity-console .priorities, .verity-console .court-card { padding: 25px 27px; }
 .verity-console .card h2 { font: 700 19px Manrope, sans-serif; letter-spacing: -.5px; margin: 8px 0; color: var(--ink); }
 .verity-console .bars { height: 155px; display: flex; align-items: flex-end; justify-content: space-around; border-bottom: 1px solid var(--line); margin-top: 20px; }
@@ -173,7 +172,7 @@
   .verity-console .app-main { margin-left: 0; }.verity-console .mobile-menu { display: grid; place-items: center; border: 0; background: transparent; cursor: pointer; margin-right: 5px; }
   .verity-console .topbar { padding: 0 24px; }.verity-console .workspace-chevron, .verity-console .email { display: none; }
   .verity-console .content { padding: 32px 24px 24px; }.verity-console .overview-page { margin: -32px -24px -24px; }
-  .verity-console .filter-grid, .verity-console .metric-grid { grid-template-columns: repeat(2, 1fr); }.verity-console .analytics-grid { grid-template-columns: 1fr; }
+  .verity-console .filter-grid, .verity-console .metric-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 640px) {
   .verity-console .topbar { height: 72px; padding: 0 16px; }.verity-console .topbar .btn, .verity-console .avatar, .verity-console .signout { display: none; }

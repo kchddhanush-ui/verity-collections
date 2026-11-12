@@ -1,4 +1,3 @@
 @import "./workspace.css" layer(workspace-structure);
 @import "./reference-ui.css";
 @import "./reference-adapter.css";
-@import "./analytics.css";

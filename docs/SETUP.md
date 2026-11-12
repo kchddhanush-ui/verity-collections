@@ -215,15 +215,6 @@ Pull the feature branch, restart Vite and refresh Lawcovery. The landing view is
 
 After pulling the feature branch, restart Vite, reload **Lawcovery Case Capture** in Chrome and confirm **1.3.2**. Refresh Lawcovery and eCourts. Existing company workspaces and capture connections continue to work; this branding update does not require a migration or a new connection. Keep using the current GitHub repository and local clone paths shown above.
 
-## Analytics dashboard
-
-Pull the feature branch, restart Vite and refresh Lawcovery. Choose **Analytics** from workspace navigation. There is no additional SQL, extension update or package installation for analytics. Previously required capture/Decision Date migrations still apply to acquiring those fields.
-
-Use court/type/status/stage/search filters to define the company portfolio. The Trend window selector changes only the monthly filings/disposals chart. The company-facing dashboard shows eight headline metrics, disposal TAT distribution, case stages/types, pending age, upcoming hearing workload, nature of disposal and court-level workload/TAT. Average and median TAT use the same filing-to-disposal sample, with Decision Date as the closing-date fallback. Samples and definitions remain visible where needed. Date-completeness, capture-recency, detail-coverage and judge/courtroom-distribution panels are excluded, together with technical follow-up lists. Priorities now cover upcoming hearings, pending cases over one year, pending NBW/SUMMONS cases and disposed cases. Clicking a case opens its saved details. Refresh cases to load recent database changes; existing automatic saves also refresh the portfolio. Court sync controls remain in Connections.
-
-Analytics covers the currently loaded company portfolio (the same limit as Cases), not unbounded database aggregates or reported search totals. It does not infer recovery amounts, outcomes or missed hearings from status/date fields. Refer to README.md for metric definitions and exclusions.
-
-
 ## Fetch missing details or refresh existing cases — extension 1.4.1
 
 1. Pull the feature branch, then copy the new query on your Mac:
@@ -257,9 +248,7 @@ This correction needs no new SQL. If the fetch-mode migration was not previously
 
 ## Supplied UI reference — Modernize and Redesign App
 
-The signed-in workspace follows the UI and UX in `Modernize and Redesign App.zip`: an indigo sidebar, cyan Lawcovery wordmark, profile dropdown, search header, responsive drawer, white overview cards, upcoming-hearing list, activity chart, purple analytics, case table, calendar and connection controls. Pull the feature branch, restart Vite and refresh Lawcovery. No new SQL, extension reload or package installation is required for this UI update.
-
-Overview shows the authenticated account name, current loaded portfolio, recorded filing/disposal trends, upcoming saved hearings and latest saved case records. The reference's sample names, dates, fixed figures and administrator labels are replaced by actual account/workspace data. Source history is not inferred from a last-check timestamp. The existing company presentation brief remains available in a collapsed section below Overview. Analytics uses the reference's four-card/trend/priorities/court layout; the remaining TAT metrics, stages and business breakdowns remain available under **Detailed portfolio insights**.
+The signed-in workspace opens on **Cases**, with the indigo sidebar, Lawcovery wordmark, profile dropdown and search header from `Modernize and Redesign App.zip`. Use the sidebar or mobile menu to open **Hearing calendar** or **Connections**.
 
 The header search navigates to Cases and filters the existing loaded portfolio. Ctrl/Cmd+K focuses search; the small-screen fallback opens case search. Sync reloads the saved company portfolio, with success feedback only after a confirmed successful refresh. Profile settings and Workspace access show the signed-in account and available companies; sign-out uses the existing revocation/sign-out flow. Mobile navigation supports Escape, focus trapping and background inertness. Court sync remains exclusive to Connections. Case fetching, capture policies, RLS, calculations, audits and database schema are unchanged. Sign-in/recovery remain the existing flows because the supplied reference contains no sign-in screen.
 

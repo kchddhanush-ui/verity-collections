@@ -134,7 +134,7 @@ export function PublicLanding() {
 
       <section className="lp-section lp-faq" aria-labelledby="faq-title"><div className="lp-container lp-faq-grid"><div><p className="lp-eyebrow">A LITTLE MORE CLARITY</p><h2 id="faq-title">Before we work together.</h2></div><div>
         <details><summary>Which portfolios does Lawcovery focus on?</summary><p>We specialise in hard-to-recover 90+ DPD portfolios, including retail and commercial NPAs, secured and unsecured books, and digital loan defaults.</p></details>
-        <details><summary>How can our team follow legal progress?</summary><p>The client workspace brings together saved case details, stage and status analytics, hearing dates and a separate history of case updates. Access is provided through your company workspace.</p></details>
+        <details><summary>How can our team follow legal progress?</summary><p>The client workspace brings together saved case details, current stages, hearing dates and a separate history of case updates. Access is provided through your company workspace.</p></details>
         <details><summary>Is the reported recovery rate a guaranteed outcome?</summary><p>No. The reported figure describes Lawcovery’s historical portfolio performance. Each portfolio and case has its own circumstances, so a new portfolio or individual account can have a different outcome.</p></details>
       </div></div></section>
 

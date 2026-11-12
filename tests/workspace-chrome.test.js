@@ -56,7 +56,7 @@ test("reference workspace shell uses account data, navigates, searches and repor
       "/src/components/WorkspaceChrome.jsx",
     );
     function Harness() {
-      const [page, onNavigate] = useState("overview"),
+      const [page, onNavigate] = useState("calendar"),
         [workspace, onWorkspace] = useState("alpha"),
         [query, onQuery] = useState("initial search");
       return React.createElement(
@@ -121,6 +121,10 @@ test("reference workspace shell uses account data, navigates, searches and repor
       "reference mock roles are not copied",
     );
     assert.equal(document.querySelector(".nav-badge").textContent, "7");
+    assert.deepEqual(
+      [...document.querySelectorAll(".sidebar-nav button")].map((node) => node.getAttribute("aria-label")),
+      ["Cases", "Hearing calendar", "Connections"],
+    );
     const search = document.querySelector('[aria-label="Search all cases"]');
     assert.equal(search.value, "initial search");
     const command = new window.Event("keydown", {
@@ -167,11 +171,11 @@ test("reference workspace shell uses account data, navigates, searches and repor
     assert.ok(document.querySelector(".sidebar-open"));
     assert.ok(document.querySelector(".console-body").hasAttribute("inert"));
     await click(
-      document.querySelector('.sidebar-nav [aria-label="Analytics"]'),
+      document.querySelector('.sidebar-nav [aria-label="Hearing calendar"]'),
     );
     assert.equal(document.querySelector(".sidebar-open"), null);
     assert.ok(!document.querySelector(".console-body").hasAttribute("inert"));
-    assert.match(document.querySelector("main").textContent, /analytics/);
+    assert.match(document.querySelector("main").textContent, /calendar/);
     await click(button("Open menu"));
     const escape = new window.Event("keydown", { bubbles: true });
     Object.assign(escape, { key: "Escape" });

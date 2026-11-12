@@ -11,11 +11,6 @@ export function WorkspaceIcon({ name, size = 20 }) {
         <rect x="14" y="14" width="7" height="7" rx="1" />
       </>
     ),
-    analytics: (
-      <>
-        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
-      </>
-    ),
     cases: <path d="M3 6.5h7l2 2h9v10.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />,
     calendar: (
       <>

@@ -99,7 +99,6 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     const { CaseWorkspace } = await server.ssrLoadModule(
       "/src/CaseWorkspace.jsx",
     );
-    await server.ssrLoadModule("/src/components/AnalyticsDashboard.jsx");
     let simulatedSuccess = false, oldExtension = true, extensionConnected = false;
     const batchRequests = [];
     let simulatedBatch = { id: "queue-a", mode: "missing", state: "waiting", total: 1, sourceTotal: 1,
@@ -163,7 +162,10 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
         }),
       ),
     );
-    assert.equal(document.querySelector(".batch-capture-panel"), null, "overview keeps capture controls out of the company brief");
+    assert.ok(document.querySelector("main.page-cases .cases-card"), "Cases opens by default");
+    const caseNav = document.querySelector('.sidebar-nav button[aria-label="Cases"]');
+    assert.equal(caseNav.getAttribute("aria-pressed"), "true");
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Cases");
     assert.equal(document.querySelector('[role="alert"]'), null, "connection update notices stay in Connections");
     await act(async () =>
       document.querySelector('.sidebar-nav button[aria-label="Connections"]')
@@ -198,16 +200,11 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     assert.ok(document.querySelector('.batch-capture-panel progress').hasAttribute("hidden"), "zero matching cases do not show an indeterminate bar");
     assert.equal(batchRequests.filter(m => m.action === "FETCH_CASE").length, 0);
     assert.equal(document.querySelector('.sidebar-nav button[aria-label="Overview"]'), null);
+    assert.equal(document.querySelector('.sidebar-nav button[aria-label="Analytics"]'), null);
     await act(async () =>
-      document
-        .querySelector('.sidebar-nav button[aria-label="Analytics"]')
-        .dispatchEvent(new window.Event("click", { bubbles: true })),
+      caseNav.dispatchEvent(new window.Event("click", { bubbles: true })),
     );
-    assert.ok(
-      document.querySelector(".analytics-dashboard"),
-      "analytics is reachable from the workspace",
-    );
-    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Analytics");
+    assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from Cases");
 
     assert.ok(document.querySelector('.skip-link[href="#workspace-content"]'));
     await act(async () =>
@@ -238,10 +235,6 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
       "calendar remains reachable from navigation",
     );
     assert.equal(document.querySelector(".batch-capture-panel"), null, "Court sync is absent from the calendar");
-    const caseNav = document.querySelector(
-      '.sidebar-nav button[aria-label="Cases"]',
-    );
-    assert.ok(caseNav, "workspace navigation exposes the case register");
     await act(async () =>
       caseNav.dispatchEvent(new window.Event("click", { bubbles: true })),
     );
@@ -269,7 +262,7 @@ test("clicking a listed case opens a dialog with fetching errors next to its det
     assert.equal(portalLinks().length, 1, "Connections provides the portal link");
     assert.match(document.querySelector('.case-fetch-status[role="status"]').textContent, /complete CAPTCHA/);
     assert.ok([...document.querySelectorAll("button")].some(b => b.textContent === "Go to eCourts tab"));
-    for (const label of ["Analytics", "Hearing calendar", "Cases"]) {
+    for (const label of ["Hearing calendar", "Cases"]) {
       await act(async () => document.querySelector(`.sidebar-nav button[aria-label="${label}"]`).dispatchEvent(new window.Event("click", { bubbles: true })));
       assert.equal(portalLinks().length, 0, `${label} does not show Open eCourts`);
       assert.equal(document.querySelector('.case-fetch-status[role="status"]'), null, `${label} does not repeat connection messages`);
