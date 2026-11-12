@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import recoveryCentre from "../assets/loan-recovery-centre.webp";
 import { LawcoveryLogo } from "./LawcoveryLogo";
+import { RecoveryScene } from "./RecoveryScene";
 import { WorkspaceIcon as Icon } from "./WorkspaceIcon";
 import "../public-site.css";
 
@@ -32,47 +32,25 @@ const journey = [
   {
     id: "process",
     label: "Portfolio intake",
+    frame: 47,
     title: "Start with the overdue account.",
     description: "Bring together the records and recovery history for accounts that are 90 or more days past due. Give the teams handling the portfolio a shared view of each case.",
   },
   {
     id: "legal-review",
     label: "Legal review",
+    frame: 76,
     title: "Build a plan for legal action.",
     description: "Legal and recovery teams assess the case, decide the next step, and coordinate on-ground work in the relevant jurisdiction.",
   },
   {
     id: "recovery",
     label: "Recovery tracking",
+    frame: 160,
     title: "See how each case progresses.",
     description: "Follow court updates, hearings, and recorded recovery outcomes so your team knows which cases need attention.",
   },
 ];
-
-function RecoveryScene() {
-  return (
-    <figure className="lp-stage">
-      <div className="lp-stage-inner">
-        <div className="lp-scene">
-          <img
-            className="lp-scene-art"
-            src={recoveryCentre}
-            alt="Illustrated recovery centre with overdue loan files, legal scales, and checked recovery folders."
-            width={1983}
-            height={793}
-            fetchPriority="high"
-          />
-        </div>
-        <figcaption>
-          <nav className="lp-stage-nav" aria-label="Recovery stages">
-            {journey.map(({ id, label }) => <a key={id} href={"#" + id}>{label}</a>)}
-          </nav>
-          <div className="lp-stage-progress" aria-hidden="true"><span/></div>
-        </figcaption>
-      </div>
-    </figure>
-  );
-}
 
 function LendingPartners() {
   const [selected, setSelected] = useState(0);
@@ -135,11 +113,11 @@ export function PublicLanding() {
           </div>
         </section>
 
-        <RecoveryScene/>
+        <RecoveryScene chapters={journey}/>
 
         <div className="lp-chapters">
-          {journey.map(({ id, label, title, description }) => (
-            <section id={id} className="lp-panel lp-chapter" aria-labelledby={id + "-title"} key={id}>
+          {journey.map(({ id, label, title, description, frame }) => (
+            <section id={id} className="lp-panel lp-chapter" aria-labelledby={id + "-title"} data-recovery-frame={frame} key={id}>
               <div className="lp-panel-inner">
                 <p className="lp-eyebrow">{label}</p>
                 <h2 id={id + "-title"}>{title}</h2>
@@ -164,7 +142,7 @@ export function PublicLanding() {
               </div>
             </section>
 
-            <section id="results" className="lp-panel lp-results" aria-labelledby="results-title">
+            <section id="results" className="lp-panel lp-results" aria-labelledby="results-title" data-recovery-frame="182">
               <div className="lp-panel-inner">
                 <p className="lp-eyebrow">Our track record</p>
                 <h2 id="results-title">Recovery performance</h2>
