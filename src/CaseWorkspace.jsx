@@ -610,7 +610,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         id="workspace-content"
         tabIndex="-1"
       >
-        {portfolioView !== "calendar" && (
+        {portfolioView !== "calendar" && (portfolioView !== "analytics" || !workspace) && (
           <div className="console-title page-heading">
             <div>
               <p className="console-eyebrow">
@@ -627,7 +627,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               <h1>
                 {
                   {
-                    analytics: "Your cases, by the numbers.",
+                    analytics: "Legal Portfolio Review",
                     cases: "Your case portfolio.",
                     calendar: "Your hearing diary.",
                     connections: "Connected to your workflow.",
@@ -637,8 +637,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               <p>
                 {
                   {
-                    analytics:
-                      "Review pending stages, filing activity and court workload.",
+                    analytics: "Choose a company workspace to view its portfolio.",
                     cases:
                       "Find a case, review its progress, and see the latest saved details.",
                     calendar:

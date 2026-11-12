@@ -103,7 +103,7 @@ test("analytics shows pending stages, carries filing year into drill-down and co
         select.dispatchEvent(new window.Event("change", { bubbles: true }));
       });
     };
-    assert.equal(document.querySelectorAll(".analytics-metrics article").length, 5);
+    assert.equal(document.querySelectorAll(".analytics-metrics article").length, 6);
     const cards = [...document.querySelectorAll("button.pending-stage-card")];
     assert.match(cards[0].textContent, /SUMMONS.*12 cases.*100%/);
     assert.equal(cards.length, 1);
