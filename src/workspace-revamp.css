@@ -1,0 +1,199 @@
+/* 2026 workspace refresh: presentation-only overrides for the live case workflow. */
+.verity-console.app-shell {
+  --ink: #172035;
+  --muted: #697386;
+  --line: #e3e7ef;
+  --canvas: #f2f4f8;
+  --surface: #fff;
+  --accent: #5d53d8;
+  --accent-soft: #eeecff;
+  --positive: #278665;
+  display: block;
+  min-block-size: 100dvh;
+  background:
+    radial-gradient(circle at 80% -10%, #dfdcff 0, transparent 29rem),
+    var(--canvas);
+  color: var(--ink);
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+.verity-console h1,.verity-console h2,.verity-console h3 { color: var(--ink); }
+.verity-console .console-sidebar {
+  position: fixed;
+  z-index: 12;
+  inset: 22px auto 22px 22px;
+  inline-size: 238px;
+  block-size: auto;
+  padding: 20px 14px 14px;
+  overflow: auto;
+  border: 1px solid #e1e5ef;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 18px 50px #25345712;
+  color: var(--ink);
+}
+.verity-console .console-sidebar .console-brand { margin: 3px 9px 25px; }
+.verity-console .console-brand > .lawcovery-logo { --logo-accent: #6251df; --logo-outline: #c4bde5; color:#221d50; }
+.verity-console .console-brand > small { color:#8790a3; font-weight:700; }
+.verity-console .console-sidebar .nav-label { margin:0 12px 11px; color:#9aa3b5; font-size:9px; font-weight:750; letter-spacing:.14em; text-transform:uppercase; }
+.verity-console .sidebar-nav { gap:5px; }
+.verity-console .sidebar-nav .nav-item { border-radius:12px; color:#647087; font-weight:650; }
+.verity-console .sidebar-nav .nav-item:hover { background:#f5f4fd; color:#3e367f; }
+.verity-console .sidebar-nav .nav-item[aria-pressed="true"] { background:linear-gradient(135deg,#6558e9,#5144ce); color:#fff; box-shadow:0 7px 16px #574bd334; }
+.verity-console .sidebar-nav .nav-badge { background:#edeaff; color:#5c51d4; }.verity-console .sidebar-nav [aria-pressed="true"] .nav-badge { background:#ffffff2e;color:#fff; }
+.verity-console .audit-card { margin:20px 0 0; border:1px solid #e9e7ff; border-radius:16px; background:#f8f7ff; }.verity-console .audit-card>svg { color:#675ce5; }.verity-console .audit-card>strong { color:#30375a; }.verity-console .audit-card>p { color:#7b8394; }
+.verity-console .workspace-status { color:#8790a3; }.verity-console .workspace-status>span { background:#54b28c; box-shadow:0 0 0 4px #54b28c1c; }
+.verity-console .console-body { margin-inline-start: 272px; min-block-size:100dvh; }
+.verity-console .console-header {
+  position: sticky;
+  z-index: 8;
+  inset-block-start: 18px;
+  min-block-size: 68px;
+  margin: 18px 24px 0 0;
+  padding: 10px 16px;
+  border: 1px solid #e1e5ef;
+  border-radius: 20px;
+  background: #ffffffeb;
+  box-shadow: 0 8px 30px #1d28520b;
+  backdrop-filter: blur(14px);
+}
+.verity-console .workspace-switcher .eyebrow { color:#8b94a7; font-size:9px; letter-spacing:.1em; }.verity-console .workspace-switcher select { color:#222b45; }
+.verity-console .global-search { min-inline-size:min(360px,35vw); padding:0 12px; border-radius:12px; background:#f5f6fa; }.verity-console .global-search:focus-within { box-shadow:0 0 0 3px #6358df24; }.verity-console .global-search kbd { border:0; background:#e7e9f0; color:#8a93a5; }
+.verity-console .refresh-button,.verity-console .profile-trigger { border-radius:12px; }.verity-console .refresh-button { border-color:#dedcf7; color:#5146c9; background:#f8f7ff; }.verity-console .profile-trigger { background:#262342; }
+.verity-console .console-main { max-inline-size: 1600px; padding: 34px 24px 52px 0; }
+.verity-console .console-title { padding: 19px 23px; border:1px solid #e1e5ef; border-radius:20px; background:linear-gradient(110deg,#fff,#faf9ff); box-shadow:0 10px 28px #222a4808; }.verity-console .console-title h1 { font-size:clamp(26px,3.1vw,38px); letter-spacing:-.05em; }.verity-console .console-title p:last-child { color:#748095; }
+.verity-console .console-eyebrow,.verity-console .panel-kicker { color:#756bd4; font-weight:800; }
+.verity-console .console-panel,.verity-console .card { border:1px solid #e1e5ef; border-radius:20px; background:#fff; box-shadow:0 10px 28px #222a4808; }
+.verity-console button,.verity-console .console-link { border-radius:11px; border-color:#dde1eb; color:#414a61; }
+.verity-console button:hover:not(:disabled),.verity-console .console-link:hover { border-color:#bcb8ee; background:#f5f4ff; }
+.verity-console .button-primary,.verity-console .btn-primary,.verity-console .console-link.button-primary { border-color:#5b4fd5; background:linear-gradient(135deg,#6659eb,#4e41c9); box-shadow:0 7px 16px #574bd32e; }
+.verity-console .button-primary:hover,.verity-console .btn-primary:hover,.verity-console .console-link.button-primary:hover { background:linear-gradient(135deg,#5649de,#4336b4); }
+.verity-console .case-register-filters { padding:15px; border:1px solid #e5e8f0; border-radius:16px; background:#f8f9fc; }.verity-console .case-register-filters input,.verity-console .case-register-filters select { border-color:#dfe3ed; background:#fff; border-radius:10px; }.verity-console .cases-title { align-items:center; }.verity-console .case-table-wrap { border-color:#e7e9f0; border-radius:14px; }.verity-console .case-table thead { background:#f7f8fc; }.verity-console .case-table th { color:#687388; }.verity-console .case-table tbody tr:hover { background:#f7f6ff; }.verity-console .case-open { color:#5145c5; font-weight:750; }
+.verity-console .case-detail-dialog { border:0; border-radius:24px; box-shadow:0 30px 100px #0f183561; }.verity-console .case-detail-dialog::backdrop { background:#1d274b82; backdrop-filter:blur(7px); }.verity-console .case-tabs { border-bottom-color:#e7e9f0; }.verity-console .case-tabs button[aria-pressed="true"] { border-bottom-color:#6155df; color:#5145c5; }
+.verity-console .hearing-calendar,.verity-console .connections-layout { gap:16px; }.verity-console .hearing-day { border-color:#e4e7ef; }.verity-console .hearing-day:hover { background:#f7f6ff; }.verity-console .hearing-day.is-today { background:#f0efff; border-color:#bcb6f1; }.verity-console .connection-help { background:linear-gradient(145deg,#2d2855,#433a7c); color:#fafaff; }.verity-console .connection-help h3 { color:#fff; }.verity-console .connection-help p,.verity-console .connection-help li { color:#d4d0ee; }
+.verity-console .console-empty { border-color:#e1e5ef; border-radius:18px; background:#fafbfe; }.verity-console .console-error { border-radius:14px; }
+.analytics-dashboard { gap:18px; }.analytics-overview { padding:25px; border:1px solid #e1e5ef; border-radius:20px; background:linear-gradient(120deg,#fff,#f7f6ff); box-shadow:0 10px 28px #222a4808; }.analytics-overview h1 { color:#202747; }.analytics-period { border-color:#e1dffc; background:#f0efff; }.analytics-period button[aria-pressed="true"] { background:#5b4fd5!important; }
+.analytics-metric { border:1px solid #e1e5ef; border-radius:18px; box-shadow:0 8px 24px #222a4808; }.analytics-metric.attention { border-top-color:#e1974d; }.analytics-metric.highlight { border-top-color:#6b5ce7; }.analytics-metric.success { border-top-color:#38a575; }.analytics-panel { border:1px solid #e1e5ef; border-radius:18px; box-shadow:0 8px 24px #222a4808; }.analytics-panel header>span,.analytics-metric p,.analytics-metric small { color:#7c8598; }.analytics-bar b { background:linear-gradient(90deg,#6b5ce7,#8a7eee); }.status-donut { background:conic-gradient(#6357df 0 var(--pending),#5eb18c var(--pending) var(--disposed),#e4e6ed var(--disposed) 100%); }.status-legend i.pending { background:#6357df; }.status-legend i.disposed { background:#5eb18c; }.trend-key i,.trend-column i { background:#6357df; }.trend-key span+span i,.trend-column i+i { background:#dfa258; }.analytics-callout { background:#f2f1ff; color:#49427f; }.analytics-health button,.data-health button { background:#f8f8fd!important; border-color:#e4e5f1!important; }
+@media(max-width:980px){.verity-console .console-sidebar{inset:0 auto 0 0;block-size:100dvh;border-radius:0;transform:translateX(-105%);transition:transform .2s ease}.verity-console .console-sidebar.sidebar-open{transform:translateX(0)}.verity-console .console-body{margin-inline-start:0}.verity-console .console-header{margin:12px;inset-block-start:12px}.verity-console .console-main{padding:22px 12px 42px}.verity-console .mobile-menu{border-radius:11px}.verity-console .scrim{backdrop-filter:blur(3px)}}
+@media(max-width:700px){.verity-console .console-header{gap:8px;padding:9px}.verity-console .workspace-switcher{max-inline-size:120px}.verity-console .global-search{display:none}.verity-console .console-title,.analytics-overview{padding:18px}.verity-console .console-main{padding-top:16px}.verity-console .case-register-filters{padding:11px}}
+
+/* Structural pass: mirrors the reference's pill navbar + compact icon dock. */
+@media (min-width: 981px) {
+  .verity-console.app-shell { padding: 24px 48px 64px 92px; }
+  .verity-console .console-sidebar {
+    inset: 128px auto 64px 24px;
+    inline-size: 52px;
+    padding: 8px;
+    overflow: visible;
+    border-radius: 28px;
+  }
+  .verity-console .console-sidebar .console-brand,
+  .verity-console .console-sidebar .nav-label,
+  .verity-console .console-sidebar .audit-card,
+  .verity-console .console-sidebar .workspace-status { display: none; }
+  .verity-console .sidebar-nav { gap: 8px; }
+  .verity-console .sidebar-nav .nav-item {
+    grid-template-columns: 1fr;
+    inline-size: 36px;
+    min-block-size: 36px;
+    padding: 8px;
+    border-radius: 50%;
+    place-items: center;
+  }
+  .verity-console .sidebar-nav .nav-item > span:not(.nav-badge),
+  .verity-console .sidebar-nav .nav-badge { display: none; }
+  .verity-console .sidebar-nav .nav-item > svg { inline-size: 18px; block-size: 18px; }
+  .verity-console .console-body { margin-inline-start: 0; }
+  .verity-console .console-header {
+    max-inline-size: 1440px;
+    min-block-size: 64px;
+    margin: 0 auto;
+    padding: 8px 14px;
+    border-radius: 999px;
+  }
+  .verity-console .topbar-brand { display: inline-flex; align-items: center; flex: 0 0 142px; min-inline-size: 0; }
+  .verity-console .topbar-brand .lawcovery-logo { --logo-accent:#6658ea; --logo-outline:#beb9f4; color:#242044; inline-size:142px; }
+  .verity-console .topbar-nav { display:flex; align-items:center; gap:3px; padding:4px; border-radius:999px; background:#f2f3f7; }
+  .verity-console .topbar-nav button { min-block-size:34px; padding:7px 13px; border:0; border-radius:999px; background:transparent; color:#687287; font-size:12px; font-weight:650; }
+  .verity-console .topbar-nav button[aria-pressed="true"] { background:#fff; color:#20263c; box-shadow:0 2px 8px #20263c14; }
+  .verity-console .topbar-nav button:hover:not(:disabled) { background:#fff; border:0; color:#4136a9; }
+  .verity-console .workspace-switcher { margin-inline-start:auto; max-inline-size:178px; min-inline-size:130px; }
+  .verity-console .console-main { max-inline-size:1440px; margin:auto; padding:28px 0 40px; }
+  .verity-console .console-title { min-block-size:126px; padding:25px 30px; border-radius:24px; }
+}
+@media (max-width: 1200px) and (min-width: 981px) {
+  .verity-console.app-shell { padding-inline:84px 26px; }
+  .verity-console .topbar-nav button { padding-inline:9px; }
+  .verity-console .global-search { min-inline-size:180px; }
+  .verity-console .topbar-brand { flex-basis:125px; }.verity-console .topbar-brand .lawcovery-logo { inline-size:125px; }
+}
+@media (max-width: 980px) { .verity-console .topbar-brand,.verity-console .topbar-nav { display:none; } }
+
+/* Ocean-glass theme and wide-screen alignment repair.  Opaque surfaces above
+   remain the no-backdrop fallback; the glass treatment is opt-in below. */
+.verity-console.app-shell {
+  --ink: #eaf7fb;
+  --muted: #9bb7c2;
+  --line: #ffffff1a;
+  --canvas: #071923;
+  --surface: #102a38;
+  --accent: #4fd8d0;
+  --positive: #7ae1b7;
+  background:
+    radial-gradient(circle at 8% 3%, #0c647155 0, transparent 33rem),
+    radial-gradient(circle at 92% 8%, #3156aa52 0, transparent 37rem),
+    radial-gradient(circle at 50% 104%, #1e69764a 0, transparent 36rem),
+    #071923;
+}
+.verity-console h1,.verity-console h2,.verity-console h3 { color:#edfaff; }
+.verity-console .console-sidebar { border-color:#ffffff1e; background:#0b2431e8; box-shadow:0 24px 70px #01090e75; color:#d9eef3; }
+.verity-console .console-sidebar .nav-label { color:#7ba0ad; }.verity-console .console-brand > .lawcovery-logo { --logo-accent:#5be3dc; --logo-outline:#a8fffb70; color:#f3ffff; }.verity-console .console-brand > small { color:#8db6c1; }
+.verity-console .sidebar-nav .nav-item { color:#9fc3cc; }.verity-console .sidebar-nav .nav-item:hover { background:#65ebe01a; color:#e9ffff; }.verity-console .sidebar-nav .nav-item[aria-pressed="true"] { background:linear-gradient(135deg,#2bcac3,#167f9b); color:#001d28; box-shadow:0 9px 20px #0dbab259; }.verity-console .sidebar-nav .nav-badge { background:#1b4453; color:#9efff7; }.verity-console .sidebar-nav [aria-pressed="true"] .nav-badge { color:#00242d; background:#ffffff75; }
+.verity-console .audit-card { border-color:#5fe8de2c; background:#5fe8de0b; }.verity-console .audit-card>svg { color:#6ce3db; }.verity-console .audit-card>strong { color:#e0f7fa; }.verity-console .audit-card>p,.verity-console .workspace-status { color:#91b8c3; }
+.verity-console .console-header { border-color:#ffffff20; background:#0b2635ed; box-shadow:0 12px 38px #010b1170; }
+.verity-console .topbar-brand .lawcovery-logo { --logo-accent:#5be3dc; --logo-outline:#a8fffb70; color:#f3ffff; }.verity-console .topbar-nav { background:#ffffff0f; }.verity-console .topbar-nav button { color:#9dc0ca; }.verity-console .topbar-nav button[aria-pressed="true"] { background:#ffffff18; color:#efffff; box-shadow:inset 0 1px #ffffff29,0 3px 12px #0000002b; }.verity-console .topbar-nav button:hover:not(:disabled) { background:#5ce8df1a; color:#dffffd; }
+.verity-console .workspace-switcher .eyebrow { color:#82adb9; }.verity-console .workspace-switcher select { color:#f0ffff; background-color:transparent; }.verity-console .global-search { background:#ffffff0c; color:#dff9f8; }.verity-console .global-search input { color:#e6f8fa; }.verity-console .global-search input::placeholder { color:#8eafb7; }.verity-console .global-search kbd { background:#ffffff12; color:#a9c8cf; }.verity-console .refresh-button { border-color:#62ded43d; color:#a5fff8; background:#4edfd311; }.verity-console .profile-trigger { background:#14374a; }.verity-console .profile-summary strong { color:#efffff; }.verity-console .profile-summary small { color:#8fb2be; }
+.verity-console .console-title { border-color:#ffffff1c; background:linear-gradient(110deg,#123446d9,#0d2635cc); box-shadow:0 15px 38px #010b115c; }.verity-console .console-title p:last-child { color:#a8c3cb; }.verity-console .console-eyebrow,.verity-console .panel-kicker { color:#74e8df; }
+.verity-console .console-panel,.verity-console .card { border-color:#ffffff1b; background:#102c3bd9; box-shadow:0 15px 36px #010c135c; }.verity-console button,.verity-console .console-link { border-color:#ffffff24; background:#ffffff0b; color:#d5edf1; }.verity-console button:hover:not(:disabled),.verity-console .console-link:hover { border-color:#73eee47a; background:#5ce8df14; }.verity-console .button-primary,.verity-console .btn-primary,.verity-console .console-link.button-primary { border-color:#66e8df; background:linear-gradient(135deg,#5be3dc,#228caf); color:#00222c; box-shadow:0 9px 22px #22c5bd44; }.verity-console .button-primary:hover,.verity-console .btn-primary:hover,.verity-console .console-link.button-primary:hover { background:linear-gradient(135deg,#8af8ef,#35a6c3); }
+.verity-console .case-register-filters { border-color:#ffffff16; background:#ffffff08; }.verity-console .case-register-filters input,.verity-console .case-register-filters select { border-color:#ffffff25; background:#082330; color:#dff7f9; }.verity-console .case-table-wrap { border-color:#ffffff1a; }.verity-console .case-table thead { background:#ffffff0c; }.verity-console .case-table th { color:#91b6c1; }.verity-console .case-table td { border-color:#ffffff12; color:#e2f4f5; }.verity-console .case-table tbody tr:hover { background:#54e2d00d; }.verity-console .case-open { color:#8bf6ee; }.verity-console .muted,.verity-console .fine-print { color:#9bbbc4; }
+.analytics-overview { border-color:#ffffff1d; background:linear-gradient(110deg,#123a4bd9,#122a4bd1); box-shadow:0 18px 44px #010b115e; }.analytics-overview h1 { color:#f1ffff; }.analytics-overview p { color:#b0cbd1; }.analytics-period { border-color:#ffffff22; background:#ffffff0b; }.analytics-period>span { color:#9bc5cb; }.analytics-period button[aria-pressed="true"] { background:#51dcd5!important; color:#00252c!important; }.analytics-metric,.analytics-panel { border-color:#ffffff1d; background:#102d3ddd; box-shadow:0 14px 36px #010c135c; }.analytics-metric p,.analytics-metric small,.analytics-panel header>span { color:#9bbcc5; }.analytics-metric.attention { border-top-color:#f3ae64; }.analytics-metric.highlight { border-top-color:#58e2dd; }.analytics-metric.success { border-top-color:#75e1af; }.analytics-bar>i { background:#ffffff12; }.analytics-bar b { background:linear-gradient(90deg,#58e2dd,#3387c5); }.analytics-bar>span,.analytics-bar strong,.status-legend span,.status-legend strong { color:#e6f8f9; }.status-donut { background:conic-gradient(#5be3dc 0 var(--pending),#79dfa9 var(--pending) var(--disposed),#ffffff23 var(--disposed) 100%); }.status-donut:before { background:#102d3d; }.status-donut small { color:#94bbc3; }.trend-key,.trend-column { color:#9dbcc5; }.trend-key i,.trend-column i { background:#5be3dc; }.trend-key span+span i,.trend-column i+i { background:#f3ae64; }.analytics-callout { background:#54e2d012; color:#baf8f3; }.data-health button { background:#ffffff08!important; border-color:#ffffff1a!important; }.data-health span { color:#a3c3ca; }.court-list button { border-color:#ffffff12!important; }.court-list small,.analytics-footnote,.analytics-disclaimer { color:#9abac3; }
+@supports (backdrop-filter: blur(1px)) { .verity-console .console-sidebar,.verity-console .console-header,.verity-console .console-title,.verity-console .console-panel,.verity-console .card,.analytics-overview,.analytics-metric,.analytics-panel { backdrop-filter:blur(18px) saturate(135%); } }
+@media (max-width: 1500px) and (min-width: 981px) { .verity-console .global-search { min-inline-size:190px; }.verity-console .profile-summary,.verity-console .profile-chevron { display:none; }.verity-console .profile-trigger { inline-size:44px; justify-content:center; padding:3px; }.verity-console .workspace-switcher { min-inline-size:114px; max-inline-size:132px; }.verity-console .topbar-nav button { padding-inline:9px; } }
+
+/* Semantic analytics colours: amber = active/pending review, green = completed,
+   cyan = neutral throughput, slate = missing or unknown. */
+.analytics-metric.attention { border-top-color:#f6ae59; }.analytics-metric.success { border-top-color:#6fe0a6; }.analytics-metric.highlight { border-top-color:#5be3dc; }
+.status-donut { background:conic-gradient(#f6ae59 0 var(--pending),#6fe0a6 var(--pending) var(--disposed),#ffffff23 var(--disposed) 100%); }
+.status-legend i.pending { background:#f6ae59; }.status-legend i.disposed { background:#6fe0a6; }.status-legend i.status-unknown,.status-legend i.listed-only { background:#8aa0ac; }
+.stage-card { border-color:#ffffff1f!important; background:#ffffff0b!important; }.stage-card>span { color:#b9d4da; }.stage-card>small { color:#91afba; }.stage-card>i { background:#ffffff14; }.stage-card>i b { background:#5be3dc; }.stage-card:hover { border-color:#66e6dd7a!important; background:#5ce8df0d!important; }
+.stage-card.total { background:#082532!important; border-color:#2a5462!important; }.stage-card.total>span,.stage-card.total>small { color:#b7d4d9; }.stage-card.total>strong { color:#efffff; }
+.stage-card.nbw { background:#f6ae5919!important; border-color:#f6ae59!important; box-shadow:0 0 0 3px #f6ae591c; }.stage-card.nbw>span,.stage-card.nbw>strong { color:#ffd39a; }.stage-card.nbw>i { background:#ffffff20; }.stage-card.nbw>i b { background:#f6ae59; }.stage-card.nbw>em { background:#c66d1e; color:#fff7e8; }
+.nbw-insight { border-color:#f6ae596e; border-left-color:#f6ae59; background:#f6ae5912; color:#ffe0b2; }.nbw-insight p { color:#e7c59a; }.nbw-insight>button { border-color:#f6ae59!important; background:#d7822e!important; color:#201204!important; }
+.activity-key i.filed,.activity-bar i.filed { background:#5be3dc; }.activity-key i.disposed,.activity-bar i.disposed { background:#6fe0a6; }.activity-column:hover { background:#5ce8df10!important; }.activity-column.is-selected { background:#5ce8df16!important; border-color:#5ce8df71!important; }.activity-bar em,.activity-label { color:#c5e0e4; }.activity-detail { background:#ffffff0a; color:#d7f0f2; }.activity-detail>button { color:#8bf6ee!important; }
+.tat-summary>div { border-color:#5be3dc3b; background:#5be3dc0d; }.tat-summary strong { color:#8bf6ee; }.chip.done { background:#6fe0a620!important; border-color:#6fe0a66e!important; color:#a9f5cf!important; }.chip.nbw { background:#d7822e!important; border-color:#f6ae59!important; color:#241305!important; }.chip.muted { background:#ffffff0d!important; color:#a5bbc2!important; }
+
+/* Contrast pass: keep glass in the edges, not behind the figures. */
+.verity-console.app-shell { background:radial-gradient(circle at 8% 1%,#0f5d6a42 0,transparent 30rem),radial-gradient(circle at 94% 9%,#253f8740 0,transparent 34rem),#06111b; }
+.verity-console .console-header { background:#091b2af5; }.verity-console .console-sidebar { background:#081b29f2; }.verity-console .console-title { background:linear-gradient(115deg,#0d2839fa,#0a1c2bf7); }
+.verity-console .console-panel,.verity-console .card,.analytics-metric,.analytics-panel { background:#0b2030f5; }.analytics-overview { background:linear-gradient(115deg,#0d2a3bf7,#0c2032f7); }
+.verity-console .case-register-filters,.verity-console .analytics-filters { background:#071827e8; }.verity-console .case-register-filters input,.verity-console .case-register-filters select,.analytics-filters input,.analytics-filters select,.advocate-tools input,.advocate-tools select { background:#061722; color:#e9fbfc; }
+.analytics-metric strong,.analytics-panel strong,.analytics-panel h2,.analytics-panel h3,.analytics-overview h1,.analytics-overview h2,.analytics-overview h3 { color:#f1ffff; text-shadow:0 1px 0 #00000055; }.analytics-metric p { color:#b2cdd4; }.analytics-metric small,.analytics-panel header>span,.analytics-footnote,.analytics-disclaimer { color:#91b3bd; }
+.analytics-metric { box-shadow:inset 0 1px #ffffff0d,0 14px 32px #00091266; }.analytics-panel,.analytics-overview { box-shadow:inset 0 1px #ffffff0d,0 18px 42px #00091266; }.analytics-dashboard .analytics-grid,.analytics-dashboard .analytics-metrics { filter:none; }
+.status-donut:before { background:#0b2030; }.status-donut strong { color:#f5ffff; }.stage-card { background:#0a1e2df5!important; }.stage-card.total { background:#061521!important; }.data-health button { background:#081a28!important; }.court-list button:hover,.analytics-bar:hover { background:#5be3dc10!important; }
+
+/* The register has sticky header/first-column rules in the legacy theme. Reset
+   every table paint surface together so scrolling never exposes a white cell. */
+.verity-console .case-table-wrap { border-color:#ffffff22; background:#081c2a; }
+.verity-console .case-table { background:#081c2a; color:#dceff2; }
+.verity-console .case-table caption { color:#91b7c0; background:#081c2a; }
+.verity-console .case-table thead th,
+.verity-console .portfolio-table-wrap .case-table thead th { background:#102c3cfb!important; color:#a9cad1!important; border-color:#ffffff16!important; }
+.verity-console .case-table tbody tr,
+.verity-console .portfolio-table-wrap .case-table tr { background:#081c2a!important; }
+.verity-console .case-table tbody :is(td,th),
+.verity-console .portfolio-table-wrap .case-table tbody :is(td,th),
+.verity-console .portfolio-table-wrap .case-table tbody th { background:#081c2a!important; color:#dceff2!important; border-color:#ffffff12!important; }
+.verity-console .case-table tbody tr:hover :is(td,th),
+.verity-console .portfolio-table-wrap .case-table tbody tr:hover :is(td,th) { background:#103343!important; }
+.verity-console .case-table .case-open { color:#75f4ec!important; background:transparent!important; }
+.verity-console .case-table small { color:#92b7c0!important; }
+.verity-console button:disabled,.verity-console .console-link:disabled { background:#102333!important; border-color:#ffffff16!important; color:#75939d!important; opacity:.65; }
