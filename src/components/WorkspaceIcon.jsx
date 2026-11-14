@@ -71,6 +71,8 @@ export function WorkspaceIcon({ name, size = 20 }) {
     close: <path d="m6 6 12 12M18 6 6 18" />,
     chevron: <path d="m9 18 6-6-6-6" />,
     arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
+    moon: <path d="M20 15.4A8.5 8.5 0 0 1 8.6 4 8.5 8.5 0 1 0 20 15.4Z" />,
+    sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>,
   };
   return (
     <svg

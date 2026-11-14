@@ -259,3 +259,87 @@ test("detail availability distinguishes listings and combines with case filters"
   assert.deepEqual(filterCases(cases, { details: "missing" }).map(item => item.cnr), ["listing"]);
   assert.equal(filterCases(cases, {}).length, 3);
 });
+
+import {
+  activitySeries,
+  advocatePerformance,
+  caseAdvocates,
+  nbwInsight,
+  pendingStageCards,
+  scopeCases,
+} from "../src/lib/analytics.js";
+
+const adv = (name) => [`1) Example Finance Pvt Ltd   Advocate- ${name}`];
+test("pending stage cards add up to the overall pending number and ignore disposed cases", () => {
+  const rows = [
+    row(1, { case_status: "Pending", case_stage: "NBW" }),
+    row(2, { case_status: "Pending", case_stage: "NBW" }),
+    row(3, { case_status: "Pending", case_stage: "SUMMONS" }),
+    row(4, { case_status: "Pending", case_stage: "---" }),
+    row(5, { case_status: "Disposed", case_stage: "FOR STEPS" }),
+  ];
+  const cards = pendingStageCards(rows);
+  assert.equal(cards.total, buildAnalytics(rows, { today }).pending);
+  assert.equal(cards.rows.reduce((s, r) => s + r.count, 0), 4);
+  assert.equal(find(cards.rows, "NBW"), 2);
+  assert.equal(find(cards.rows, "Stage not recorded"), 1);
+  assert.equal(find(cards.rows, "FOR STEPS"), undefined);
+});
+test("court (contains) and filing-year scope", () => {
+  const rows = [
+    row(1, { court: "City Civil Court", filing_date: "10th January 2024" }),
+    row(2, { court: "Chief Metropolitan Magistrate Court", filing_date: "5th May 2025" }),
+  ];
+  assert.equal(scopeCases(rows, { court: "metropolitan" }).length, 1);
+  assert.equal(scopeCases(rows, { year: "2024" }).length, 1);
+  assert.equal(scopeCases(rows, { court: "court", year: "2025" }).length, 1);
+  assert.equal(scopeCases(rows, {}).length, 2);
+});
+test("advocate performance counts disposed vs pending-by-stage and filing-to-disposal TAT", () => {
+  const mk = (id, status, stage, filing, disposal, advocate) =>
+    row(id, { case_status: status, case_stage: stage, filing_date: filing, disposal_date: disposal, petitioners: adv(advocate) });
+  const rows = [
+    mk(1, "Disposed", "", "2024-01-01", "2024-01-11", "A ONE"),
+    mk(2, "Disposed", "", "2024-01-01", "2024-01-31", "A ONE"),
+    mk(3, "Pending", "NBW", "2024-02-01", "", "A ONE"),
+    mk(4, "Pending", "NBW", "2024-02-01", "", "A ONE"),
+    mk(5, "Pending", "SUMMONS", "2024-02-01", "", "A ONE"),
+    mk(6, "Pending", "NBW", "2024-02-01", "", "B TWO"),
+  ];
+  const [a, b] = advocatePerformance(rows, today);
+  assert.equal(a.label, "A ONE");
+  assert.equal(a.total, 5);
+  assert.equal(a.disposed, 2);
+  assert.equal(a.pending, 3);
+  assert.equal(find(a.stages, "NBW"), 2);
+  assert.equal(find(a.stages, "SUMMONS"), 1);
+  assert.equal(a.averageTat, 20); // (10 + 30) / 2
+  assert.equal(b.averageTat, null);
+  assert.deepEqual(caseAdvocates(row(9, {})), ["Advocate not recorded"]);
+});
+test("activity series gives yearly and monthly buckets with the cases behind each bar", () => {
+  const rows = [
+    row(1, { case_status: "Disposed", filing_date: "2024-03-01", disposal_date: "2024-06-01" }),
+    row(2, { case_status: "Pending", filing_date: "2025-03-01" }),
+  ];
+  const yearly = activitySeries(rows, { today });
+  assert.deepEqual(yearly.rows.map((r) => [r.key, r.filings, r.disposals]), [["2024", 1, 1], ["2025", 1, 0]]);
+  const monthly = activitySeries(rows, { today, granularity: "month", year: "2024" });
+  assert.equal(monthly.rows.length, 12);
+  assert.equal(monthly.rows.find((r) => r.key === "2024-06").disposedCases.length, 1);
+  assert.equal(monthly.shownFilings, 1);
+});
+test("NBW insight reports pending share and how many disposed cases passed through NBW", () => {
+  const rows = [
+    row(1, { case_status: "Pending", case_stage: "NBW" }),
+    row(2, { case_status: "Pending", case_stage: "SUMMONS" }),
+    row(3, { case_status: "Disposed", history: [["x", "2024-01-01", "y", "SUMMONS"], ["x", "2024-02-01", "y", "NBW"]] }),
+    row(4, { case_status: "Disposed", history: [["x", "2024-01-01", "y", "EVIDENCES"]] }),
+  ];
+  const insight = nbwInsight(rows);
+  assert.equal(insight.count, 1);
+  assert.equal(insight.share, 50);
+  assert.equal(insight.sample, 2);
+  assert.equal(insight.throughNbw, 1);
+  assert.equal(insight.throughRate, 50);
+});

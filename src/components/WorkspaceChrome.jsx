@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { WorkspaceIcon as Icon } from "./WorkspaceIcon";
 import { LawcoveryLogo } from "./LawcoveryLogo";
+import "../theme-system.css";
 
 const nav = [
+  ["analytics", "Analytics", "overview"],
   ["cases", "Cases", "cases"],
   ["calendar", "Hearing calendar", "calendar"],
   ["connections", "Connections", "connection"],
@@ -40,6 +42,10 @@ export function WorkspaceChrome({
   const [profileOpen, setProfileOpen] = useState(false);
   const [accountView, setAccountView] = useState("");
   const [toast, setToast] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    try { return window.localStorage.getItem("lawcovery-theme") || "dark"; }
+    catch { return "dark"; }
+  });
   const profile = useRef(null),
     profileButton = useRef(null),
     menuButton = useRef(null),
@@ -57,6 +63,10 @@ export function WorkspaceChrome({
   const company =
     workspaces.find((item) => item.id === workspace)?.name ||
     "Select a workspace";
+  useEffect(() => {
+    document.documentElement.dataset.uiTheme = theme;
+    try { window.localStorage.setItem("lawcovery-theme", theme); } catch {}
+  }, [theme]);
   function navigate(value) {
     onNavigate(value);
     setMenuOpen(false);
@@ -230,6 +240,20 @@ export function WorkspaceChrome({
           >
             <Icon name="menu" />
           </button>
+          <a className="topbar-brand" href="/" aria-label="Lawcovery home">
+            <LawcoveryLogo />
+          </a>
+          <nav className="topbar-nav" aria-label="Primary workspace views">
+            {nav.map(([id, label]) => (
+              <button
+                key={id}
+                aria-pressed={page === id}
+                onClick={() => navigate(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
           <label className="workspace-switcher">
             <span className="eyebrow">Company workspace</span>
             <select
@@ -279,6 +303,16 @@ export function WorkspaceChrome({
           >
             <Icon name="refresh" size={16} />
             {busy ? "Syncing…" : "Sync"}
+          </button>
+          <button
+            className="theme-toggle"
+            type="button"
+            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+          >
+            <Icon name={theme === "dark" ? "sun" : "moon"} size={17} />
+            <span>{theme === "dark" ? "Light" : "Dark"}</span>
           </button>
           <div ref={profile} className="profile">
             <button

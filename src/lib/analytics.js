@@ -22,7 +22,8 @@ export function caseStatus(item) {
 }
 export const caseStage = (item) => {
   const stage = tidy(item.data?.case_stage);
-  return stage && !["-", "—"].includes(stage)
+  // "-", "--", "---", "—" and similar placeholders mean "no stage recorded".
+  return stage && !/^[-—–\s]+$/.test(stage)
     ? stage.toUpperCase()
     : "Stage not recorded";
 };
@@ -290,10 +291,12 @@ export function buildAnalytics(
     { label: "181–365 days", max: 365 },
     { label: "1–2 years", max: 730 },
     { label: "Over 2 years", max: Infinity },
-  ].map((band, i, bands) => ({
-    label: band.label,
-    count: tatDurations.filter(days => days <= band.max && (i === 0 || days > bands[i - 1].max)).length,
-  }));
+  ].map((band, i, bands) => {
+    const bandCases = tatRecords
+      .filter((row) => row.days <= band.max && (i === 0 || row.days > bands[i - 1].max))
+      .map((row) => row.item);
+    return { label: band.label, count: bandCases.length, cases: bandCases };
+  });
   for (const court of courts.values()) {
     const samples = tatRecords.filter(row => courtName(row.item) === court.label);
     court.tatSamples = samples.length;
@@ -514,4 +517,172 @@ export function portfolioDiagnostic(cases, today = indiaToday(), reviewDays = 36
   }
   const yearRows = [...years.values()].sort((a, b) => b.label.localeCompare(a.label));
   return { pending, dated, averageAge, medianAge, old, oldest, advocates, yearRows, advocateCoverage: percentage(dated.filter((row) => caseAdvocate(row.item) !== "Advocate not recorded").length, dated.length) };
+}
+
+/* ------------------------------------------------------------------ *
+ * Dashboard additions: scope filters, stage cards, activity chart,
+ * NBW insight and advocate performance.
+ * ------------------------------------------------------------------ */
+
+export const NO_STAGE = "Stage not recorded";
+
+const averageOf = (values) =>
+  values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+
+// Years in which cases were filed, newest first (drives the Year filter).
+export function filingYears(cases) {
+  return [...new Set(cases.map(filingYear).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+}
+
+// Court is a "contains" search so typing part of a court name works; year is exact.
+export function scopeCases(cases, { court = "", year = "" } = {}) {
+  const needle = tidy(court).toUpperCase();
+  return cases.filter(
+    (item) =>
+      (!year || filingYear(item) === year) &&
+      (!needle || courtName(item).includes(needle)),
+  );
+}
+
+// Every advocate named against the petitioner. A case with two advocates is
+// counted once under each of them.
+export function caseAdvocates(item) {
+  const values = Array.isArray(item.data?.petitioners) ? item.data.petitioners : [];
+  const names = values
+    .flatMap((value) => String(value).split(/\bAdvocate\s*[-:]\s*/i).slice(1))
+    .map((value) => tidy(value).replace(/^\d+\)\s*/, "").replace(/[.,;]+$/, "").toUpperCase())
+    .filter(Boolean);
+  return names.length ? [...new Set(names)] : ["Advocate not recorded"];
+}
+
+// Pending cases per stage, with the share of all pending cases.
+export function pendingStageCards(cases) {
+  const rows = pendingStageRows(cases);
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
+  return {
+    total,
+    rows: rows.map((row) => ({ ...row, share: percentage(row.count, total) })),
+  };
+}
+
+// NBW: how many pending cases sit there, plus evidence from the saved hearing
+// history of disposed cases (how many passed through NBW before closing).
+export function nbwInsight(cases) {
+  const { total, rows } = pendingStageCards(cases);
+  const nbw = rows.find((row) => row.label === "NBW");
+  let sample = 0,
+    throughNbw = 0;
+  for (const item of cases) {
+    if (caseStatus(item) !== "Disposed" || !Array.isArray(item.data?.history)) continue;
+    const stages = item.data.history
+      .filter(Array.isArray)
+      .map((row) => caseStage({ data: { case_stage: row[3] } }))
+      .filter((stage) => stage !== NO_STAGE);
+    if (!stages.length) continue;
+    sample++;
+    if (stages.includes("NBW")) throughNbw++;
+  }
+  return {
+    pendingTotal: total,
+    count: nbw?.count || 0,
+    share: nbw?.share ?? null,
+    cases: nbw?.cases || [],
+    sample,
+    throughNbw,
+    throughRate: percentage(throughNbw, sample),
+  };
+}
+
+// Filings vs disposals. Yearly: one bar pair per year. Monthly: the 12 months
+// of the selected year, or the last 12 months when no year is selected.
+export function activitySeries(cases, { granularity = "year", year = "", today = indiaToday() } = {}) {
+  const monthly = granularity === "month";
+  const rows = new Map();
+  const blank = (key, label) => ({ key, label, filings: 0, disposals: 0, filedCases: [], disposedCases: [] });
+  const keyOf = (day) => (monthly ? day.slice(0, 7) : day.slice(0, 4));
+  const monthName = (key) =>
+    new Intl.DateTimeFormat("en-IN", { month: "short" }).format(new Date(`${key}-01T00:00:00`));
+  if (monthly) {
+    const months = year
+      ? Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`)
+      : Array.from({ length: 12 }, (_, i) => shiftMonth(today.slice(0, 7), i - 11));
+    for (const key of months) rows.set(key, blank(key, year ? monthName(key) : `${monthName(key)} ${key.slice(2, 4)}`));
+  }
+  const events = [];
+  for (const item of cases) {
+    const filing = pastDate(item.data?.filing_date, today);
+    if (filing) events.push({ item, day: filing, field: "filings" });
+    if (caseStatus(item) === "Disposed") {
+      const closed = closureDate(item, today);
+      if (closed) events.push({ item, day: closed, field: "disposals" });
+    }
+  }
+  if (!monthly && events.length) {
+    const years = events.map((e) => Number(e.day.slice(0, 4)));
+    for (let y = Math.min(...years); y <= Math.max(...years); y++) rows.set(String(y), blank(String(y), String(y)));
+  }
+  let shownFilings = 0,
+    shownDisposals = 0,
+    totalFilings = 0,
+    totalDisposals = 0;
+  for (const { item, day, field } of events) {
+    field === "filings" ? totalFilings++ : totalDisposals++;
+    const row = rows.get(keyOf(day));
+    if (!row) continue;
+    row[field]++;
+    (field === "filings" ? row.filedCases : row.disposedCases).push(item);
+    field === "filings" ? shownFilings++ : shownDisposals++;
+  }
+  return {
+    rows: [...rows.values()].sort((a, b) => a.key.localeCompare(b.key)),
+    shownFilings,
+    shownDisposals,
+    totalFilings,
+    totalDisposals,
+  };
+}
+
+// Advocate-wise performance: how many cases each advocate holds, where they
+// stand (disposed / pending by stage) and filing-to-disposal TAT.
+export function advocatePerformance(cases, today = indiaToday()) {
+  const groups = new Map();
+  for (const item of cases) {
+    if (!item.hasDetails) continue; // listed-only cases have no status yet
+    const status = caseStatus(item);
+    for (const label of caseAdvocates(item)) {
+      const row =
+        groups.get(label) ||
+        { label, cases: [], pendingCases: [], disposedCases: [], stages: new Map(), tatDays: [] };
+      row.cases.push(item);
+      if (status === "Pending") {
+        row.pendingCases.push(item);
+        const stage = caseStage(item);
+        row.stages.set(stage, [...(row.stages.get(stage) || []), item]);
+      } else if (status === "Disposed") {
+        row.disposedCases.push(item);
+        const filing = pastDate(item.data?.filing_date, today);
+        const closed = closureDate(item, today);
+        if (filing && closed && closed >= filing) row.tatDays.push(dayNumber(closed) - dayNumber(filing));
+      }
+      groups.set(label, row);
+    }
+  }
+  return [...groups.values()]
+    .map((row) => ({
+      label: row.label,
+      total: row.cases.length,
+      pending: row.pendingCases.length,
+      disposed: row.disposedCases.length,
+      cases: row.cases,
+      pendingCases: row.pendingCases,
+      disposedCases: row.disposedCases,
+      stages: [...row.stages]
+        .map(([label, items]) => ({ label, count: items.length, cases: items }))
+        .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)),
+      disposalRate: percentage(row.disposedCases.length, row.cases.length),
+      averageTat: averageOf(row.tatDays),
+      medianTat: median(row.tatDays),
+      tatSamples: row.tatDays.length,
+    }))
+    .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
 }

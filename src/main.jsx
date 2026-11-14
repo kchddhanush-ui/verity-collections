@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 import './auth-layout.css';
+import './site-dark.css';
 import { supabase } from './lib/supabase';
 import { useAuth } from './useAuth';
 import { extensionRequest } from './lib/extensionBridge';

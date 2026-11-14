@@ -1,3 +1,5 @@
 @import "./workspace.css" layer(workspace-structure);
 @import "./reference-ui.css";
 @import "./reference-adapter.css";
+@import "./workspace-revamp.css";
+@import "./theme-system.css";

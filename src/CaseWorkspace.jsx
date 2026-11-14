@@ -8,8 +8,9 @@ import { HearingCalendar } from "./components/HearingCalendar";
 import { parseCourtDate } from "./lib/hearings";
 import { currentRecordedStage, previousRecordedStage } from "./lib/caseStages";
 import { caseCsv } from "./lib/csv";
-import { filterCases, courtName, filingYear } from "./lib/analytics";
+import { buildAnalytics, caseStatus, filterCases, courtName, filingYear } from "./lib/analytics";
 import { WorkspaceChrome } from "./components/WorkspaceChrome";
+import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { extensionRequest } from "./lib/extensionBridge";
 
 function partyColumns(values = []) {
@@ -529,9 +530,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   }
   const currentCaseFilters = caseFilters?.workspace === workspace ? caseFilters : { values: {}, respondent: "" };
   const respondentQuery = currentCaseFilters.respondent.trim().toLowerCase();
-  const filtered = filterCases(cases, { ...currentCaseFilters.values, search: query }).filter(
-    (item) => !respondentQuery || partyColumns(item.data.respondents).names.toLowerCase().includes(respondentQuery),
-  );
+  const filtered = filterCases(cases, { ...currentCaseFilters.values, search: query })
+    .filter((item) => !respondentQuery || partyColumns(item.data.respondents).names.toLowerCase().includes(respondentQuery))
+    .filter((item) => !currentCaseFilters.cnrs || currentCaseFilters.cnrs.has(item.cnr));
   const showingConnections = portfolioView === "connections";
   const setCaseFilter = (key, value) => setCaseFilters((previous) => {
     const current = previous?.workspace === workspace ? previous : { values: {}, respondent: "" };
@@ -542,6 +543,28 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   const clearCaseFilters = () => {
     setCaseFilters(null);
     setQuery("");
+  };
+  const openAnalyticsCases = (filters) => {
+    let values = {};
+    if (filters.status) values.status = filters.status;
+    if (filters.stage) values.stage = filters.stage;
+    if (filters.court) values.court = filters.court;
+    if (filters.details) values.details = filters.details;
+    // The analytics dashboard passes the exact cases behind the number or bar
+    // that was clicked (already respecting its court / year filters).
+    let selectedCases = Array.isArray(filters.cases) ? filters.cases : cases;
+    const analytics = buildAnalytics(cases);
+    if (filters.age)
+      selectedCases = analytics.age.find((row) => row.label === filters.age)?.cases || [];
+    if (filters.pendingOlderThan)
+      selectedCases = analytics.longPending.map((row) => row.item);
+    if (filters.pendingWithoutNext)
+      selectedCases = cases.filter((item) => caseStatus(item) === "Pending" && !parseCourtDate(item.data?.next_hearing_date));
+    if (filters.stale) selectedCases = analytics.stale.map((row) => row.item);
+    const cnrs = new Set(selectedCases.map((item) => item.cnr));
+    setCaseFilters({ workspace, values, respondent: "", cnrs: Array.isArray(filters.cases) || cnrs.size ? cnrs : null });
+    setQuery("");
+    setPortfolioView("cases");
   };
   const caseHeaders = [
     "Case number", "Case type", "CNR number", "Filing number", "Filing date",
@@ -599,7 +622,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         id="workspace-content"
         tabIndex="-1"
       >
-        {portfolioView !== "calendar" && (
+        {portfolioView !== "calendar" && portfolioView !== "analytics" && (
           <div className="console-title page-heading">
             <div>
               <p className="console-eyebrow">
@@ -795,7 +818,9 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
             )}
             {workspace && (
               <>
-                {portfolioView === "calendar" ? (
+                {portfolioView === "analytics" ? (
+                  <AnalyticsDashboard cases={cases} onDrillDown={openAnalyticsCases} />
+                ) : portfolioView === "calendar" ? (
                   <HearingCalendar
                     key={workspace}
                     cases={cases}
