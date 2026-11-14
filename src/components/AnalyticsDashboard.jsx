@@ -12,7 +12,6 @@ import {
   scopeCases,
 } from "../lib/analytics";
 import "../analytics-dashboard.css";
-import "../analytics-dark.css";
 import "../theme-system.css";
 
 const n = (value) => (value == null ? "—" : value.toLocaleString("en-IN", { maximumFractionDigits: 1 }));

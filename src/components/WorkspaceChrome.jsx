@@ -42,9 +42,10 @@ export function WorkspaceChrome({
   const [profileOpen, setProfileOpen] = useState(false);
   const [accountView, setAccountView] = useState("");
   const [toast, setToast] = useState(false);
+  const [pageTransition, setPageTransition] = useState(0);
   const [theme, setTheme] = useState(() => {
-    try { return window.localStorage.getItem("lawcovery-theme") || "dark"; }
-    catch { return "dark"; }
+    try { return window.localStorage.getItem("lawcovery-theme") || "light"; }
+    catch { return "light"; }
   });
   const profile = useRef(null),
     profileButton = useRef(null),
@@ -63,12 +64,14 @@ export function WorkspaceChrome({
   const company =
     workspaces.find((item) => item.id === workspace)?.name ||
     "Select a workspace";
+  const currentPage = nav.find(([id]) => id === page) || nav[0];
   useEffect(() => {
     document.documentElement.dataset.uiTheme = theme;
     try { window.localStorage.setItem("lawcovery-theme", theme); } catch {}
   }, [theme]);
   function navigate(value) {
     onNavigate(value);
+    setPageTransition((value) => value + 1);
     setMenuOpen(false);
     setProfileOpen(false);
     if (menuOpen)
@@ -192,6 +195,7 @@ export function WorkspaceChrome({
               key={id}
               className={`nav-item ${page === id ? "active" : ""}`}
               aria-label={label}
+              aria-current={page === id ? "page" : undefined}
               aria-pressed={page === id}
               onClick={() => navigate(id)}
             >
@@ -248,6 +252,7 @@ export function WorkspaceChrome({
               <button
                 key={id}
                 aria-pressed={page === id}
+                aria-current={page === id ? "page" : undefined}
                 onClick={() => navigate(id)}
               >
                 {label}
@@ -380,7 +385,13 @@ export function WorkspaceChrome({
             )}
           </div>
         </header>
-        {children}
+        <div className="workspace-view-header" key={`${page}-${pageTransition}`} aria-live="polite">
+          <span>Workspace view</span>
+          <strong>{currentPage[1]}</strong>
+        </div>
+        <div className="workspace-page-transition" key={`content-${page}-${pageTransition}`}>
+          {children}
+        </div>
       </div>
       {toast && (
         <div className="toast" role="status">

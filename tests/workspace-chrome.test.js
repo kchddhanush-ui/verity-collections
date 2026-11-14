@@ -123,7 +123,7 @@ test("reference workspace shell uses account data, navigates, searches and repor
     assert.equal(document.querySelector(".nav-badge").textContent, "7");
     assert.deepEqual(
       [...document.querySelectorAll(".sidebar-nav button")].map((node) => node.getAttribute("aria-label")),
-      ["Cases", "Hearing calendar", "Connections"],
+      ["Analytics", "Cases", "Hearing calendar", "Connections"],
     );
     const search = document.querySelector('[aria-label="Search all cases"]');
     assert.equal(search.value, "initial search");
