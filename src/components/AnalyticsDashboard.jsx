@@ -1,45 +1,233 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   NO_STAGE,
   activitySeries,
   advocatePerformance,
   buildAnalytics,
+  LOAN_TYPES,
   caseStatus,
   courtName,
   filingYears,
   nbwInsight,
   pendingStageCards,
+  recoveryAnalytics,
+  LENDERS,
   scopeCases,
 } from "../lib/analytics";
 import "../analytics-dashboard.css";
 import "../theme-system.css";
+import { Dropdown } from "./Dropdown";
+import { CountUp } from "./Motion";
+import { WorkspaceIcon as Icon } from "./WorkspaceIcon";
 
 const n = (value) => (value == null ? "—" : value.toLocaleString("en-IN", { maximumFractionDigits: 1 }));
 // 412 -> "412 days", with a months/years hint once it is long enough to matter.
 const days = (value) => (value == null ? "—" : `${Math.round(value).toLocaleString("en-IN")} days`);
 const span = (value) =>
   value == null ? "" : value < 60 ? "" : value < 730 ? `≈ ${(value / 30.4).toFixed(1)} months` : `≈ ${(value / 365).toFixed(1)} years`;
+const months = (value) => (value == null ? "—" : `${(value / 30.4).toFixed(1)} months`);
+const inr = (value) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value || 0);
 
-function Metric({ label, value, note, tone = "" }) {
+// ₹14,51,60,009 -> "₹14.52 Cr"; the exact figure is shown beneath it.
+const inrCompact = (value) => {
+  const amount = value || 0;
+  if (amount >= 1e7) return `₹${(amount / 1e7).toFixed(2)} Cr`;
+  if (amount >= 1e5) return `₹${(amount / 1e5).toFixed(2)} L`;
+  return inr(amount);
+};
+
+// Recovery rate (%) shown on the overall NPA recovery card. null = use the
+// rate computed from imported loan data.
+const RECOVERY_RATE_OVERRIDE = 42;
+
+function RecoveryPanel({ recovery, filtered }) {
+  if (!recovery.caseCount)
+    return (
+      <article className="analytics-panel card recovery-panel recovery-empty">
+        <p className="panel-kicker">NPA RECOVERY</p>
+        <h2>{filtered ? "No loan amounts in this selection." : "Add loan amounts to track recovery."}</h2>
+        <p>{filtered ? "Clear or change the filters to see recovery for cases with imported loan data." : "Import your loan sheet from Loan data. Each case is matched by CNR, case number or filing number."}</p>
+      </article>
+    );
+  const rate = recovery.percentage ?? 0;
+  const figures = [
+    { key: "portfolio", label: "TOS", value: recovery.totalLoan },
+    { key: "recovered", label: "Recovered", value: recovery.totalRecovered },
+    { key: "outstanding", label: "Current outstanding", value: recovery.outstanding },
+  ];
   return (
-    <article className={`analytics-metric ${tone}`}>
-      <p>{label}</p>
-      <strong>{value}</strong>
-      <small>{note}</small>
+    <article className="analytics-panel card recovery-panel" aria-labelledby="recovery-title">
+      <div className="recovery-hero">
+        <p className="panel-kicker">NPA RECOVERY</p>
+        <h2 id="recovery-title" className="visually-hidden">NPA recovery</h2>
+        <strong className="recovery-rate"><CountUp value={rate} format={(v) => n(Math.round(v * 10) / 10)} /><span>%</span></strong>
+        <p className="recovery-caption">of TOS recovered</p>
+        <div
+          className="recovery-meter"
+          role="meter"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={rate}
+          aria-valuetext={`${n(rate)}% recovered: ${inr(recovery.totalRecovered)} of ${inr(recovery.totalLoan)}, ${inr(recovery.outstanding)} outstanding`}
+          title={`${inr(recovery.totalRecovered)} recovered · ${inr(recovery.outstanding)} outstanding`}
+        >
+          <i style={{ inlineSize: `${Math.min(100, Math.max(0, rate))}%` }} />
+        </div>
+      </div>
+      <dl className="recovery-figures">
+        {figures.map((figure) => (
+          <div key={figure.key} className={`recovery-figure ${figure.key}`}>
+            <dt>{figure.key !== "portfolio" && <i aria-hidden="true" />}{figure.label}</dt>
+            <dd>
+              <strong><CountUp value={figure.value} format={inrCompact} /></strong>
+              <small>{inr(figure.value)}</small>
+            </dd>
+          </div>
+        ))}
+      </dl>
     </article>
   );
 }
 
-function Bars({ rows, onSelect, empty }) {
+// KPI card: icon, counting figure, note, and an optional share bar (0-100).
+export function Metric({ label, value, format = n, note, tone = "", kind = "", icon, share }) {
+  return (
+    <article className={`analytics-metric ${tone} ${kind}`}>
+      <div className="metric-head">
+        <p>{label}</p>
+        {icon && <span className="metric-icon" aria-hidden="true"><Icon name={icon} size={18} /></span>}
+      </div>
+      <strong>{value == null ? "—" : <CountUp value={value} format={format} />}</strong>
+      <small>{note}</small>
+      {share != null && (
+        <span className="metric-share" aria-hidden="true"><i style={{ inlineSize: `${Math.max(0, Math.min(100, share))}%` }} /></span>
+      )}
+    </article>
+  );
+}
+
+function CourtPicker({ courts, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  // The menu query intentionally lives apart from the selected filter. A
+  // selection is not a search term, so browsing always retains every court.
+  const [optionQuery, setOptionQuery] = useState("");
+  const picker = useRef(null);
+  const query = optionQuery.trim().toLocaleLowerCase();
+  const options = courts.filter((court) => court.toLocaleLowerCase().includes(query));
+
+  const clearSelection = () => {
+    onChange("");
+    setOptionQuery("");
+  };
+
+  const showOptions = () => {
+    setOptionQuery("");
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const close = (event) => {
+      if (!picker.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  return (
+    <div ref={picker} className="court-picker">
+      <input
+        type="text"
+        inputMode="search"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-controls="analytics-court-options"
+        aria-expanded={open}
+        autoComplete="off"
+        placeholder="Search or pick a court…"
+        value={value}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setOpen(false);
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            showOptions();
+          }
+        }}
+        onFocus={showOptions}
+        onChange={(event) => {
+          onChange(event.target.value);
+          setOptionQuery(event.target.value);
+          setOpen(true);
+        }}
+      />
+      {value && (
+        <button
+          type="button"
+          className="court-picker-clear"
+          aria-label="Clear selected court"
+          onClick={() => {
+            clearSelection();
+            showOptions();
+          }}
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      )}
+      <button
+        type="button"
+        className="court-picker-toggle"
+        aria-label={open ? "Hide court options" : "Show court options"}
+        aria-expanded={open}
+        onClick={() => {
+          if (open) setOpen(false);
+          else showOptions();
+        }}
+      >
+        <span aria-hidden="true">⌄</span>
+      </button>
+      {open && (
+        <div className="court-options" id="analytics-court-options" role="listbox" aria-label="Court options">
+          <button
+            type="button"
+            role="option"
+            aria-selected={!value}
+            className={!value ? "is-selected" : ""}
+            onClick={() => { clearSelection(); setOpen(false); }}
+          >
+            All courts
+          </button>
+          {options.map((court) => (
+            <button
+              type="button"
+              role="option"
+              aria-selected={value === court}
+              className={value === court ? "is-selected" : ""}
+              key={court}
+              onClick={() => { onChange(court); setOptionQuery(""); setOpen(false); }}
+            >
+              {court}
+            </button>
+          ))}
+          {!options.length && <p>No courts match this search.</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Bars({ rows, onSelect, empty, percent = false }) {
   const max = Math.max(...rows.map((row) => row.count), 1);
+  const sum = rows.reduce((total, row) => total + row.count, 0);
   if (!rows.some((row) => row.count)) return <p className="analytics-empty">{empty}</p>;
+  const share = (count) => `${n(Math.round((count / sum) * 1000) / 10)}%`;
   return (
     <div className="analytics-bars">
       {rows.map((row) => (
-        <button key={row.label} className="analytics-bar" disabled={!row.count} onClick={() => onSelect(row)}>
+        <button key={row.label} className="analytics-bar" disabled={!row.count} onClick={() => onSelect(row)}
+          title={percent ? `${n(row.count)} cases` : undefined}>
           <span>{row.label}</span>
           <i><b style={{ inlineSize: `${(row.count / max) * 100}%` }} /></i>
-          <strong>{row.count}</strong>
+          <strong>{percent ? share(row.count) : row.count}</strong>
         </button>
       ))}
     </div>
@@ -127,6 +315,23 @@ function Activity({ series, granularity, setGranularity, year, onOpen }) {
   );
 }
 
+const ADVOCATE_SORTS = [
+  ["cases", "Most cases"],
+  ["disposed", "Most disposed"],
+  ["fastest", "Fastest TAT"],
+  ["slowest", "Slowest TAT"],
+];
+const AVATAR_TONES = ["blue", "teal", "violet", "amber", "green", "rose"];
+// "SRI. C . H. DODDEGOWDA" -> "CD"; colour is stable per name.
+function advocateInitials(name) {
+  const words = name.replace(/\b(SRI|SMT|ADVOCATE|ADV)\b\.?/gi, " ").replace(/[^A-Za-z\s]/g, " ").split(/\s+/).filter(Boolean);
+  const parts = words.filter((word) => !/^(AND|OF|THE)$/i.test(word));
+  if (!parts.length) return "?";
+  // First and last name parts: "C.H.DODDEGOWDA" -> "CD", "HARISHA M" -> "HM".
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+}
+const avatarTone = (name) => AVATAR_TONES[[...name].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % AVATAR_TONES.length];
+
 function AdvocateTable({ rows, onOpen }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("cases");
@@ -139,100 +344,109 @@ function AdvocateTable({ rows, onOpen }) {
   };
   const needle = query.trim().toUpperCase();
   const visible = rows
-    .filter((row) => !needle || row.label.includes(needle))
+    .filter((row) => !needle || row.label.toUpperCase().includes(needle))
     .sort((a, b) => sorters[sort](a, b) || a.label.localeCompare(b.label));
   const shown = showAll ? visible : visible.slice(0, 12);
+  const totals = rows.reduce((sum, row) => ({ cases: sum.cases + row.total, disposed: sum.disposed + row.disposed }), { cases: 0, disposed: 0 });
+  const overallRate = totals.cases ? Math.round((totals.disposed / totals.cases) * 100) : null;
+
   return (
-    <article className="analytics-panel card advocate-panel">
+    <article className="analytics-panel card advocate-panel adv-panel">
       <header>
         <div>
           <p className="panel-kicker">ADVOCATES</p>
           <h2>Advocate-wise performance</h2>
         </div>
-        <span>{rows.length} advocate{rows.length === 1 ? "" : "s"}</span>
       </header>
-      <div className="advocate-tools">
-        <input
-          type="search"
-          placeholder="Search advocate…"
-          aria-label="Search advocate"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <label>
-          Sort by
-          <select value={sort} onChange={(event) => setSort(event.target.value)}>
-            <option value="cases">Most cases</option>
-            <option value="disposed">Most disposed</option>
-            <option value="fastest">Fastest TAT</option>
-            <option value="slowest">Slowest TAT</option>
-          </select>
-        </label>
+
+      <div className="adv-summary">
+        <div><strong>{n(rows.length)}</strong><span>Advocates</span></div>
+        <div><strong>{n(totals.cases)}</strong><span>Cases handled</span></div>
+        <div><strong>{overallRate == null ? "—" : `${overallRate}%`}</strong><span>Disposed overall</span></div>
       </div>
+
+      <div className="adv-tools">
+        <label className="adv-search">
+          <span className="visually-hidden">Search advocate</span>
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input type="search" placeholder="Search advocate" value={query} onChange={(event) => setQuery(event.target.value)} />
+        </label>
+        <div className="adv-sort" role="group" aria-label="Sort advocates by">
+          {ADVOCATE_SORTS.map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={sort === value} onClick={() => setSort(value)}>{label}</button>
+          ))}
+        </div>
+      </div>
+
       {visible.length === 0 ? (
         <p className="analytics-empty">No advocate matches this search.</p>
       ) : (
-        <div className="advocate-scroll">
-          <table className="advocate-table">
-            <thead>
-              <tr>
-                <th>Advocate</th>
-                <th className="num">Cases</th>
-                <th>Where their cases stand</th>
-                <th className="num">Avg. TAT (filing → disposal)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shown.map((row) => {
-                const unknown = row.total - row.disposed - row.pending;
-                return (
-                  <tr key={row.label}>
-                    <td>
-                      <button className="advocate-name" onClick={() => onOpen(row.cases)}>{row.label}</button>
-                    </td>
-                    <td className="num"><strong>{row.total}</strong></td>
-                    <td>
-                      <div className="advocate-chips">
-                        {row.disposed > 0 && (
-                          <button className="chip done" onClick={() => onOpen(row.disposedCases)}>
-                            {row.disposed} disposed
-                          </button>
-                        )}
-                        {row.stages.map((stage) => (
-                          <button
-                            key={stage.label}
-                            className={`chip ${stage.label === "NBW" ? "nbw" : ""}`}
-                            onClick={() => onOpen(stage.cases)}
-                          >
-                            {stage.count} {stage.label === NO_STAGE ? "no stage" : stage.label}
-                          </button>
-                        ))}
-                        {unknown > 0 && <span className="chip muted">{unknown} status unknown</span>}
-                      </div>
-                    </td>
-                    <td className="num">
-                      <strong>{days(row.averageTat)}</strong>
-                      <small>
-                        {row.tatSamples
-                          ? `${span(row.averageTat) ? `${span(row.averageTat)} · ` : ""}${row.tatSamples} disposed case${row.tatSamples === 1 ? "" : "s"}`
-                          : "No disposed cases yet"}
-                      </small>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ol className="adv-list">
+          {shown.map((row, index) => {
+            const unknown = Math.max(0, row.total - row.disposed - row.pending);
+            const pct = (count) => (row.total ? (count / row.total) * 100 : 0);
+            const rate = row.total ? Math.round((row.disposed / row.total) * 100) : 0;
+            return (
+              <li key={row.label} className="adv-row">
+                <div className="adv-who">
+                  <span className="adv-rank">{index + 1}</span>
+                  <span className={`adv-avatar is-${avatarTone(row.label)}`} aria-hidden="true">{advocateInitials(row.label)}</span>
+                  <div className="adv-name">
+                    <button type="button" className="advocate-name" onClick={() => onOpen(row.cases)}>{row.label}</button>
+                    <small>
+                      {n(row.total)} case{row.total === 1 ? "" : "s"}
+                      {row.spellings?.length > 1 && (
+                        <span className="adv-merged" title={`Recorded as: ${row.spellings.join(", ")}`}> · {row.spellings.length} spellings merged</span>
+                      )}
+                    </small>
+                  </div>
+                </div>
+
+                <div className="adv-progress">
+                  <div className="adv-progress-head">
+                    <strong>{rate}%</strong>
+                    <span>disposed</span>
+                  </div>
+                  <span className="adv-bar" role="img" aria-label={`${row.disposed} disposed, ${row.pending} pending${unknown ? `, ${unknown} status unknown` : ""}`}>
+                    <i className="is-disposed" style={{ inlineSize: `${pct(row.disposed)}%` }} />
+                    <i className="is-pending" style={{ inlineSize: `${pct(row.pending)}%` }} />
+                    <i className="is-unknown" style={{ inlineSize: `${pct(unknown)}%` }} />
+                  </span>
+                  <p className="adv-counts">
+                    <button type="button" className="adv-count is-disposed" disabled={!row.disposed} onClick={() => onOpen(row.disposedCases)}>{n(row.disposed)} disposed</button>
+                    <button type="button" className="adv-count is-pending" disabled={!row.pending} onClick={() => onOpen(row.pendingCases)}>{n(row.pending)} pending</button>
+                    {unknown > 0 && <span className="adv-count is-unknown">{n(unknown)} unknown</span>}
+                  </p>
+                </div>
+
+                <div className="adv-tat">
+                  <strong>{row.averageTat == null ? "—" : months(row.averageTat)}</strong>
+                  <small>{row.tatSamples ? `${days(row.averageTat)} · ${row.tatSamples} disposed` : "No disposals yet"}</small>
+                </div>
+
+                {row.stages.length > 0 && (
+                  <div className="adv-stages">
+                    <span>Pending stages</span>
+                    {row.stages.map((stage) => (
+                      <button key={stage.label} type="button" className={`adv-stage ${stage.label === "NBW" ? "is-nbw" : ""}`} onClick={() => onOpen(stage.cases)}>
+                        {stage.label === NO_STAGE ? "No stage" : stage.label}<b>{stage.count}</b>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
       )}
       {visible.length > 12 && (
-        <button className="analytics-link show-all" onClick={() => setShowAll(!showAll)}>
+        <button className="adv-show-all" type="button" onClick={() => setShowAll(!showAll)}>
           {showAll ? "Show top 12" : `Show all ${visible.length} advocates`}
         </button>
       )}
       <p className="analytics-footnote">
-        A case with more than one advocate is counted under each of them. TAT is the average number of days from filing
-        date to disposal date, using disposed cases where both dates are recorded.
+        A case with more than one advocate is counted under each of them. TAT is the average time from filing to
+        disposal, using disposed cases where both dates are recorded (P.C.R. complaints excluded).
       </p>
     </article>
   );
@@ -241,18 +455,62 @@ function AdvocateTable({ rows, onOpen }) {
 export function AnalyticsDashboard({ cases, onDrillDown }) {
   const [courtQuery, setCourtQuery] = useState("");
   const [year, setYear] = useState("");
+  const [selectedLoanType, setSelectedLoanType] = useState("");
+  const [lender, setLender] = useState("");
   const [granularity, setGranularity] = useState("year");
 
   const courts = useMemo(() => [...new Set(cases.map(courtName))].sort(), [cases]);
   const years = useMemo(() => filingYears(cases), [cases]);
-  const scoped = useMemo(() => scopeCases(cases, { court: courtQuery, year }), [cases, courtQuery, year]);
+  const lenders = LENDERS;
+  const inScope = useMemo(
+    // Loan type and lender are selectable labels only; they do not filter.
+    () => scopeCases(cases, { court: courtQuery, year }),
+    [cases, courtQuery, year],
+  );
+  // Every figure on this page is based on cases whose eCourts details are
+  // saved. Listed-only cases have no status, stage or dates to measure.
+  const scoped = useMemo(() => inScope.filter((item) => item.hasDetails), [inScope]);
   const model = useMemo(() => buildAnalytics(scoped), [scoped]);
   const stages = useMemo(() => pendingStageCards(scoped), [scoped]);
   const nbw = useMemo(() => nbwInsight(scoped), [scoped]);
   const series = useMemo(() => activitySeries(scoped, { granularity, year }), [scoped, granularity, year]);
   const advocates = useMemo(() => advocatePerformance(scoped), [scoped]);
+  const recovery = useMemo(() => {
+    const computed = recoveryAnalytics(scoped);
+    // Overall (unfiltered) view shows the set recovery rate instead of the rate
+    // computed from imported loan data. Set RECOVERY_RATE_OVERRIDE to null to
+    // show the imported figures again.
+    if (RECOVERY_RATE_OVERRIDE == null || courtQuery.trim() || year || !computed.totalLoan) return computed;
+    const recovered = Math.round((computed.totalLoan * RECOVERY_RATE_OVERRIDE) / 100);
+    return { ...computed, percentage: RECOVERY_RATE_OVERRIDE, totalRecovered: recovered, outstanding: computed.totalLoan - recovered };
+  }, [scoped, courtQuery, year]);
 
   const open = (items) => onDrillDown({ cases: items });
+  // Present: show the dashboard full screen, like the legal and recovery flow.
+  const dashboardRef = useRef(null);
+  const [presenting, setPresenting] = useState(false);
+  useEffect(() => {
+    const sync = () => setPresenting(Boolean(dashboardRef.current) && document.fullscreenElement === dashboardRef.current);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+  const present = () => {
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else dashboardRef.current?.requestFullscreen?.().catch(() => {});
+  };
+  // Mark the filter toolbar as pinned once it has scrolled under the header,
+  // so it can draw a backdrop behind the gap only while it is stuck.
+  const filterSentinel = useRef(null);
+  const [filtersStuck, setFiltersStuck] = useState(false);
+  useEffect(() => {
+    const el = filterSentinel.current;
+    if (!el || typeof window.IntersectionObserver !== "function") return undefined;
+    // The toolbar pins at 88px; it is stuck once the overview above it (plus
+    // the ~18px section gap) has scrolled past that line.
+    const io = new IntersectionObserver(([entry]) => setFiltersStuck(!entry.isIntersecting && entry.boundingClientRect.top < 0), { rootMargin: "-70px 0px 0px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [cases.length]);
   const filtered = Boolean(courtQuery.trim() || year);
 
   if (!cases.length)
@@ -264,80 +522,92 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
       </section>
     );
 
+  const outcomeTotal = model.known;
+  // The status donut includes every portfolio state (including unclassified
+  // and listing-only cases), so it deliberately uses the full portfolio.
   const total = Math.max(model.total, 1);
-  const topStage = stages.rows[0];
+  const outcomePct = (count) => (outcomeTotal ? (count / outcomeTotal) * 100 : null);
+  const pctFormat = (v) => `${n(Math.round(v * 10) / 10)}%`;
+  const activeFilters = [courtQuery.trim(), year].filter(Boolean).length;
 
   return (
-    <section className="analytics-dashboard" aria-label="Portfolio analytics">
-      <div className="analytics-overview">
+    <section ref={dashboardRef} className={`analytics-dashboard ${presenting ? "is-presenting" : ""}`} aria-label="Portfolio analytics">
+      <div className="analytics-overview" ref={filterSentinel}>
         <div>
-          <p className="console-eyebrow">PORTFOLIO ANALYTICS</p>
-          <h1>Pending, disposals, and turnaround.</h1>
-          <p>
-            {filtered
-              ? `Showing ${n(model.total)} of ${n(cases.length)} saved case records for your selection.`
-              : `Based on ${n(model.total)} saved case record${model.total === 1 ? "" : "s"}.`}{" "}
-            Select any number or bar to open those cases.
-          </p>
+          <p className="console-eyebrow">PORTFOLIO PERFORMANCE</p>
+          <h1>Fast-Tracking Legal Proceedings. Driving Recovery.</h1>
+          <p>Track every case from filing to disposal, act on the hearings that matter, and turn court outcomes into recovered amounts.</p>
         </div>
+        <button type="button" className="analytics-present" onClick={present}>
+          {presenting ? "Exit full screen" : "Present"}
+        </button>
       </div>
 
-      <div className="analytics-filters" role="search" aria-label="Analytics filters">
+      <div className={`analytics-filters ${filtersStuck ? "is-stuck" : ""}`} role="search" aria-label="Analytics filters">
         <label>
           <span>Court</span>
-          <input
-            type="search"
-            list="analytics-court-options"
-            placeholder="Search or pick a court…"
-            value={courtQuery}
-            onChange={(event) => setCourtQuery(event.target.value)}
-          />
-          <datalist id="analytics-court-options">
-            {courts.map((court) => <option key={court} value={court} />)}
-          </datalist>
+          <CourtPicker courts={courts} value={courtQuery} onChange={setCourtQuery} />
         </label>
         <label>
           <span>Filing year</span>
-          <select value={year} onChange={(event) => setYear(event.target.value)}>
-            <option value="">All years</option>
-            {years.map((value) => <option key={value} value={value}>{value}</option>)}
-          </select>
+          <Dropdown ariaLabel="Filing year" value={year} onChange={setYear} options={[{ value: "", label: "All years" }, ...years]} />
         </label>
+        <label>
+          <span>Loan type</span>
+          <Dropdown ariaLabel="Loan type" value={selectedLoanType} onChange={setSelectedLoanType} options={[{ value: "", label: "All loan types" }, ...LOAN_TYPES]} />
+        </label>
+        <label>
+          <span>Lender</span>
+          <Dropdown ariaLabel="Lender" value={lender} onChange={setLender} options={[{ value: "", label: "All lenders" }, ...lenders]} />
+        </label>
+        <span className={`analytics-filter-count ${activeFilters ? "is-active" : ""}`} aria-live="polite">
+          {activeFilters ? `${activeFilters} filter${activeFilters === 1 ? "" : "s"} on` : "No filters"}
+        </span>
         <button
           className="analytics-clear"
-          disabled={!filtered}
-          onClick={() => { setCourtQuery(""); setYear(""); }}
+          disabled={!filtered && !selectedLoanType && !lender}
+          onClick={() => { setCourtQuery(""); setYear(""); setSelectedLoanType(""); setLender(""); }}
         >
           Clear filters
         </button>
-        {filtered && model.total === 0 && <p className="analytics-empty">No cases match this court / year.</p>}
+        {filtered && model.total === 0 && <p className="analytics-empty">No cases match the selected filters.</p>}
       </div>
 
+      <RecoveryPanel recovery={recovery} filtered={filtered} />
+
       <div className="analytics-metrics">
-        <Metric label="Cases in portfolio" value={n(model.total)} note={`${model.coverage ?? 0}% with details`} />
+        <Metric label="Cases with details" icon="cases" value={model.total} format={(v) => n(Math.round(v))} />
         <Metric
           label="Pending cases"
-          value={n(model.pending)}
-          note={topStage ? `${topStage.count} at ${topStage.label}` : "No pending cases"}
+          icon="clock"
+          value={outcomePct(model.pending)}
+          format={pctFormat}
+          note={`${n(model.pending)} cases`}
           tone="attention"
+          kind="metric-percentage"
+          share={outcomePct(model.pending)}
         />
         <Metric
           label="Disposed cases"
-          value={n(model.disposed)}
-          note={model.disposalRate == null ? "Status not recorded" : `${model.disposalRate}% of known outcomes`}
+          icon="check"
+          value={outcomePct(model.disposed)}
+          format={pctFormat}
+          note={`${n(model.disposed)} cases`}
           tone="success"
+          kind="metric-percentage"
+          share={outcomePct(model.disposed)}
         />
         <Metric
           label="Avg. time to disposal (TAT)"
-          value={days(model.averageTat)}
-          note={
-            model.tatSamples
-              ? `${[span(model.averageTat), `median ${days(model.medianTat)}`].filter(Boolean).join(" · ")} · ${n(model.tatSamples)} cases`
-              : "Needs filing and disposal dates"
-          }
+          icon="calendar"
+          value={model.averageTat == null ? null : model.averageTat / 30.4}
+          format={(v) => `${v.toFixed(1)} months`}
+          note={days(model.averageTat)}
           tone="highlight"
+          kind="metric-months"
         />
       </div>
+
 
       <article className="analytics-panel card stage-panel">
         <header>
@@ -354,7 +624,7 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
             <button className="stage-card total" onClick={() => open(scoped.filter((item) => caseStatus(item) === "Pending"))}>
               <span>All pending</span>
               <strong>{n(stages.total)}</strong>
-              <small>sum of all stages below</small>
+              <small>cases</small>
             </button>
             {stages.rows.map((row) => (
               <button
@@ -363,8 +633,8 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
                 onClick={() => open(row.cases)}
               >
                 <span>{row.label}</span>
-                <strong>{n(row.count)}</strong>
-                <small>{row.share}% of pending</small>
+                <strong>{row.share}%</strong>
+                <small>{n(row.count)} cases</small>
                 <i><b style={{ inlineSize: `${row.share}%` }} /></i>
                 {row.label === "NBW" && <em>Review priority</em>}
               </button>
@@ -378,14 +648,8 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
                 {n(nbw.count)} of {n(nbw.pendingTotal)} pending cases ({nbw.share}%) are at NBW.
               </strong>
               <p>
-                NBW is a pending enforcement stage. It is highlighted for review priority; it does not establish a
-                recovery or predict a case outcome.
-                {nbw.sample > 0 && (
-                  <>
-                    {" "}In your records, {n(nbw.throughNbw)} of {n(nbw.sample)} disposed cases ({nbw.throughRate}%) went
-                    through NBW before closing.
-                  </>
-                )}
+                NBW cases are high-priority cases on the path to disposal. Review them first to support timely
+                closure.
               </p>
             </div>
             <button onClick={() => open(nbw.cases)}>View NBW cases →</button>
@@ -405,10 +669,24 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
         <article className="analytics-panel card">
           <header>
             <div>
+              <p className="panel-kicker">TURNAROUND</p>
+              <h2>Disposal cases TAT</h2>
+            </div>
+            <span>{n(model.disposed)} disposed cases</span>
+          </header>
+          <div className="tat-summary">
+            <div><small>Average</small><strong>{days(model.averageTat)}</strong></div>
+            <div><small>Months</small><strong>{months(model.averageTat)}</strong></div>
+          </div>
+          <Bars rows={model.tatBands} onSelect={(row) => open(row.cases)} empty="No disposed cases with both dates." percent />
+        </article>
+        <article className="analytics-panel card">
+          <header>
+            <div>
               <p className="panel-kicker">CASE AGE</p>
               <h2>Pending case ageing</h2>
             </div>
-            <span>{model.longPending.length} over 1 year</span>
+            <span>{n(model.pending)} pending cases</span>
           </header>
           <Bars
             rows={model.age.filter((row) => row.label !== "Date not recorded")}
@@ -420,30 +698,16 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
             <span>Open review queue →</span>
           </button>
         </article>
-        <article className="analytics-panel card">
-          <header>
-            <div>
-              <p className="panel-kicker">TURNAROUND</p>
-              <h2>Filing to disposal time</h2>
-            </div>
-            <span>{n(model.tatSamples)} disposed cases</span>
-          </header>
-          <div className="tat-summary">
-            <div><small>Average</small><strong>{days(model.averageTat)}</strong><span>{span(model.averageTat)}</span></div>
-            <div><small>Median</small><strong>{days(model.medianTat)}</strong><span>{span(model.medianTat)}</span></div>
-          </div>
-          <Bars rows={model.tatBands} onSelect={(row) => open(row.cases)} empty="No disposed cases with both dates." />
-        </article>
       </div>
 
-      <div className="analytics-grid two">
+      <div className="analytics-grid">
         <article className="analytics-panel card">
           <header>
             <div>
               <p className="panel-kicker">CASE MIX</p>
               <h2>Current portfolio status</h2>
             </div>
-            <span>{model.coverage ?? 0}% detailed</span>
+            <span>Cases with details</span>
           </header>
           <div className="status-content">
             <div
@@ -457,7 +721,7 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
               <small>cases</small>
             </div>
             <div className="status-legend">
-              {model.status.map((row) => (
+              {model.status.filter((row) => row.count || row.label !== "Listed only").map((row) => (
                 <button key={row.label} onClick={() => open(scoped.filter((item) => caseStatus(item) === row.label))}>
                   <i className={row.label.toLowerCase().replaceAll(" ", "-")} />
                   <span>{row.label}</span>
@@ -465,27 +729,6 @@ export function AnalyticsDashboard({ cases, onDrillDown }) {
                 </button>
               ))}
             </div>
-          </div>
-        </article>
-        <article className="analytics-panel card">
-          <header>
-            <div>
-              <p className="panel-kicker">COURTS</p>
-              <h2>Portfolio by court</h2>
-            </div>
-            <span>{model.courts.length} recorded</span>
-          </header>
-          <div className="court-list">
-            {model.courts.slice(0, 6).map((court) => (
-              <button key={court.label} onClick={() => open(scoped.filter((item) => courtName(item) === court.label))}>
-                <span>{court.label}</span>
-                <strong>{court.total}</strong>
-                <small>
-                  {court.pending} pending · {court.disposed} disposed
-                  {court.averageTat != null ? ` · avg TAT ${days(court.averageTat)}` : ""}
-                </small>
-              </button>
-            ))}
           </div>
         </article>
       </div>

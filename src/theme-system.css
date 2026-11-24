@@ -1,114 +1,1311 @@
-/* Theme tokens only: dimensions and layout stay untouched when changing modes. */
-:root,[data-ui-theme="dark"] {
-  color-scheme: dark;
-  --theme-bg:#071A3D; --theme-panel:#0D2753; --theme-panel-raised:#123366;
-  --theme-panel-deep:#0A2046; --theme-line:#7BA7DF3D; --theme-text:#EAF3FF;
-  --theme-muted:#B5C9E5; --theme-accent:#78A6FF; --theme-accent-soft:#78A6FF26;
-  --theme-good:#6CCB9B; --theme-pending:#F3B66A; --theme-neutral:#78A6FF;
-}
-[data-ui-theme="light"] {
+/* One light ice-blue system wins over every older workspace skin. */
+:root, [data-ui-theme], [data-ui-theme="dark"] {
   color-scheme: light;
-  --theme-bg:#EAF3FF; --theme-panel:#F8FBFF; --theme-panel-raised:#FFFFFF;
-  --theme-panel-deep:#F1F7FF; --theme-line:#CADCF3; --theme-text:#0F2447;
-  --theme-muted:#415A77; --theme-accent:#1D4ED8; --theme-accent-soft:#DBEAFE;
-  --theme-good:#15803D; --theme-pending:#B45309; --theme-neutral:#1D4ED8;
-}
-.verity-console.app-shell { --ink:var(--theme-text); --muted:var(--theme-muted); --line:var(--theme-line); --canvas:var(--theme-bg); --surface:var(--theme-panel); --accent:var(--theme-accent); background:radial-gradient(circle at 8% 0,#d79b5817,transparent 32rem),var(--theme-bg)!important; color:var(--theme-text)!important; }
-.verity-console h1,.verity-console h2,.verity-console h3 { color:var(--theme-text)!important; }.verity-console .console-sidebar,.verity-console .console-header { background:color-mix(in srgb,var(--theme-panel-deep) 94%,transparent)!important; border-color:var(--theme-line)!important; box-shadow:0 18px 45px #11151c26!important; }.verity-console .console-title,.verity-console .analytics-overview { background:linear-gradient(130deg,var(--theme-panel-raised),var(--theme-panel))!important; border-color:var(--theme-line)!important; }.verity-console .console-panel,.verity-console .card,.verity-console .analytics-panel,.verity-console .analytics-metric { background:color-mix(in srgb,var(--theme-panel) 96%,transparent)!important; border-color:var(--theme-line)!important; box-shadow:0 12px 28px #10141c1c!important; }
-.verity-console .console-brand>.lawcovery-logo,.verity-console .topbar-brand .lawcovery-logo { --logo-accent:var(--theme-accent); --logo-outline:color-mix(in srgb,var(--theme-accent) 55%,transparent); color:var(--theme-text); }.verity-console .console-brand>small,.verity-console .console-sidebar .nav-label,.verity-console .workspace-status { color:var(--theme-muted)!important; }.verity-console .sidebar-nav .nav-item { color:var(--theme-muted)!important; }.verity-console .sidebar-nav .nav-item[aria-pressed="true"] { background:var(--theme-accent)!important; color:#fffaf4!important; box-shadow:0 8px 18px #8e512b36!important; }.verity-console .sidebar-nav .nav-item:hover { background:var(--theme-accent-soft)!important; color:var(--theme-text)!important; }
-.verity-console .topbar-nav { background:var(--theme-panel-raised)!important; }.verity-console .topbar-nav button { color:var(--theme-muted)!important; }.verity-console .topbar-nav button[aria-pressed="true"] { background:var(--theme-accent-soft)!important; color:var(--theme-text)!important; box-shadow:none!important; }.verity-console .workspace-switcher .eyebrow,.verity-console .console-eyebrow,.verity-console .panel-kicker { color:var(--theme-accent)!important; }.verity-console .workspace-switcher select,.verity-console .global-search input { color:var(--theme-text)!important; }.verity-console .global-search,.verity-console .case-register-filters,.verity-console .analytics-filters { background:var(--theme-panel-deep)!important; border-color:var(--theme-line)!important; }.verity-console .global-search kbd { background:var(--theme-accent-soft)!important; color:var(--theme-muted)!important; }
-.verity-console button,.verity-console .console-link { background:var(--theme-panel-raised)!important; border-color:var(--theme-line)!important; color:var(--theme-text)!important; }.verity-console button:hover:not(:disabled),.verity-console .console-link:hover { background:var(--theme-accent-soft)!important; border-color:color-mix(in srgb,var(--theme-accent) 52%,var(--theme-line))!important; }.verity-console .button-primary,.verity-console .btn-primary,.verity-console .console-link.button-primary { background:var(--theme-accent)!important; border-color:var(--theme-accent)!important; color:#fffaf4!important; box-shadow:0 8px 18px #8e512b30!important; }.verity-console .refresh-button,.verity-console .theme-toggle { display:inline-flex; align-items:center; gap:7px; min-block-size:42px; padding-inline:12px; border-radius:12px; }.verity-console .theme-toggle span { font-size:12px; font-weight:700; }
-.verity-console .case-register-filters input,.verity-console .case-register-filters select,.verity-console .analytics-filters input,.verity-console .analytics-filters select,.verity-console .advocate-tools input,.verity-console .advocate-tools select { background:var(--theme-panel-raised)!important; border-color:var(--theme-line)!important; color:var(--theme-text)!important; }.verity-console .case-table-wrap,.verity-console .case-table,.verity-console .case-table caption,.verity-console .case-table tbody tr,.verity-console .portfolio-table-wrap .case-table tbody :is(td,th) { background:var(--theme-panel-deep)!important; color:var(--theme-text)!important; border-color:var(--theme-line)!important; }.verity-console .case-table thead th,.verity-console .portfolio-table-wrap .case-table thead th { background:var(--theme-panel-raised)!important; color:var(--theme-muted)!important; border-color:var(--theme-line)!important; }.verity-console .case-table tbody tr:hover :is(td,th) { background:var(--theme-accent-soft)!important; }.verity-console .case-table .case-open { color:color-mix(in srgb,var(--theme-accent) 72%,#fff)!important; }
-.verity-console .analytics-metric p,.verity-console .analytics-metric small,.verity-console .analytics-panel header>span,.verity-console .analytics-empty,.verity-console .analytics-footnote,.verity-console .analytics-disclaimer { color:var(--theme-muted)!important; }.verity-console .analytics-metric strong,.verity-console .analytics-panel strong { color:var(--theme-text)!important; }.verity-console .analytics-metric.attention { border-top-color:var(--theme-pending)!important; }.verity-console .analytics-metric.success { border-top-color:var(--theme-good)!important; }.verity-console .analytics-metric.highlight { border-top-color:var(--theme-neutral)!important; }.verity-console .status-donut { background:conic-gradient(var(--theme-pending) 0 var(--pending),var(--theme-good) var(--pending) var(--disposed),var(--theme-line) var(--disposed) 100%)!important; }.verity-console .status-donut:before { background:var(--theme-panel)!important; }.verity-console .status-legend i.pending { background:var(--theme-pending)!important; }.verity-console .status-legend i.disposed { background:var(--theme-good)!important; }.verity-console .status-legend i.status-unknown,.verity-console .status-legend i.listed-only { background:var(--theme-muted)!important; }
-.verity-console .stage-card { background:var(--theme-panel-deep)!important; border-color:var(--theme-line)!important; }.verity-console .stage-card>span,.verity-console .stage-card>strong { color:var(--theme-text)!important; }.verity-console .stage-card>small { color:var(--theme-muted)!important; }.verity-console .stage-card>i { background:var(--theme-line)!important; }.verity-console .stage-card>i b { background:var(--theme-neutral)!important; }.verity-console .stage-card.total { background:var(--theme-panel-raised)!important; border-color:color-mix(in srgb,var(--theme-neutral) 55%,var(--theme-line))!important; }.verity-console .stage-card.nbw { background:var(--theme-accent-soft)!important; border-color:var(--theme-pending)!important; box-shadow:none!important; }.verity-console .stage-card.nbw>span,.verity-console .stage-card.nbw>strong { color:var(--theme-pending)!important; }.verity-console .stage-card.nbw>em { background:var(--theme-pending)!important; color:#fffaf4!important; }.verity-console .nbw-insight { background:var(--theme-accent-soft)!important; border-color:color-mix(in srgb,var(--theme-pending) 52%,var(--theme-line))!important; border-left-color:var(--theme-pending)!important; color:var(--theme-text)!important; }.verity-console .nbw-insight p { color:var(--theme-muted)!important; }.verity-console .nbw-insight>button { background:var(--theme-pending)!important; border-color:var(--theme-pending)!important; color:#fffaf4!important; }
-.verity-console .analytics-bar>i,.verity-console .stage-card>i { background:var(--theme-line)!important; }.verity-console .analytics-bar b,.verity-console .activity-key i.filed,.verity-console .activity-bar i.filed { background:var(--theme-neutral)!important; }.verity-console .activity-key i.disposed,.verity-console .activity-bar i.disposed { background:var(--theme-good)!important; }.verity-console .tat-summary>div,.verity-console .activity-detail,.verity-console .data-health button { background:var(--theme-panel-deep)!important; border-color:var(--theme-line)!important; }.verity-console .tat-summary strong { color:var(--theme-neutral)!important; }
-@supports (backdrop-filter:blur(1px)) { .verity-console .console-sidebar,.verity-console .console-header,.verity-console .console-title,.verity-console .console-panel,.verity-console .card,.verity-console .analytics-overview,.verity-console .analytics-metric,.verity-console .analytics-panel { backdrop-filter:blur(14px) saturate(115%); } }
-@media(max-width:760px){.verity-console .theme-toggle span{display:none}.verity-console .theme-toggle{min-inline-size:42px;padding-inline:11px;justify-content:center}}
-
-/* Every remaining workspace view consumes the same token surfaces. */
-.verity-console .profile-menu,.verity-console .account-dialog,.verity-console .case-detail-dialog { background:var(--theme-panel-raised)!important; color:var(--theme-text)!important; border-color:var(--theme-line)!important; }.verity-console .profile-menu :is(strong,span),.verity-console .account-dialog :is(h2,dt,dd,p),.verity-console .case-detail-dialog :is(dt,dd,h2,h3,p,li) { color:var(--theme-text)!important; }.verity-console .profile-menu small,.verity-console .account-dialog p,.verity-console .case-detail-dialog .muted { color:var(--theme-muted)!important; }.verity-console .profile-context,.verity-console .case-tabs { border-color:var(--theme-line)!important; }.verity-console .case-tabs button[aria-pressed="true"] { color:var(--theme-accent)!important; border-bottom-color:var(--theme-accent)!important; }.verity-console .toast { background:var(--theme-panel-raised)!important; border-color:var(--theme-line)!important; color:var(--theme-text)!important; }
-.verity-console .connection-help,.verity-console .assurance { background:var(--theme-panel-raised)!important; color:var(--theme-text)!important; }.verity-console .connection-help :is(h3,p,li),.verity-console .assurance :is(h3,p,li),.verity-console .source-summary :is(h2,h3,p,strong),.verity-console .connection-panel :is(h2,h3,p,li,span) { color:var(--theme-text)!important; }.verity-console .connection-help p,.verity-console .connection-help li,.verity-console .assurance p,.verity-console .assurance li,.verity-console .source-summary .muted { color:var(--theme-muted)!important; }.verity-console .connection-list li,.verity-console .search-summary-metrics { border-color:var(--theme-line)!important; }
-.verity-console .case-fetch-status,.verity-console .listing-notice,.verity-console .console-error { background:var(--theme-accent-soft)!important; border-color:color-mix(in srgb,var(--theme-accent) 42%,var(--theme-line))!important; color:var(--theme-text)!important; }.verity-console .batch-fetch-modes,.verity-console .capture-entry,.verity-console .audit-event { border-color:var(--theme-line)!important; background:var(--theme-panel-deep)!important; }.verity-console .batch-fetch-modes legend,.verity-console .batch-fetch-modes p,.verity-console .batch-summary p,.verity-console .audit-event p { color:var(--theme-muted)!important; }
-.verity-console .hearing-calendar,.verity-console .hearing-agenda,.verity-console .selected-day { background:var(--theme-panel)!important; border-color:var(--theme-line)!important; }.verity-console .hearing-month :is(th,td),.verity-console .hearing-month .hearing-blank { background:var(--theme-panel-deep)!important; border-color:var(--theme-line)!important; color:var(--theme-text)!important; }.verity-console .hearing-month th,.verity-console .day-name { background:var(--theme-panel-raised)!important; color:var(--theme-muted)!important; }.verity-console .hearing-day { background:transparent!important; color:var(--theme-text)!important; }.verity-console .hearing-selected,.verity-console .hearing-today { background:var(--theme-accent-soft)!important; }.verity-console .hearing-case,.verity-console .hearing-badge { background:color-mix(in srgb,var(--theme-neutral) 20%,var(--theme-panel-deep))!important; border-color:color-mix(in srgb,var(--theme-neutral) 45%,var(--theme-line))!important; color:var(--theme-text)!important; }.verity-console .hearing-next { background:color-mix(in srgb,var(--theme-good) 20%,var(--theme-panel-deep))!important; border-color:color-mix(in srgb,var(--theme-good) 45%,var(--theme-line))!important; }
-[data-ui-theme="light"] .verity-console.app-shell { background:radial-gradient(circle at 4% 0,#a9613b14,transparent 30rem),#ece8e1!important; }.verity-console :is(.console-empty,.workspace-setup details,.search-box,.hearing-toolbar,.hearing-month-scroll,.hearing-agenda) { color:var(--theme-text); }.verity-console .case-facts>div,.verity-console .audit-event,.verity-console .capture-entry { color:var(--theme-text)!important; }.verity-console .case-facts dt,.verity-console .case-facts dd { color:var(--theme-text)!important; }.verity-console input::placeholder { color:color-mix(in srgb,var(--theme-muted) 78%,transparent)!important; }
-
-/* Must be explicit: analytics used to ship an independent dark-only skin. */
-[data-ui-theme="light"] .verity-console .analytics-overview { background:linear-gradient(135deg,#fffaf4,#f1e8de)!important; border-color:#d6c8ba!important; }
-[data-ui-theme="light"] .verity-console .analytics-overview :is(h1,h2,h3,strong) { color:#202937!important; } [data-ui-theme="light"] .verity-console .analytics-overview p { color:#667180!important; }
-[data-ui-theme="light"] .verity-console .analytics-filters { background:#f8f2eb!important; border-color:#d6c8ba!important; } [data-ui-theme="light"] .verity-console .analytics-filters label>span { color:#536171!important; } [data-ui-theme="light"] .verity-console .analytics-filters :is(input,select) { background:#fffaf5!important; border-color:#cfc0b2!important; color:#202937!important; }
-[data-ui-theme="light"] .verity-console .analytics-metric,[data-ui-theme="light"] .verity-console .analytics-panel { background:#fffaf4!important; border-color:#d8cabd!important; box-shadow:0 10px 24px #3826170f!important; } [data-ui-theme="light"] .verity-console .analytics-metric :is(strong,p,small),[data-ui-theme="light"] .verity-console .analytics-panel :is(h2,h3,strong) { color:#202937!important; } [data-ui-theme="light"] .verity-console .analytics-metric :is(p,small),[data-ui-theme="light"] .verity-console .analytics-panel header>span,[data-ui-theme="light"] .verity-console :is(.analytics-empty,.analytics-footnote,.analytics-disclaimer) { color:#667180!important; }
-[data-ui-theme="light"] .verity-console .analytics-bar>i,[data-ui-theme="light"] .verity-console .stage-card>i { background:#eadfd4!important; } [data-ui-theme="light"] .verity-console .analytics-bar b,[data-ui-theme="light"] .verity-console .stage-card>i b { background:#4c7294!important; } [data-ui-theme="light"] .verity-console .activity-detail,[data-ui-theme="light"] .verity-console .tat-summary>div,[data-ui-theme="light"] .verity-console .data-health button { background:#f5eee6!important; border-color:#d8cabd!important; color:#202937!important; }
-[data-ui-theme="light"] .verity-console .status-donut:before { background:#fffaf4!important; } [data-ui-theme="light"] .verity-console .status-donut strong,[data-ui-theme="light"] .verity-console .status-legend :is(span,strong) { color:#202937!important; }
-[data-ui-theme="light"] .verity-console .stage-card { background:#fffaf4!important; border-color:#d8cabd!important; } [data-ui-theme="light"] .verity-console .stage-card :is(span,strong) { color:#202937!important; } [data-ui-theme="light"] .verity-console .stage-card small { color:#667180!important; } [data-ui-theme="light"] .verity-console .stage-card.total { background:#ede3d8!important; border-color:#bda894!important; } [data-ui-theme="light"] .verity-console .stage-card.nbw { background:#fff0df!important; border-color:#b26d35!important; } [data-ui-theme="light"] .verity-console .stage-card.nbw :is(span,strong) { color:#85471f!important; } [data-ui-theme="light"] .verity-console .nbw-insight { background:#fff1e2!important; border-color:#d7ad88!important; color:#472b1c!important; } [data-ui-theme="light"] .verity-console .nbw-insight p { color:#6d513d!important; }
-
-/* Workspace-wide visual contract. Structural lines deliberately share one
-   token; status and chart-series colours are the only semantic exceptions. */
-.verity-console .console-sidebar,
-.verity-console .console-header,
-.verity-console .console-title,
-.verity-console .console-panel,
-.verity-console .card,
-.verity-console .analytics-overview,
-.verity-console .analytics-filters,
-.verity-console .case-table-wrap,
-.verity-console .hearing-calendar,
-.verity-console dialog { border-color:var(--theme-line)!important; }
-.verity-console :is(.case-table th,.case-table td,.advocate-table th,.advocate-table td,.activity-chart,.trend-columns,.court-list button,.connection-list li,.case-tabs,.case-facts>div,.audit-event,.hearing-month th,.hearing-month td,.hearing-agenda) { border-color:var(--theme-line)!important; }
-.verity-console .activity-chart,.verity-console .trend-columns { background-image:linear-gradient(to bottom,transparent calc(100% - 1px),var(--theme-line) calc(100% - 1px)); }
-
-/* Desktop remains an expanded, readable workspace navigator. */
-@media (min-width:981px) {
-  .verity-console.app-shell { padding-inline-start:286px; }
-  .verity-console .console-sidebar { inset:24px auto 24px 24px; inline-size:238px; block-size:calc(100dvh - 48px); padding:20px 14px 14px; overflow:auto; border-radius:24px; }
-  .verity-console .console-sidebar .console-brand,.verity-console .console-sidebar .nav-label,.verity-console .console-sidebar .audit-card,.verity-console .console-sidebar .workspace-status { display:grid; }
-  .verity-console .console-sidebar .console-brand { display:grid; }
-  .verity-console .sidebar-nav { gap:6px; }
-  .verity-console .sidebar-nav .nav-item { position:relative; display:grid; grid-template-columns:20px minmax(0,1fr) auto; inline-size:100%; min-block-size:46px; padding:12px; border-radius:12px; text-align:start; }
-  .verity-console .sidebar-nav .nav-item>span:not(.nav-badge),.verity-console .sidebar-nav .nav-badge { display:inline; }
-  .verity-console .sidebar-nav .nav-badge { justify-self:end; }
-  .verity-console .sidebar-nav .nav-item[aria-current="page"]::before { content:""; position:absolute; inset-inline-start:-14px; inline-size:4px; block-size:22px; border-radius:0 999px 999px 0; background:var(--theme-accent); box-shadow:0 0 14px color-mix(in srgb,var(--theme-accent) 65%,transparent); animation:nav-indicator .26s var(--motion-ease); }
-  .verity-console .console-body { margin-inline-start:0; }
+  --theme-canvas: #EAF3FF;
+  --theme-glass: #F8FBFF;
+  --theme-raised: #FFFFFF;
+  --theme-dense: #F4F8FF;
+  --theme-border: #CADCF3;
+  --theme-text: #0F2447;
+  --theme-muted: #415A77;
+  --theme-subtle: #6D829E;
+  --theme-accent: #1D4ED8;
+  --theme-accent-strong: #163EAF;
+  --theme-selected: #DBEAFE;
+  --theme-track: #DCEAFD;
+  --theme-teal: #0F8CA5;
+  --theme-success: #16805A;
+  --theme-success-soft: #E5F6EE;
+  --theme-warning: #A95C0D;
+  --theme-warning-soft: #FFF3DF;
+  --theme-shadow: 0 16px 38px rgba(38, 83, 139, .12);
+  --theme-shadow-raised: 0 20px 52px rgba(38, 83, 139, .16);
+  --motion-fast: 160ms;
+  --motion-page: 220ms;
+  --motion-ease: cubic-bezier(.2, .8, .2, 1);
 }
 
-/* Shared glass depth, with readable denser data surfaces. */
-.verity-console { --motion-fast:160ms; --motion-page:260ms; --motion-ease:cubic-bezier(.2,.8,.2,1); }
-.verity-console .console-sidebar,.verity-console .console-header,.verity-console .console-title,.verity-console .console-panel,.verity-console .card,.verity-console .analytics-overview,.verity-console dialog { background:color-mix(in srgb,var(--theme-panel) 82%,transparent)!important; box-shadow:inset 0 1px color-mix(in srgb,#fff 20%,transparent),0 16px 36px #17202b18!important; }
-.verity-console :is(.case-table-wrap,.case-table,.case-register-filters,.analytics-filters,.hearing-month-scroll,.hearing-agenda,.batch-fetch-modes,.capture-entry,.audit-event,.profile-menu) { background:color-mix(in srgb,var(--theme-panel-deep) 94%,transparent)!important; }
-@supports (backdrop-filter:blur(1px)) { .verity-console .console-sidebar,.verity-console .console-header,.verity-console .console-title,.verity-console .console-panel,.verity-console .card,.verity-console .analytics-overview,.verity-console dialog { backdrop-filter:blur(18px) saturate(120%); } }
+html { color-scheme: light; background: var(--theme-canvas); }
 
-/* Navigation-driven motion; filtering and background refreshes do not remount this wrapper. */
-.workspace-view-header { display:flex; align-items:baseline; gap:9px; margin:18px 2px 10px; color:var(--theme-muted); animation:fade-rise var(--motion-page) var(--motion-ease) both; }.workspace-view-header span { font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }.workspace-view-header strong { color:var(--theme-text); font-size:14px; }.workspace-page-transition { animation:fade-rise var(--motion-page) var(--motion-ease) both; }
-.verity-console :is(button,.console-link,.nav-item,.case-open,.hearing-day,.stage-card,.analytics-bar,.activity-column,.court-list button) { transition:transform var(--motion-fast) var(--motion-ease),background-color var(--motion-fast) var(--motion-ease),border-color var(--motion-fast) var(--motion-ease),box-shadow var(--motion-fast) var(--motion-ease); }.verity-console :is(.stage-card,.analytics-bar,.activity-column,.court-list button,.hearing-day):hover { transform:translateY(-2px); }.verity-console dialog[open] { animation:dialog-in var(--motion-page) var(--motion-ease) both; }.verity-console dialog::backdrop { animation:backdrop-in var(--motion-page) var(--motion-ease) both; }
-@keyframes fade-rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } } @keyframes nav-indicator { from { opacity:0; transform:scaleY(.25); } to { opacity:1; transform:scaleY(1); } } @keyframes dialog-in { from { opacity:0; transform:translateY(10px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } } @keyframes backdrop-in { from { opacity:0; } to { opacity:1; } }
-@media (prefers-reduced-motion:reduce) { .verity-console *, .verity-console *::before,.verity-console *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; } }
+.verity-console.app-shell {
+  --ink: var(--theme-text); --muted: var(--theme-muted); --line: var(--theme-border);
+  --canvas: var(--theme-canvas); --surface: var(--theme-raised); --accent: var(--theme-accent);
+  display: grid !important;
+  grid-template-columns: 244px minmax(0, 1fr);
+  gap: 18px;
+  padding: 20px;
+  min-block-size: 100dvh;
+  color: var(--theme-text) !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(191, 219, 254, .9), transparent 32rem),
+    radial-gradient(circle at 96% 12%, rgba(219, 234, 254, .84), transparent 29rem),
+    var(--theme-canvas) !important;
+}
+.verity-console *, .verity-console *::before, .verity-console *::after { border-color: var(--theme-border); }
+.verity-console :is(h1,h2,h3,h4,strong,dt) { color: var(--theme-text) !important; }
+.verity-console :is(p,small,.muted,.fine-print,.analytics-footnote,.analytics-disclaimer) { color: var(--theme-muted); }
+.verity-console ::placeholder { color: var(--theme-subtle) !important; opacity: 1; }
+.verity-console :focus-visible { outline: 3px solid color-mix(in srgb,var(--theme-accent) 54%,transparent); outline-offset: 3px; }
 
-/* Skyline-inspired ice-blue finishing layer. These rules load last so legacy
-   green, violet, and warm fallback declarations cannot leak into the shell. */
-.verity-console.app-shell { background:radial-gradient(circle at 5% 0,#C5DEFF 0,transparent 29rem),radial-gradient(circle at 96% 5%,#DCEBFF 0,transparent 30rem),var(--theme-bg)!important; }
-.verity-console .console-sidebar,.verity-console .console-header,.verity-console .console-title,.verity-console .console-panel,.verity-console .card,.verity-console .analytics-overview,.verity-console dialog { background:color-mix(in srgb,var(--theme-panel) 82%,transparent)!important; border-color:var(--theme-line)!important; box-shadow:0 14px 34px #1D4ED81A,inset 0 1px #FFFFFFA8!important; }
-.verity-console .console-sidebar,.verity-console .console-header { background:color-mix(in srgb,var(--theme-panel-raised) 78%,transparent)!important; }
-.verity-console .console-brand>.lawcovery-logo { --logo-accent:var(--theme-accent); --logo-outline:#91B6F0; color:var(--theme-text); }
-.verity-console .topbar-brand,.verity-console .topbar-nav { display:none!important; }
-.verity-console .global-search,.verity-console .case-register-filters,.verity-console .analytics-filters,.verity-console .case-table-wrap,.verity-console .case-table,.verity-console .hearing-month-scroll,.verity-console .hearing-agenda,.verity-console .batch-fetch-modes,.verity-console .capture-entry,.verity-console .audit-event { background:color-mix(in srgb,var(--theme-panel-raised) 92%,transparent)!important; border-color:var(--theme-line)!important; }
-.verity-console .global-search :is(input,input::placeholder),.verity-console .workspace-switcher select,.verity-console .case-register-filters :is(input,select),.verity-console .analytics-filters :is(input,select),.verity-console .advocate-tools :is(input,select) { color:var(--theme-text)!important; }.verity-console input::placeholder { color:color-mix(in srgb,var(--theme-muted) 75%,transparent)!important; }
-.verity-console .sidebar-nav .nav-item { color:var(--theme-muted)!important; }.verity-console .sidebar-nav .nav-item[aria-current="page"] { background:var(--theme-accent-soft)!important; color:var(--theme-accent)!important; box-shadow:inset 0 0 0 1px #A9C7FA,0 6px 14px #1D4ED812!important; }.verity-console .sidebar-nav .nav-item[aria-current="page"]::before { background:var(--theme-accent)!important; }.verity-console .nav-badge { background:#E6F0FF!important; color:var(--theme-accent)!important; }
-.verity-console .console-eyebrow,.verity-console .panel-kicker,.workspace-view-header span { color:var(--theme-accent)!important; }.workspace-view-header strong { color:var(--theme-text)!important; }
-.verity-console .button-primary,.verity-console .btn-primary,.verity-console .console-link.button-primary { background:linear-gradient(135deg,#2563EB,#1D4ED8)!important; border-color:#1D4ED8!important; color:#fff!important; box-shadow:0 8px 18px #1D4ED833!important; }.verity-console .theme-toggle,.verity-console .refresh-button { background:#EDF5FF!important; border-color:#BBD3F4!important; color:#123B8C!important; }.verity-console .profile-trigger { background:#EEF5FF!important; color:var(--theme-text)!important; }.verity-console .avatar { background:#DBEAFE!important; color:#1D4ED8!important; }
-.verity-console :is(.analytics-metric,.analytics-panel) { background:color-mix(in srgb,var(--theme-panel-raised) 86%,transparent)!important; }.verity-console .analytics-metric strong,.verity-console .analytics-panel strong { color:var(--theme-text)!important; font-variant-numeric:tabular-nums; }.verity-console .analytics-metric p,.verity-console .analytics-metric small,.verity-console .analytics-panel header>span,.verity-console .analytics-empty,.verity-console .analytics-footnote,.verity-console .analytics-disclaimer { color:var(--theme-muted)!important; }.verity-console .analytics-metric.attention { border-top-color:var(--theme-pending)!important; }.verity-console .analytics-metric.success { border-top-color:var(--theme-good)!important; }.verity-console .analytics-metric.highlight { border-top-color:var(--theme-accent)!important; }
-.verity-console .analytics-bar { grid-template-columns:minmax(112px,1.2fr) minmax(90px,2fr) 38px!important; }.verity-console .analytics-bar>span,.verity-console .analytics-bar strong { color:var(--theme-text)!important; }.verity-console .analytics-bar strong { justify-self:end; font-variant-numeric:tabular-nums; }.verity-console .analytics-bar>i,.verity-console .stage-card>i { background:#DCEBFF!important; }.verity-console .analytics-bar b,.verity-console .stage-card>i b { background:linear-gradient(90deg,#60A5FA,#1D4ED8)!important; }.verity-console .activity-chart,.verity-console .trend-columns { border-color:var(--theme-line)!important; background-image:linear-gradient(to bottom,transparent 24%,#CADCF360 25%,transparent 26%,transparent 49%,#CADCF360 50%,transparent 51%,transparent 74%,#CADCF360 75%,transparent 76%)!important; }.verity-console .activity-key i.filed,.verity-console .activity-bar i.filed { background:#60A5FA!important; }.verity-console .activity-key i.disposed,.verity-console .activity-bar i.disposed { background:#15803D!important; }.verity-console .activity-bar em,.verity-console .activity-label,.verity-console .trend-key,.verity-console .trend-column { color:var(--theme-muted)!important; }
-.verity-console .status-donut { background:conic-gradient(var(--theme-pending) 0 var(--pending),var(--theme-good) var(--pending) var(--disposed),#DCE8F7 var(--disposed) 100%)!important; }.verity-console .status-donut:before { background:var(--theme-panel-raised)!important; }.verity-console .stage-card { background:color-mix(in srgb,var(--theme-panel-raised) 94%,transparent)!important; border-color:var(--theme-line)!important; }.verity-console .stage-card.total { background:#EAF3FF!important; border-color:#A9C7FA!important; }.verity-console .stage-card.nbw { background:#FFF7ED!important; border-color:#F3B66A!important; }.verity-console .stage-card.nbw :is(span,strong) { color:#9A4B0B!important; }.verity-console .stage-card.nbw>em { background:#B45309!important; }
-.verity-console :is(.case-table thead th,.portfolio-table-wrap .case-table thead th) { background:#EAF3FF!important; color:#27496D!important; }.verity-console :is(.case-table,.case-table caption,.case-table tbody tr,.portfolio-table-wrap .case-table tbody :is(td,th)) { background:color-mix(in srgb,var(--theme-panel-raised) 96%,transparent)!important; color:var(--theme-text)!important; border-color:var(--theme-line)!important; }.verity-console .case-table tbody tr:hover :is(td,th) { background:#EFF6FF!important; }.verity-console .case-table .case-open { color:#1D4ED8!important; }
-.verity-console .hearing-month :is(th,td),.verity-console .hearing-month .hearing-blank { background:color-mix(in srgb,var(--theme-panel-raised) 96%,transparent)!important; border-color:var(--theme-line)!important; color:var(--theme-text)!important; }.verity-console .hearing-month th,.verity-console .day-name { background:#EAF3FF!important; color:#27496D!important; }.verity-console .hearing-selected,.verity-console .hearing-today { background:#DBEAFE!important; }.verity-console .hearing-case,.verity-console .hearing-badge { background:#EFF6FF!important; border-color:#BBD3F4!important; color:#173C78!important; }.verity-console .hearing-next { background:#ECFDF5!important; border-color:#A7E1C0!important; color:#166534!important; }
-.verity-console :is(.profile-menu,.account-dialog,.case-detail-dialog,.connection-help,.assurance,.source-summary) { background:color-mix(in srgb,var(--theme-panel-raised) 88%,transparent)!important; color:var(--theme-text)!important; }.verity-console :is(.case-fetch-status,.listing-notice,.console-error) { background:#EFF6FF!important; border-color:#BBD3F4!important; color:#173C78!important; }.verity-console button:disabled { background:#F1F5F9!important; border-color:#D8E2EF!important; color:#74859A!important; opacity:1!important; }
-@media (min-width:981px) { .verity-console.app-shell { padding:22px 28px 48px 286px!important; }.verity-console .console-sidebar { inset:22px auto 22px 22px!important; inline-size:236px!important; block-size:calc(100dvh - 44px)!important; }.verity-console .console-body { min-inline-size:0; margin:0!important; }.verity-console .console-header { display:grid!important; grid-template-columns:minmax(132px,1fr) minmax(220px,440px) auto auto auto; gap:10px; max-inline-size:none!important; margin:0 0 18px!important; padding:10px 14px!important; }.verity-console .workspace-switcher { margin:0!important; max-inline-size:none!important; min-inline-size:0!important; }.verity-console .topbar-spacer { display:none!important; }.verity-console .global-search { min-inline-size:0!important; inline-size:100%!important; }.verity-console .profile-trigger { min-inline-size:46px!important; }.verity-console .profile-summary,.verity-console .profile-chevron { display:none!important; } }
-@media (max-width:980px) { .verity-console.app-shell { padding:0!important; }.verity-console .console-sidebar { background:color-mix(in srgb,var(--theme-panel-raised) 94%,transparent)!important; }.verity-console .console-header { margin:10px!important; }.workspace-view-header { margin-inline:14px; } }
+/* Shared frosted surface with a solid fallback for unsupported blur. */
+.verity-console :is(.console-sidebar,.console-header,.console-title,.console-panel,.card,.analytics-overview,.analytics-filters,.case-register-filters,.case-table-wrap,.hearing-calendar,.hearing-agenda,.profile-menu,.account-dialog,.case-detail-dialog) {
+  background: var(--theme-glass) !important;
+  border: 1px solid var(--theme-border) !important;
+  box-shadow: var(--theme-shadow);
+}
+@supports (backdrop-filter: blur(1px)) {
+  .verity-console :is(.console-sidebar,.console-header,.console-title,.console-panel,.card,.analytics-overview,.analytics-filters,.case-register-filters,.profile-menu,.account-dialog,.case-detail-dialog) {
+    background: color-mix(in srgb,var(--theme-glass) 82%,transparent) !important;
+    backdrop-filter: blur(18px) saturate(118%);
+  }
+}
 
-/* Coordinated navy mode: same geometry and semantics, only the token values
-   and dense surfaces change. */
-[data-ui-theme="dark"] .verity-console.app-shell { background:radial-gradient(circle at 5% 0,#245BAA55,transparent 28rem),#071A3D!important; }
-[data-ui-theme="dark"] .verity-console :is(.console-sidebar,.console-header,.console-title,.console-panel,.card,.analytics-overview,dialog) { background:color-mix(in srgb,#0D2753 82%,transparent)!important; border-color:#7BA7DF3D!important; box-shadow:0 14px 34px #020B1F55,inset 0 1px #B7D7FF1A!important; }
-[data-ui-theme="dark"] .verity-console :is(.global-search,.case-register-filters,.analytics-filters,.case-table-wrap,.case-table,.hearing-month-scroll,.hearing-agenda,.batch-fetch-modes,.capture-entry,.audit-event,.profile-menu) { background:#0A2046E8!important; border-color:#7BA7DF3D!important; }
-[data-ui-theme="dark"] .verity-console .sidebar-nav .nav-item[aria-current="page"] { background:#78A6FF2B!important; color:#CFE2FF!important; box-shadow:inset 0 0 0 1px #78A6FF66!important; }.verity-console .sidebar-nav .nav-item[aria-current="page"]::before { background:#78A6FF!important; }
-[data-ui-theme="dark"] .verity-console :is(.theme-toggle,.refresh-button) { background:#123366!important; border-color:#315A91!important; color:#D6E6FF!important; }.verity-console .profile-trigger { background:#123366!important; }.verity-console .avatar { background:#284D82!important; color:#CFE2FF!important; }
-[data-ui-theme="dark"] .verity-console :is(.analytics-metric,.analytics-panel,.stage-card,.tat-summary>div,.activity-detail,.data-health button) { background:#0D2753!important; border-color:#7BA7DF3D!important; }.verity-console .analytics-bar>i,.verity-console .stage-card>i { background:#244E83!important; }.verity-console .analytics-bar b,.verity-console .stage-card>i b { background:linear-gradient(90deg,#78A6FF,#3B82F6)!important; }.verity-console .stage-card.total { background:#123366!important; border-color:#4773AB!important; }.verity-console .stage-card.nbw { background:#3B2B18!important; border-color:#F3B66A!important; }.verity-console .status-donut:before { background:#0D2753!important; }
-[data-ui-theme="dark"] .verity-console :is(.case-table thead th,.portfolio-table-wrap .case-table thead th,.hearing-month th,.day-name) { background:#123366!important; color:#CFE2FF!important; }.verity-console :is(.case-table,.case-table caption,.case-table tbody tr,.portfolio-table-wrap .case-table tbody :is(td,th),.hearing-month :is(td,th)) { background:#0A2046!important; color:#EAF3FF!important; border-color:#7BA7DF2D!important; }.verity-console .case-table tbody tr:hover :is(td,th) { background:#123366!important; }.verity-console .hearing-selected,.verity-console .hearing-today { background:#173E72!important; }.verity-console :is(.case-fetch-status,.listing-notice,.console-error) { background:#102F5C!important; border-color:#315A91!important; color:#D6E6FF!important; }.verity-console button:disabled { background:#112A4D!important; border-color:#254A7A!important; color:#8FAACB!important; }
+/* A real first grid track gives the sidebar its own desktop column. */
+.verity-console .console-sidebar {
+  position: sticky !important; inset: 0 auto auto 0 !important;
+  inline-size: auto !important; block-size: calc(100dvh - 40px) !important; margin: 0 !important;
+  padding: 24px 14px 18px !important; border-width: 1px !important;
+  border-radius: 28px !important; overflow-y: auto; overscroll-behavior: contain; z-index: 20;
+}
+.verity-console .console-sidebar .console-brand { margin: 0 10px 28px !important; }
+.verity-console .console-brand > .lawcovery-logo { --logo-accent: var(--theme-accent); --logo-outline: #9DB8E5; color: var(--theme-text); }
+.verity-console .console-brand > small,.verity-console .nav-label,.verity-console .workspace-status { color: var(--theme-muted) !important; }
+.verity-console .sidebar-nav { gap: 6px; }
+.verity-console .sidebar-nav .nav-item { position: relative; color: var(--theme-muted) !important; border: 1px solid transparent !important; border-radius: 13px !important; background: transparent !important; }
+.verity-console .sidebar-nav .nav-item:hover { color: var(--theme-text) !important; background: #EFF6FF !important; }
+.verity-console .sidebar-nav .nav-item[aria-current="page"] { color: var(--theme-accent-strong) !important; background: var(--theme-selected) !important; border-color: #B8D3FB !important; box-shadow: 0 8px 18px rgba(29,78,216,.12) !important; }
+.verity-console .sidebar-nav .nav-item[aria-current="page"]::before { content:""; position:absolute; inset-inline-start:-15px; inline-size:4px; block-size:26px; border-radius:0 999px 999px 0; background:var(--theme-accent); }
+.verity-console .nav-badge { background:#E7F0FF !important; color:var(--theme-accent-strong) !important; }
+.verity-console .audit-card { background:#F0F6FF !important; border-color:#C7DCFA !important; color:var(--theme-text) !important; }
+.verity-console .audit-card svg { color:var(--theme-accent) !important; }
+.verity-console .audit-card :is(strong,p) { color:var(--theme-text) !important; }
+.verity-console .audit-card p { color:var(--theme-muted) !important; }
+.verity-console .workspace-status span { background:var(--theme-success) !important; }
+
+.verity-console .console-body { min-inline-size:0; margin:0 !important; }
+.verity-console .console-header {
+  position:sticky; inset-block-start:0; z-index:10; display:grid !important;
+  grid-template-columns:minmax(156px,.7fr) minmax(230px,1.25fr) auto auto;
+  align-items:center; gap:10px; min-block-size:78px; margin:0 !important;
+  padding:12px clamp(18px,3vw,34px) !important; border-width:1px !important; border-radius:28px !important;
+}
+.verity-console .topbar-brand,.verity-console .topbar-nav,.verity-console .topbar-spacer { display:none !important; }
+.verity-console .workspace-switcher { min-inline-size:0; max-inline-size:none !important; }
+.verity-console .workspace-switcher .eyebrow { color:var(--theme-accent) !important; }
+.verity-console .workspace-switcher select { inline-size:100%; color:var(--theme-text) !important; background:transparent !important; }
+.verity-console .global-search { min-inline-size:0; inline-size:100%; background:var(--theme-dense) !important; border:1px solid var(--theme-border) !important; border-radius:14px !important; }
+.verity-console .global-search input { min-inline-size:0; color:var(--theme-text) !important; }
+.verity-console .global-search svg { color:var(--theme-accent); }
+.verity-console .global-search kbd { background:#E4EEFC !important; color:var(--theme-muted) !important; }
+.verity-console .profile-trigger { inline-size:auto !important; min-inline-size:48px; padding-inline:10px !important; border-radius:14px !important; }
+.verity-console .profile-summary :is(strong,small) { color:var(--theme-text) !important; }
+.verity-console .avatar { background:var(--theme-selected) !important; color:var(--theme-accent-strong) !important; }
+.verity-console .profile-chevron { color:var(--theme-muted); transition:rotate var(--motion-fast) var(--motion-ease); }
+.verity-console .profile-chevron.open { rotate:180deg; }
+.verity-console .workspace-view-header { display:flex; align-items:baseline; gap:9px; max-inline-size:1440px; margin:20px auto -8px; padding-inline:0; color:var(--theme-muted); font-size:12px; }
+.verity-console .workspace-view-header span { color:var(--theme-subtle); }
+.verity-console .workspace-view-header strong { color:var(--theme-accent-strong) !important; }
+.verity-console .workspace-page-transition { min-inline-size:0; }
+
+/* Controls and data-dense surfaces retain crisp contrast. */
+.verity-console :is(button,.console-link) { color:var(--theme-text) !important; background:var(--theme-raised) !important; border-color:var(--theme-border) !important; transition:background-color var(--motion-fast) var(--motion-ease),border-color var(--motion-fast) var(--motion-ease),box-shadow var(--motion-fast) var(--motion-ease),transform var(--motion-fast) var(--motion-ease); }
+.verity-console :is(button,.console-link):hover:not(:disabled) { background:#EFF6FF !important; border-color:#9ABDF0 !important; transform:translateY(-1px); }
+.verity-console :is(button,.console-link):disabled { color:var(--theme-subtle) !important; background:#EDF3FB !important; opacity:1; }
+.verity-console :is(.button-primary,.btn-primary,.console-link.button-primary) { color:#fff !important; background:var(--theme-accent) !important; border-color:var(--theme-accent) !important; box-shadow:0 8px 18px rgba(29,78,216,.22) !important; }
+.verity-console :is(.button-primary,.btn-primary,.console-link.button-primary):hover:not(:disabled) { background:var(--theme-accent-strong) !important; }
+.verity-console :is(input,select,textarea) { color:var(--theme-text) !important; background:var(--theme-raised) !important; border-color:var(--theme-border) !important; }
+.verity-console select,.verity-console select option { color-scheme:light; color:var(--theme-text) !important; background:var(--theme-raised) !important; }
+.verity-console :is(.case-table-wrap,.advocate-scroll,.hearing-month-scroll) { background:var(--theme-raised) !important; }
+.verity-console :is(.case-table,.advocate-table,.case-table tbody tr) { background:var(--theme-raised) !important; color:var(--theme-text) !important; }
+.verity-console :is(.case-table thead th,.advocate-table th,.hearing-month th,.day-name) { background:#EDF5FF !important; color:var(--theme-muted) !important; }
+.verity-console :is(.case-table th,.case-table td,.advocate-table th,.advocate-table td,.hearing-month th,.hearing-month td) { border-color:var(--theme-border) !important; }
+.verity-console .case-table tbody tr:hover :is(td,th) { background:#F3F8FF !important; }
+.verity-console .case-open,.verity-console .analytics-link,.verity-console .advocate-name { color:var(--theme-accent) !important; }
+.verity-console .case-date-fallback { display:grid; gap:2px; color:var(--theme-text) !important; }
+.verity-console .case-date-fallback small { color:var(--theme-muted) !important; font-size:11px; }
+
+/* Analytics components and all pages consume the same panel treatment. */
+.verity-console :is(.console-title,.analytics-overview) { background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(232,243,255,.84)) !important; border-radius:22px !important; }
+.verity-console :is(.console-eyebrow,.panel-kicker,.workspace-switcher .eyebrow) { color:var(--theme-accent) !important; }
+.verity-console :is(.analytics-filters,.case-register-filters) { background:#F8FBFF !important; border-radius:18px !important; }
+.verity-console :is(.analytics-filters label > span,.case-register-filters label,.advocate-tools label) { color:var(--theme-muted) !important; }
+@media (min-width: 1400px) {
+  /* Four filters fit comfortably on the wide signed-in workspace; the
+     respondent, free-text search, and reset control stay together below. */
+  .verity-console .case-register-filters { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+.verity-console :is(.analytics-metric,.analytics-panel,.stage-card,.tat-summary > div,.activity-detail,.data-health button) { background:var(--theme-raised) !important; color:var(--theme-text) !important; border-color:var(--theme-border) !important; }
+.verity-console .analytics-metric { border-radius:18px !important; box-shadow:0 12px 26px rgba(49,91,145,.09) !important; }
+.verity-console .analytics-metric :is(p,small),.verity-console .analytics-panel header > span { color:var(--theme-muted) !important; }
+.verity-console .analytics-metric strong { color:var(--theme-text) !important; font-variant-numeric:tabular-nums; }
+.verity-console .analytics-metric.attention { border-top-color:var(--theme-warning) !important; }
+.verity-console .analytics-metric.success { border-top-color:var(--theme-success) !important; }
+.verity-console .analytics-metric.highlight { border-top-color:var(--theme-accent) !important; }
+.verity-console .stage-card { border-radius:16px !important; }
+.verity-console .stage-card > :is(span,strong) { color:var(--theme-text) !important; }
+.verity-console .stage-card > small { color:var(--theme-muted) !important; }
+.verity-console .stage-card > i,.verity-console .analytics-bar > i { background:var(--theme-track) !important; }
+.verity-console .stage-card > i b,.verity-console .analytics-bar b { background:linear-gradient(90deg,#4C82E6,var(--theme-accent)) !important; }
+.verity-console .stage-card.total { background:#EDF5FF !important; border-color:#9CC0F1 !important; }
+.verity-console .stage-card.nbw { background:var(--theme-warning-soft) !important; border-color:#F0C181 !important; box-shadow:0 0 0 3px rgba(240,193,129,.18) !important; }
+.verity-console .stage-card.nbw > :is(span,strong) { color:#8D4709 !important; }
+.verity-console .stage-card.nbw > i { background:#FDE3BB !important; }
+.verity-console .stage-card.nbw > i b,.verity-console .stage-card.nbw > em { background:var(--theme-warning) !important; color:#fff !important; }
+.verity-console .nbw-insight { background:var(--theme-warning-soft) !important; border-color:#F2C98F !important; border-left-color:var(--theme-warning) !important; color:var(--theme-text) !important; }
+.verity-console .nbw-insight p { color:var(--theme-muted) !important; }
+.verity-console .status-donut { background:conic-gradient(var(--theme-warning) 0 var(--pending),var(--theme-success) var(--pending) var(--disposed),var(--theme-track) var(--disposed) 100%) !important; }
+.verity-console .status-donut::before { background:var(--theme-raised) !important; }
+.verity-console .status-legend i.pending { background:var(--theme-warning) !important; }
+.verity-console .status-legend i.disposed { background:var(--theme-success) !important; }
+.verity-console .status-legend i.status-unknown,.verity-console .status-legend i.listed-only { background:var(--theme-subtle) !important; }
+/* Keep semantic dots colourful, but never use their pale/legacy text colours
+   for the labels themselves: every status name must hold 4.5:1+ contrast. */
+.verity-console .status-legend span { color:var(--theme-text) !important; font-weight:650; }
+.verity-console .status-legend strong { color:var(--theme-text) !important; font-variant-numeric:tabular-nums; }
+.verity-console .status-legend button:hover span { color:var(--theme-accent-strong) !important; }
+
+/* Charts: bars, labels and values are intentionally targeted separately. */
+.verity-console .analytics-bar { grid-template-columns:minmax(108px,1.2fr) minmax(80px,2fr) minmax(34px,auto) !important; }
+.verity-console .analytics-bar > span,.verity-console .analytics-bar strong { color:var(--theme-text) !important; }
+.verity-console .analytics-bar strong { font-variant-numeric:tabular-nums; }
+.verity-console .activity-key { color:var(--theme-muted) !important; }
+.verity-console .activity-key i.filed,.verity-console .activity-bar > i.filed { background:var(--theme-accent) !important; }
+.verity-console .activity-key i.disposed,.verity-console .activity-bar > i.disposed { background:var(--theme-teal) !important; }
+.verity-console .activity-chart { gap:10px !important; padding:10px 4px 8px !important; overflow-x:auto; scrollbar-gutter:stable; border-block-end:1px solid var(--theme-border) !important; background-image:linear-gradient(to bottom,transparent 74%,#E2EDF9 74%,#E2EDF9 75%,transparent 75%) !important; }
+.verity-console .activity-column { flex:0 0 64px !important; min-block-size:194px !important; gap:8px !important; background:transparent !important; border:1px solid transparent !important; border-radius:10px !important; }
+/* Selected month: a soft full-height tint and a highlighted label instead of
+   an outlined box; hover is a fainter tint. The outline is kept for keyboard
+   focus only. */
+.verity-console .activity-column { border-color:transparent !important; box-shadow:none !important; outline:none; }
+.verity-console .activity-column:hover { background:rgba(29,78,216,.04) !important; }
+.verity-console .activity-column.is-selected { background:linear-gradient(180deg, rgba(29,78,216,.03), rgba(29,78,216,.09)) !important; }
+.verity-console .activity-column:focus-visible { outline:2px solid var(--theme-accent) !important; outline-offset:2px; }
+.verity-console .activity-column.is-selected > .activity-label { padding:2px 8px !important; border-radius:999px !important; background:var(--theme-accent) !important; color:#fff !important; font-weight:750; }
+.verity-console .activity-bars { align-items:end !important; gap:7px !important; inline-size:100%; border-block-end:1px solid #A9C6EB; }
+.verity-console .activity-bar { inline-size:22px !important; min-block-size:100%; justify-content:end !important; background:transparent !important; }
+.verity-console .activity-bar > em { min-block-size:14px; color:var(--theme-text) !important; font-variant-numeric:tabular-nums; }
+.verity-console .activity-bar > i { inline-size:100%; flex:0 0 auto; border-radius:4px 4px 0 0; }
+.verity-console .activity-label { color:var(--theme-muted) !important; font-variant-numeric:tabular-nums; }
+.verity-console .activity-detail { background:var(--theme-dense) !important; color:var(--theme-text) !important; }
+.verity-console .activity-detail > button { color:var(--theme-accent) !important; }
+.verity-console .trend-columns { border-color:var(--theme-border) !important; background-image:linear-gradient(to bottom,transparent calc(100% - 1px),var(--theme-border) calc(100% - 1px)) !important; }
+.verity-console .trend-column { color:var(--theme-muted) !important; }
+.verity-console .trend-column i { background:var(--theme-accent) !important; }
+.verity-console .trend-column i + i { background:var(--theme-teal) !important; }
+
+.verity-console :is(.case-fetch-status,.listing-notice,.console-error) { background:#EEF5FF !important; border-color:#B8D5FB !important; color:var(--theme-text) !important; }
+.verity-console :is(.hearing-calendar,.hearing-agenda,.selected-day) { background:var(--theme-glass) !important; border-color:var(--theme-border) !important; }
+.verity-console .hearing-month :is(th,td,.hearing-blank) { background:var(--theme-raised) !important; color:var(--theme-text) !important; border-color:var(--theme-border) !important; }
+.verity-console .hearing-selected,.verity-console .hearing-today { background:var(--theme-selected) !important; }
+.verity-console :is(.hearing-case,.hearing-badge) { background:#E9F3FF !important; border-color:#B8D3F4 !important; color:var(--theme-accent-strong) !important; }
+.verity-console :is(.hearing-case,.hearing-badge).hearing-next { background:var(--theme-success-soft) !important; border-color:#9ED6C2 !important; color:#0B6647 !important; }
+.verity-console .profile-menu,.verity-console dialog { color:var(--theme-text) !important; }
+.verity-console dialog::backdrop { background:rgba(15,36,71,.28); backdrop-filter:blur(4px); }
+.verity-console .toast { background:var(--theme-text) !important; color:#fff !important; border-color:transparent !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .verity-console .workspace-page-transition { animation:workspace-page-in var(--motion-page) var(--motion-ease) both; }
+  .verity-console .sidebar-nav .nav-item[aria-current="page"]::before { animation:workspace-indicator var(--motion-page) var(--motion-ease) both; }
+  .verity-console .profile-menu,.verity-console dialog[open] { animation:workspace-pop-in var(--motion-fast) var(--motion-ease) both; }
+}
+@keyframes workspace-page-in { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+@keyframes workspace-indicator { from { opacity:0; transform:scaleY(.45); } to { opacity:1; transform:scaleY(1); } }
+@keyframes workspace-pop-in { from { opacity:0; transform:translateY(-5px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+@media (max-width: 980px) {
+  .verity-console.app-shell { display:block !important; padding:10px !important; }
+  .verity-console .console-sidebar { position:fixed !important; inset:10px auto 10px 10px !important; inline-size:min(290px,calc(100dvw - 36px)) !important; block-size:calc(100dvh - 20px) !important; transform:translateX(-105%); transition:transform var(--motion-page) var(--motion-ease); border-width:1px !important; border-radius:22px !important; box-shadow:var(--theme-shadow-raised); z-index:30; }
+  .verity-console .console-sidebar.sidebar-open { transform:translateX(0); }
+  .verity-console .scrim { background:rgba(15,36,71,.28) !important; }
+  .verity-console .console-header { grid-template-columns:auto minmax(132px,1fr) minmax(0,1.6fr) auto auto; }
+  .verity-console .mobile-menu { display:grid !important; }
+  .verity-console .mobile-close { display:grid !important; color:var(--theme-text) !important; }
+}
+@media (max-width: 700px) {
+  .verity-console .console-header { grid-template-columns:auto minmax(0,1fr) auto auto; min-block-size:68px; padding-inline:14px !important; }
+  .verity-console .workspace-switcher { display:none; }
+  .verity-console .global-search { min-inline-size:0; }
+  .verity-console .global-search kbd,.verity-console .profile-summary,.verity-console .profile-chevron { display:none; }
+  .verity-console .refresh-button { min-inline-size:42px; padding-inline:11px !important; font-size:0; }
+  .verity-console .refresh-button svg { inline-size:17px; block-size:17px; }
+  .verity-console .workspace-view-header { margin-block-start:14px; padding-inline:16px; }
+  .verity-console .activity-chart { margin-inline:-2px; }
+}
+
+/* Desktop sidebar is a dedicated layout column, never an icon-only overlay. */
+@media (min-width: 981px) {
+  .verity-console.app-shell {
+    grid-template-columns:244px minmax(0,1fr) !important;
+    gap:18px !important;
+    padding:20px !important;
+  }
+  .verity-console .console-sidebar {
+    position:sticky !important;
+    inset:0 auto auto 0 !important;
+    inline-size:auto !important;
+    block-size:calc(100dvh - 40px) !important;
+    display:flex !important;
+    flex-direction:column !important;
+    padding:24px 14px 18px !important;
+    overflow-y:auto !important;
+  }
+  .verity-console .console-sidebar .console-brand { display:grid !important; }
+  .verity-console .console-sidebar .nav-label { display:block !important; }
+  .verity-console .console-sidebar .audit-card { display:grid !important; }
+  .verity-console .console-sidebar .workspace-status { display:grid !important; }
+  .verity-console .sidebar-nav { display:grid !important; gap:6px !important; }
+  .verity-console .sidebar-nav .nav-item {
+    display:grid !important;
+    grid-template-columns:20px minmax(0,1fr) auto !important;
+    inline-size:100% !important;
+    min-block-size:46px !important;
+    padding:12px !important;
+    border-radius:13px !important;
+    place-items:initial !important;
+    align-items:center !important;
+  }
+  .verity-console .sidebar-nav .nav-item > span:not(.nav-badge) { display:block !important; }
+  .verity-console .sidebar-nav .nav-badge { display:inline-grid !important; }
+  .verity-console .sidebar-spacer { display:block !important; flex:1 1 auto !important; }
+  .verity-console .console-header {
+    grid-template-columns:minmax(132px,.7fr) minmax(190px,1.25fr) auto auto !important;
+    max-inline-size:none !important;
+    margin:0 !important;
+    border-radius:28px !important;
+  }
+  .verity-console .profile-trigger { inline-size:auto !important; min-inline-size:48px !important; padding-inline:10px !important; }
+}
+
+@media (min-width: 1280px) {
+  .verity-console .profile-summary,.verity-console .profile-chevron { display:grid !important; }
+}
+
+/* Final light-only interaction and detail layer. This loads after the legacy
+   reference skins, which otherwise leak dark paints into nested tables. */
+.verity-console .analytics-segment {
+  display:inline-grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:4px !important;
+  padding:4px !important;
+  background:rgba(219,234,254,.72) !important;
+  border:1px solid rgba(157,190,237,.85) !important;
+  border-radius:14px !important;
+  box-shadow:inset 0 1px rgba(255,255,255,.86) !important;
+}
+.verity-console .analytics-segment button {
+  min-inline-size:76px;
+  min-block-size:38px !important;
+  padding:7px 13px !important;
+  color:var(--theme-accent-strong) !important;
+  background:transparent !important;
+  border:1px solid transparent !important;
+  border-radius:10px !important;
+  font-weight:750;
+}
+.verity-console .analytics-segment button[aria-pressed="true"] {
+  color:#fff !important;
+  background:linear-gradient(135deg,#2563EB,#1D4ED8) !important;
+  border-color:#1D4ED8 !important;
+  box-shadow:0 7px 16px rgba(29,78,216,.25),inset 0 1px rgba(255,255,255,.24) !important;
+}
+.verity-console .analytics-segment button:hover:not([aria-pressed="true"]) { background:rgba(255,255,255,.7) !important; }
+
+/* Prevent the historic chart rule from treating the period label as a bar. */
+.verity-console .activity-column > .activity-label {
+  inline-size:auto !important;
+  min-block-size:auto !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:0 !important;
+  color:var(--theme-muted) !important;
+  line-height:1.2;
+}
+.verity-console .activity-column > .activity-bars,
+.verity-console .activity-column > .activity-bars .activity-bar {
+  background:transparent !important;
+  border-radius:0 !important;
+}
+
+/* A controlled court picker avoids the browser-owned dark datalist menu. */
+.verity-console .court-picker { position:relative; z-index:1; display:block; }
+.verity-console .court-picker:has(.court-options) { z-index:30; }
+.verity-console .analytics-filters:has(.court-options) { position:relative; z-index:40; overflow:visible !important; }
+.verity-console .analytics-metrics { position:relative; z-index:0; }
+.verity-console .court-picker input {
+  display:block;
+  inline-size:100%;
+  block-size:48px;
+  min-block-size:48px !important;
+  padding-inline-end:92px !important;
+}
+.verity-console .court-picker input::-webkit-search-cancel-button,
+.verity-console .court-picker input::-webkit-search-decoration {
+  appearance:none;
+  -webkit-appearance:none;
+}
+.verity-console .court-picker-clear {
+  position:absolute;
+  inset-block:7px;
+  inset-inline-end:45px;
+  z-index:2;
+  display:grid !important;
+  place-items:center;
+  inline-size:32px;
+  min-inline-size:32px;
+  min-block-size:32px !important;
+  margin:0;
+  padding:0 !important;
+  color:var(--theme-muted) !important;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:8px !important;
+  font-size:22px;
+  line-height:1;
+}
+.verity-console .court-picker-clear:hover,
+.verity-console .court-picker-clear:focus-visible {
+  color:var(--theme-accent-strong) !important;
+  background:#EFF6FF !important;
+}
+.verity-console .court-picker-toggle {
+  position:absolute;
+  inset-block:1px;
+  inset-inline-end:4px;
+  inline-size:38px;
+  min-inline-size:38px;
+  block-size:auto;
+  min-block-size:0 !important;
+  margin:0;
+  display:grid !important;
+  place-items:center;
+  padding:0 !important;
+  color:var(--theme-accent-strong) !important;
+  background:transparent !important;
+  border:0 !important;
+  border-inline-start:1px solid var(--theme-border) !important;
+  border-radius:0 !important;
+  font-size:21px;
+  line-height:1;
+}
+.verity-console .court-picker-toggle > span { display:block; translate:0 -1px; }
+.verity-console .court-picker-toggle:hover { background:#EFF6FF !important; }
+.verity-console .court-options {
+  position:absolute;
+  inset-block-start:calc(100% + 8px);
+  inset-inline:0;
+  z-index:1;
+  display:grid;
+  max-block-size:190px;
+  overflow:auto;
+  margin:0;
+  padding:6px;
+  border:1px solid #A9C8EF;
+  border-radius:13px;
+  background:rgba(248,251,255,.97);
+  box-shadow:0 18px 34px rgba(29,78,216,.18),inset 0 1px rgba(255,255,255,.9);
+  backdrop-filter:blur(20px) saturate(140%);
+}
+.verity-console .court-options button {
+  justify-content:flex-start;
+  min-block-size:40px !important;
+  padding:9px 10px !important;
+  color:var(--theme-text) !important;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:9px !important;
+  text-align:start;
+  font-size:13px;
+}
+.verity-console .court-options button:hover,.verity-console .court-options button.is-selected { background:var(--theme-selected) !important; color:var(--theme-accent-strong) !important; }
+.verity-console .court-options p { margin:8px 10px; color:var(--theme-muted) !important; font-size:13px; }
+
+/* The case register has legacy dark paints on individual cells and its sticky
+   first column. Override those exact paint targets, not just the wrapper. */
+.verity-console :is(.case-table-wrap,.portfolio-table-wrap) .case-table :is(caption,tbody,tr,tbody td,tbody th),
+.verity-console .portfolio-table-wrap .case-table tbody th {
+  color:var(--theme-text) !important;
+  background:rgba(255,255,255,.96) !important;
+  border-color:var(--theme-border) !important;
+}
+.verity-console :is(.case-table-wrap,.portfolio-table-wrap) .case-table thead th {
+  color:var(--theme-muted) !important;
+  background:#EDF5FF !important;
+  border-color:var(--theme-border) !important;
+}
+.verity-console :is(.case-table-wrap,.portfolio-table-wrap) .case-table tbody tr:nth-child(even) :is(td,th) { background:#F8FBFF !important; }
+.verity-console :is(.case-table-wrap,.portfolio-table-wrap) .case-table tbody tr:hover :is(td,th) { background:#EFF6FF !important; }
+.verity-console :is(.case-table-wrap,.portfolio-table-wrap) .case-table :is(caption,small) { color:var(--theme-muted) !important; }
+.verity-console :is(.case-table-wrap,.portfolio-table-wrap) .case-table .case-open { color:var(--theme-accent) !important; background:transparent !important; }
+
+/* Light data surfaces inside every case detail dialog, including the sticky
+   first column that used to retain the navy legacy skin. */
+.verity-console .case-detail-dialog,
+.verity-console .case-detail-dialog > .console-panel {
+  color:var(--theme-text) !important;
+  background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(234,243,255,.76)) !important;
+  border-color:var(--theme-border) !important;
+}
+.verity-console .case-detail-dialog :is(.case-table-wrap,.case-table,.case-table caption,.case-table tbody,.case-table tbody tr,.case-table tbody td,.case-table tbody th,.portfolio-table-wrap .case-table tbody th) {
+  color:var(--theme-text) !important;
+  background:rgba(255,255,255,.94) !important;
+  border-color:var(--theme-border) !important;
+}
+.verity-console .case-detail-dialog .case-table thead th {
+  color:var(--theme-muted) !important;
+  background:#EDF5FF !important;
+  border-color:var(--theme-border) !important;
+}
+.verity-console .case-detail-dialog .case-table tbody tr:hover :is(td,th) { background:#F2F7FF !important; }
+.verity-console .case-detail-dialog :is(.case-tabs,.case-facts > div,.audit-event,.listing-notice,.capture-entry) {
+  color:var(--theme-text) !important;
+  background:rgba(248,251,255,.76) !important;
+  border-color:var(--theme-border) !important;
+}
+.verity-console .case-detail-dialog :is(p,dt,.case-facts dt,.case-table small) { color:var(--theme-muted) !important; }
+.verity-console .case-detail-dialog :is(dd,.case-facts dd,.case-table td,.case-table th) { color:var(--theme-text) !important; }
+
+/* Give surfaces a real liquid-glass read, while keeping dense data opaque. */
+@supports (backdrop-filter: blur(1px)) {
+  .verity-console :is(.console-sidebar,.console-header,.console-title,.analytics-overview,.analytics-filters,.case-register-filters,.analytics-metric,.analytics-panel,.hearing-calendar,.hearing-agenda,.profile-menu,.account-dialog,.case-detail-dialog) {
+    background:linear-gradient(135deg,rgba(255,255,255,.74),rgba(229,241,255,.54)) !important;
+    box-shadow:0 20px 48px rgba(50,100,164,.14),inset 0 1px rgba(255,255,255,.94) !important;
+    backdrop-filter:blur(24px) saturate(145%);
+  }
+  .verity-console :is(.case-table-wrap,.advocate-scroll,.hearing-month-scroll,.case-detail-dialog .case-table-wrap) {
+    background:rgba(255,255,255,.88) !important;
+    backdrop-filter:blur(14px) saturate(125%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .verity-console .workspace-page-transition { animation:workspace-page-in 360ms var(--motion-ease) both; }
+}
+@keyframes workspace-panel-in { from { opacity:0; transform:translateY(12px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+.verity-console :is(.analytics-metric,.analytics-panel,.stage-card,.hearing-day,.court-list button,.case-table tbody tr) { transition:transform 220ms var(--motion-ease),box-shadow 220ms var(--motion-ease),background-color 220ms var(--motion-ease),border-color 220ms var(--motion-ease); }
+@media (hover:hover) and (prefers-reduced-motion: no-preference) {
+  .verity-console :is(.analytics-metric,.analytics-panel,.stage-card,.hearing-day):hover { transform:translateY(-3px); box-shadow:0 18px 34px rgba(47,92,148,.16) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .verity-console :is(.analytics-metric,.analytics-panel,.stage-card,.hearing-day,.court-list button,.case-table tbody tr):hover { transform:none; }
+}
+
+/* Executive analytics refinements: each filter is a first-class control and
+   the percentage/months read before their supporting counts. */
+.verity-console .profile-summary {
+  display:grid;
+  align-items:center;
+  min-block-size:40px;
+}
+.verity-console .profile-summary strong { white-space:nowrap; }
+.verity-console .analytics-overview > div > p:last-child {
+  max-inline-size:72ch;
+  line-height:1.58;
+}
+.verity-console .analytics-filters {
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) auto;
+  align-items:end;
+}
+.verity-console .analytics-filters label {
+  min-inline-size:0 !important;
+  max-inline-size:none !important;
+}
+.verity-console .analytics-clear {
+  align-self:end;
+  white-space:nowrap;
+}
+/* One figure style for every KPI and stage card, so "937", "29.5%" and
+   "10.8 months" read at the same size and weight. */
+.verity-console { --metric-value-size:clamp(28px,2.3vw,32px); }
+.verity-console .analytics-metric { gap:0; }
+.verity-console .analytics-metric > p { font-size:13px; font-weight:700; }
+.verity-console .analytics-metric strong,
+.verity-console .stage-card > strong,
+.verity-console .recovery-figure strong {
+  margin-block:14px auto;
+  font-size:var(--metric-value-size) !important;
+  font-weight:700;
+  line-height:1.1;
+  letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+}
+.verity-console .stage-card > strong,
+.verity-console .recovery-figure strong { margin-block:6px 0; }
+.verity-console .analytics-metric small,
+.verity-console .stage-card > small {
+  font-size:13px !important;
+  font-weight:700;
+}
+/* Disposed cases: highlighted green, matching the success token. */
+.verity-console .analytics-metric.success {
+  background:linear-gradient(160deg,var(--theme-success-soft),#F4FBF7) !important;
+  border-color:#9FD9BD !important;
+  border-top-color:var(--theme-success) !important;
+}
+.verity-console .analytics-metric.success strong { color:var(--theme-success) !important; }
+.verity-console .analytics-metric.success :is(p,small) { color:#1F6B4C !important; }
+@media (max-width:1500px) {
+  .verity-console .analytics-filters { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .verity-console .analytics-clear { justify-self:start; }
+}
+@media (max-width:720px) {
+  .verity-console .analytics-filters { grid-template-columns:1fr; }
+  .verity-console .analytics-clear { justify-self:start; }
+}
+
+.verity-console .loan-import { margin-block:16px; padding:18px; }
+.verity-console .loan-import .section-heading { display:flex; justify-content:space-between; gap:16px; align-items:start; }
+.verity-console .loan-import-preview { display:grid; gap:12px; margin-block-start:14px; padding:14px; border:1px solid var(--theme-border); border-radius:14px; background:rgba(248,251,255,.78); }
+.verity-console .loan-import-preview p { margin:0; }
+.verity-console .loan-import-counts { display:flex; flex-wrap:wrap; gap:8px; }
+.verity-console .loan-import-counts span { padding:6px 9px; border-radius:999px; color:var(--theme-muted); background:#EDF5FF; font-size:12px; }
+.verity-console .loan-import-counts b { color:var(--theme-text); }
+/* Loan recovery: one headline rate, a meter for recovered vs portfolio, and
+   the three amounts beside it. Text uses text tokens; only the meter fill and
+   the legend swatches carry colour. */
+.verity-console .recovery-panel { display:flex; flex-wrap:wrap; align-items:center; gap:22px 32px; padding:24px 26px !important; }
+.verity-console .recovery-hero { flex:1 1 260px; display:grid; align-content:start; gap:6px; min-inline-size:0; }
+.verity-console .recovery-rate { display:flex; align-items:baseline; gap:2px; margin-top:6px; color:var(--theme-text) !important; font-size:clamp(48px,5.2vw,64px); font-weight:700; line-height:1; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+.verity-console .recovery-rate span { font-size:.5em; font-weight:650; color:var(--theme-muted); }
+.verity-console .recovery-caption { margin:0; color:var(--theme-muted); font-size:14px; }
+.verity-console .recovery-meter { position:relative; block-size:12px; margin-top:14px; border-radius:999px; background:var(--theme-track); overflow:hidden; }
+.verity-console .recovery-meter > i { display:block; block-size:100%; border-radius:999px; background:var(--theme-accent); transition:inline-size .4s ease; }
+/* auto-fit wraps the figures by the panel's own width, so a narrow panel in a
+   wide window (sidebar open) never squeezes them into each other. */
+.verity-console .recovery-figures { flex:2 1 460px; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:16px 0; margin:0; min-inline-size:0; }
+.verity-console .recovery-figure { display:grid; align-content:start; gap:8px; min-inline-size:0; padding:4px 20px; border-inline-start:1px solid var(--theme-border); }
+.verity-console .recovery-figure dt { display:flex; align-items:center; gap:8px; color:var(--theme-muted); font-size:13px; font-weight:650; }
+.verity-console .recovery-figure dt i { inline-size:10px; block-size:10px; border-radius:3px; flex:none; }
+.verity-console .recovery-figure.recovered dt i { background:var(--theme-accent); }
+.verity-console .recovery-figure.outstanding dt i { background:var(--theme-track); box-shadow:inset 0 0 0 1px var(--theme-border); }
+.verity-console .recovery-figure dd { display:grid; gap:4px; margin:0; }
+.verity-console .recovery-figure strong { color:var(--theme-text) !important; font-size:clamp(22px,2.2vw,30px); font-weight:700; letter-spacing:-.03em; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.verity-console .recovery-figure small { color:var(--theme-subtle); font-size:12px; font-variant-numeric:tabular-nums; }
+.verity-console .recovery-footer { flex:1 1 100%; display:flex; align-items:center; justify-content:space-between; gap:12px 20px; flex-wrap:wrap; padding-top:16px; border-top:1px solid var(--theme-border); }
+.verity-console .recovery-footer p { margin:0; color:var(--theme-muted); font-size:13px; }
+.verity-console .recovery-footer b { color:var(--theme-text); font-variant-numeric:tabular-nums; }
+.verity-console .recovery-footer .analytics-link { color:var(--theme-accent) !important; font-size:13px; font-weight:700; cursor:pointer; }
+.verity-console .recovery-footer .analytics-link:focus-visible { outline:2px solid var(--theme-accent); outline-offset:3px; border-radius:4px; }
+.verity-console .recovery-empty { display:grid; gap:6px; }
+.verity-console .recovery-empty h2 { margin:4px 0 0; }
+.verity-console .recovery-empty p:last-child { margin:0; color:var(--theme-muted); }
+@media (max-width:600px) { .verity-console .recovery-panel { padding:18px 16px !important; } .verity-console .recovery-figures { grid-template-columns:1fr; gap:14px; } .verity-console .recovery-figure { padding:0 0 14px; border-inline-start:0; border-bottom:1px solid var(--theme-border); } .verity-console .recovery-figure:last-child { border-bottom:0; padding-bottom:0; } .verity-console .recovery-footer { flex-direction:column; align-items:start; } .verity-console .loan-import .section-heading { flex-direction:column; } }
+
+/* ── Alignment fixes ─────────────────────────────────────────────────────
+   Activity chart: columns were a fixed 194px but their content needs ~204px,
+   so flexbox shrank each bar area by a different amount and the bars, zero
+   labels and year labels sat on different baselines. Size columns to their
+   content and never shrink the bar area. */
+.verity-console .activity-column { block-size:auto !important; min-block-size:0 !important; }
+.verity-console .activity-column > .activity-bars { flex:none !important; }
+/* The chart was a fixed 168px, so the tallest bar's value label was clipped off
+   the top. Let it grow to fit the columns. */
+.verity-console .activity-chart { block-size:auto !important; min-block-size:0 !important; background-image:none !important; }
+
+/* KPI cards: only the toned cards had a 3px top border, nudging their text
+   below "Cases in portfolio". Give every card the same top edge. */
+.verity-console .analytics-metric { border-top-width:3px !important; border-top-style:solid !important; }
+.verity-console .analytics-metric:not(.attention):not(.success):not(.highlight) { border-top-color:var(--theme-border) !important; }
+
+/* Stage cards: reserve two lines for the stage name so a long name
+   ("APPEARANCE OF ACCUSSED") does not push its figure below its neighbours. */
+.verity-console .stage-card > span { min-block-size:2.6em; line-height:1.3; }
+.verity-console .stage-card.nbw > span { padding-inline-end:96px; }
+
+/* Filters: the court picker was taller than the selects beside it. Match
+   heights and align every control to the same baseline. */
+.verity-console .analytics-filters { align-items:end; }
+.verity-console .analytics-filters :is(select,.court-picker input) { block-size:44px; min-block-size:44px !important; box-sizing:border-box; }
+.verity-console .analytics-filters label { display:flex !important; flex-direction:column; justify-content:flex-end; gap:8px; }
+.verity-console .analytics-filters label > :is(select,.court-picker) { margin:0 !important; }
+
+/* Advocate tools: the search box and the "Sort by" control sat on different
+   lines. Align both controls on one baseline. */
+.verity-console .advocate-tools { align-items:center; }
+.verity-console .advocate-tools label { display:flex !important; flex-direction:row !important; align-items:center !important; gap:10px; white-space:nowrap; }
+.verity-console .advocate-tools :is(input,select) { block-size:42px; min-block-size:42px !important; box-sizing:border-box; }
+
+/* Ageing panel: the "pending for more than a year" row was indented relative
+   to the bars above it. */
+.verity-console .review-queue { padding-inline:0 !important; background:transparent !important; }
+
+/* ── Dropdown (replaces native <select>) ─────────────────────────────────
+   Same field, divided chevron and option panel as the court picker, so every
+   dropdown in the workspace looks and behaves alike. !important matches the
+   court picker: global button rules would otherwise restyle the trigger. */
+.lc-dropdown { position:relative; display:block; inline-size:100%; min-inline-size:0; z-index:1; font:inherit; }
+.lc-dropdown.is-open { z-index:60; }
+.lc-dropdown-trigger {
+  position:relative;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:10px;
+  inline-size:100%;
+  block-size:44px;
+  min-block-size:44px !important;
+  margin:0 !important;
+  padding:0 52px 0 14px !important;
+  color:var(--theme-text) !important;
+  background:var(--theme-raised) !important;
+  border:1px solid var(--theme-border) !important;
+  border-radius:12px !important;
+  box-shadow:none !important;
+  font:inherit;
+  font-size:14px !important;
+  font-weight:650 !important;
+  text-align:start !important;
+  cursor:pointer;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.lc-dropdown-trigger:hover:not(:disabled) { border-color:#9FC5F6 !important; background:var(--theme-raised) !important; }
+.lc-dropdown-trigger:focus-visible,
+.lc-dropdown.is-open .lc-dropdown-trigger { outline:none; border-color:var(--theme-accent) !important; box-shadow:0 0 0 3px rgba(29,78,216,.14) !important; }
+.lc-dropdown-trigger:disabled { cursor:not-allowed; opacity:.6; }
+.lc-dropdown-value { min-inline-size:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lc-dropdown-value.is-placeholder { color:var(--theme-subtle); font-weight:600; }
+.lc-dropdown-chevron {
+  position:absolute;
+  inset-block:6px;
+  inset-inline-end:0;
+  display:grid;
+  place-items:center;
+  inline-size:42px;
+  border-inline-start:1px solid var(--theme-border);
+  color:var(--theme-accent-strong);
+  font-size:20px;
+  line-height:1;
+  padding-block-end:4px;
+}
+.lc-dropdown-menu {
+  position:absolute;
+  inset-block-start:calc(100% + 8px);
+  inset-inline:0;
+  display:grid;
+  gap:2px;
+  min-inline-size:100%;
+  max-block-size:280px;
+  overflow:auto;
+  margin:0;
+  padding:6px;
+  border:1px solid #A9C8EF;
+  border-radius:13px;
+  background:#FBFDFF;
+  box-shadow:0 18px 34px rgba(29,78,216,.18), inset 0 1px rgba(255,255,255,.9);
+  backdrop-filter:blur(20px) saturate(140%);
+  animation:lc-dropdown-in .12s ease-out;
+}
+@keyframes lc-dropdown-in { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce) { .lc-dropdown-menu { animation:none; } }
+.lc-dropdown-option {
+  display:flex;
+  align-items:center;
+  min-block-size:40px;
+  padding:9px 12px;
+  border-radius:9px;
+  color:var(--theme-text);
+  font-size:14px;
+  font-weight:650;
+  line-height:1.3;
+  cursor:pointer;
+  user-select:none;
+}
+.lc-dropdown-option.is-active { background:#EDF4FF; color:var(--theme-accent-strong); }
+.lc-dropdown-option.is-selected { background:var(--theme-selected); color:var(--theme-accent-strong); font-weight:700; }
+/* Mark the current choice with a check so it reads as "selected", not "hovered". */
+.lc-dropdown-option.is-selected::after { content:"✓"; margin-inline-start:auto; padding-inline-start:12px; color:var(--theme-accent); font-weight:800; }
+.lc-dropdown-option.is-disabled { color:var(--theme-subtle); cursor:default; font-weight:600; }
+.lc-dropdown-empty { margin:8px 10px; color:var(--theme-muted); font-size:13px; }
+/* Card containers must not clip an open menu. */
+.verity-console :is(.analytics-filters,.case-register-filters,.court-party-search,.advocate-tools,.analytics-panel):has(.lc-dropdown.is-open) { position:relative; z-index:40; overflow:visible !important; }
+
+/* Header workspace switcher: compact and borderless, sits under its eyebrow. */
+/* Header workspace switcher: a soft pill rather than a boxed field. Its text
+   stays aligned with the "Company workspace" label (negative margin offsets
+   the pill padding); open/hover is a light tint, not an outline. */
+.verity-console .workspace-switcher .lc-dropdown { inline-size:auto; max-inline-size:100%; }
+.verity-console .workspace-switcher .lc-dropdown-trigger {
+  inline-size:auto; max-inline-size:100%; gap:8px;
+  block-size:34px; min-block-size:34px !important;
+  margin:0 0 0 -10px !important; padding:0 34px 0 10px !important;
+  background:transparent !important; border:0 !important; border-radius:10px !important; box-shadow:none !important;
+  color:var(--theme-text) !important; font-size:16px !important; font-weight:750 !important;
+}
+.verity-console .workspace-switcher .lc-dropdown-trigger:hover:not(:disabled),
+.verity-console .workspace-switcher .lc-dropdown.is-open .lc-dropdown-trigger { background:#EAF2FF !important; color:var(--theme-accent-strong) !important; box-shadow:none !important; }
+.verity-console .workspace-switcher .lc-dropdown-trigger:focus-visible { outline:2px solid var(--theme-accent) !important; outline-offset:2px; box-shadow:none !important; }
+.verity-console .workspace-switcher .lc-dropdown-chevron { inline-size:26px; inset-block:0; inset-inline-end:4px; border-inline-start:0; font-size:16px; padding:0 0 3px; transition:transform .15s ease; }
+.verity-console .workspace-switcher .lc-dropdown.is-open .lc-dropdown-chevron { transform:rotate(180deg); padding:3px 0 0; }
+.verity-console .workspace-switcher .lc-dropdown-menu { inset-inline:-10px auto; inline-size:260px; min-inline-size:0; padding:6px; }
+.verity-console .workspace-switcher .lc-dropdown-menu::before { content:"Switch workspace"; display:block; padding:6px 10px 6px; color:var(--theme-subtle); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.verity-console .workspace-switcher .lc-dropdown-option { min-block-size:38px; padding:8px 10px; font-size:14px; }
+
+/* Advocate "Sort by": fixed width beside its label. */
+.advocate-tools .lc-dropdown { inline-size:200px; }
+.advocate-tools .lc-dropdown-trigger { block-size:42px; min-block-size:42px !important; }
+/* Text fields that sit beside dropdowns share their 44px height. */
+.verity-console :is(.court-party-search,.case-register-filters) :is(input[type="text"],input[type="search"],input:not([type])) { block-size:44px; min-block-size:44px !important; box-sizing:border-box; border-radius:12px !important; }
+.verity-console .advocate-tools { align-items:flex-end !important; }
+.verity-console .advocate-tools label { min-block-size:0 !important; margin:0 !important; padding:0 !important; }
+.verity-console .advocate-tools > input { margin:0 !important; }
+
+/* ── Hearing calendar ────────────────────────────────────────────────────
+   One toolbar of equal-height controls, a 7-column month grid, and the
+   selected day's cases beside it on wide screens. New hc-* classes so the
+   legacy .hearing-* rules in older stylesheets no longer apply. */
+.verity-console .hc-panel { display:grid; gap:18px; padding:24px 26px !important; overflow:visible !important; }
+.verity-console .hc-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px 24px; flex-wrap:wrap; }
+.verity-console .hc-title { display:grid; gap:4px; min-inline-size:0; }
+.verity-console .hc-title h2 { margin:0; font-size:clamp(22px,2vw,26px); letter-spacing:-.02em; }
+.verity-console .hc-stats { display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 0; }
+.verity-console .hc-stats > span { padding:4px 10px; border-radius:999px; background:var(--theme-selected); color:var(--theme-accent-strong); font-size:12px; }
+.verity-console .hc-stats b { font-weight:700; font-variant-numeric:tabular-nums; }
+.verity-console .hc-stats .hc-filtered { background:var(--theme-warning-soft); color:var(--theme-warning); font-weight:700; }
+.verity-console .hc-search { position:relative; display:block; flex:0 1 360px; min-inline-size:220px; margin:0; }
+.verity-console .hc-search input {
+  inline-size:100%; block-size:44px; min-block-size:44px !important; box-sizing:border-box;
+  margin:0 !important; padding:0 14px 0 38px !important;
+  border:1px solid var(--theme-border) !important; border-radius:12px !important;
+  background:var(--theme-raised) !important; color:var(--theme-text) !important; font:inherit; font-size:14px;
+}
+.verity-console .hc-search input:focus-visible { outline:none; border-color:var(--theme-accent) !important; box-shadow:0 0 0 3px rgba(29,78,216,.14); }
+.verity-console .hc-search-icon { position:absolute; inset-block-start:50%; inset-inline-start:13px; translate:0 -50%; color:var(--theme-subtle); pointer-events:none; }
+
+.verity-console .hc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-block:14px; border-block:1px solid var(--theme-border); }
+.verity-console .hc-month-nav { display:flex; align-items:center; gap:10px; }
+.verity-console .hc-month-nav h3 { margin:0; min-inline-size:168px; text-align:center; font-size:17px; font-weight:750; font-variant-numeric:tabular-nums; }
+.verity-console .hc-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.verity-console :is(.hc-icon-btn,.hc-btn,.hc-month-input input) {
+  display:inline-flex !important; align-items:center !important; justify-content:center !important;
+  block-size:40px; min-block-size:40px !important; box-sizing:border-box; margin:0 !important;
+  border:1px solid var(--theme-border) !important; border-radius:11px !important;
+  background:var(--theme-raised) !important; color:var(--theme-text) !important;
+  font:inherit; font-size:14px !important; font-weight:650 !important; box-shadow:none !important; cursor:pointer;
+}
+.verity-console .hc-icon-btn { inline-size:40px; min-inline-size:40px; padding:0 !important; font-size:22px !important; line-height:1; color:var(--theme-accent-strong) !important; }
+.verity-console .hc-btn { padding:0 16px !important; }
+.verity-console .hc-btn-primary { background:var(--theme-accent) !important; border-color:var(--theme-accent) !important; color:#fff !important; }
+.verity-console .hc-month-input { margin:0; }
+.verity-console .hc-month-input input { padding:0 12px !important; inline-size:172px; cursor:text; }
+.verity-console :is(.hc-icon-btn,.hc-btn):hover:not(:disabled) { border-color:#9FC5F6 !important; background:#F3F8FF !important; }
+.verity-console .hc-btn-primary:hover:not(:disabled) { background:var(--theme-accent-strong) !important; border-color:var(--theme-accent-strong) !important; }
+.verity-console :is(.hc-icon-btn,.hc-btn):disabled { opacity:.5; cursor:not-allowed; }
+.verity-console :is(.hc-icon-btn,.hc-btn,.hc-day,.hc-chip,.hc-more,.hc-case-link,.hc-mobile-count):focus-visible { outline:2px solid var(--theme-accent) !important; outline-offset:2px; }
+
+.verity-console .hc-legend { display:flex; flex-wrap:wrap; align-items:center; gap:8px 18px; margin:-4px 0 0; padding:0; list-style:none; color:var(--theme-muted); font-size:13px; }
+.verity-console .hc-legend li { display:flex; align-items:center; gap:7px; }
+.verity-console .hc-legend .hc-legend-note { margin-inline-start:auto; color:var(--theme-subtle); font-size:12px; cursor:help; }
+.verity-console .hc-dot { inline-size:8px; block-size:8px; flex:none; border-radius:50%; background:#94A3B8; }
+.verity-console .hc-dot.is-next { background:var(--theme-success); }
+.verity-console .hc-swatch { inline-size:18px; block-size:12px; flex:none; border:1px solid #D7E6F8; border-radius:4px; background:#F6FAFF; }
+.verity-console .hc-swatch.is-next { border-color:#B9E2CD; background:var(--theme-success-soft); }
+
+/* Calendar first; the selected day sits beside it only when there is room
+   for 7 readable columns (wide screens), otherwise below it. */
+.verity-console .hc-layout { display:grid; grid-template-columns:1fr; gap:20px; align-items:start; }
+@media (min-width:1600px) { .verity-console .hc-layout { grid-template-columns:minmax(0,1fr) minmax(320px,380px); } .verity-console .hc-agenda { position:sticky; inset-block-start:16px; max-block-size:calc(100vh - 32px); overflow:auto; } }
+.verity-console .hc-grid-wrap { min-inline-size:0; overflow-x:auto; border:1px solid var(--theme-border); border-radius:16px; background:var(--theme-raised); }
+.verity-console .hc-grid-wrap:focus-visible { outline:2px solid var(--theme-accent); outline-offset:2px; }
+.verity-console .hc-grid { inline-size:100%; min-inline-size:640px; border-collapse:collapse; table-layout:fixed; }
+.verity-console .hc-grid th { padding:12px 8px; border-bottom:1px solid var(--theme-border); background:var(--theme-dense); color:var(--theme-muted); font-size:12px; font-weight:750; letter-spacing:.06em; text-transform:uppercase; text-align:center; }
+.verity-console .hc-grid abbr { text-decoration:none; }
+.verity-console .hc-cell { position:relative; block-size:118px; padding:6px; border-inline-end:1px solid var(--theme-border); border-block-end:1px solid var(--theme-border); vertical-align:top; background:var(--theme-raised); }
+.verity-console .hc-grid tr > .hc-cell:last-child { border-inline-end:0; }
+.verity-console .hc-grid tbody tr:last-child > .hc-cell { border-block-end:0; }
+.verity-console .hc-cell.is-weekend { background:#FAFCFF; }
+.verity-console .hc-cell.is-blank { background:repeating-linear-gradient(135deg,transparent 0 8px,#F1F6FD 8px 9px); }
+.verity-console .hc-cell.is-selected { background:#F2F7FF; box-shadow:inset 0 0 0 2px var(--theme-accent); }
+.verity-console .hc-day {
+  display:flex !important; align-items:center !important; justify-content:space-between !important; gap:6px;
+  inline-size:100%; min-block-size:28px !important; margin:0 0 4px !important; padding:2px 4px !important;
+  border:0 !important; border-radius:8px !important; background:transparent !important; box-shadow:none !important;
+  color:var(--theme-text) !important; cursor:pointer;
+}
+.verity-console .hc-day:hover { background:#EEF5FF !important; }
+.verity-console .hc-day-number { display:grid; place-items:center; min-inline-size:26px; block-size:26px; border-radius:999px; font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; }
+.verity-console .hc-cell.is-today .hc-day-number { background:var(--theme-accent); color:#fff; }
+.verity-console .hc-today-tag { color:var(--theme-accent-strong); font-size:11px; font-weight:750; }
+.verity-console .hc-chips { display:grid; grid-template-columns:minmax(0,1fr); gap:3px; margin:0; padding:0; list-style:none; }
+.verity-console .hc-chips > li { min-inline-size:0; }
+.verity-console .hc-chip {
+  display:flex !important; align-items:center !important; justify-content:flex-start !important; gap:6px;
+  inline-size:100%; min-inline-size:0 !important; max-inline-size:100%; box-sizing:border-box; overflow:hidden;
+  min-block-size:24px !important; margin:0 !important; padding:3px 7px !important;
+  border:1px solid #D7E6F8 !important; border-radius:7px !important; background:#F6FAFF !important; box-shadow:none !important;
+  color:var(--theme-text) !important; font-size:12px !important; font-weight:650 !important; text-align:start; cursor:pointer;
+}
+.verity-console .hc-chip.is-next { border-color:#B9E2CD !important; background:var(--theme-success-soft) !important; }
+.verity-console .hc-chip > span { min-inline-size:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.verity-console .hc-chip:hover { border-color:var(--theme-accent) !important; }
+.verity-console .hc-more {
+  display:block !important; inline-size:100%; min-block-size:22px !important; margin:3px 0 0 !important; padding:2px 7px !important;
+  border:0 !important; background:transparent !important; box-shadow:none !important;
+  color:var(--theme-accent-strong) !important; font-size:12px !important; font-weight:700 !important; text-align:start; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;
+}
+.verity-console .hc-more:hover { text-decoration:underline; }
+.verity-console .hc-mobile-count { display:none !important; }
+
+.verity-console .hc-agenda { display:grid; gap:12px; min-inline-size:0; max-block-size:none; overflow:visible; padding:18px; border:1px solid var(--theme-border); border-radius:16px; background:var(--theme-dense); }
+.verity-console .hc-agenda-head { display:grid; gap:2px; padding-block-end:12px; border-block-end:1px solid var(--theme-border); }
+.verity-console .hc-agenda-head h3 { margin:2px 0 0; font-size:20px; letter-spacing:-.02em; outline:none; }
+.verity-console .hc-agenda-count { margin:0; color:var(--theme-muted); font-size:13px; font-weight:650; }
+.verity-console .hc-empty { margin:0; color:var(--theme-muted); font-size:13px; }
+.verity-console .hc-agenda-list { display:grid; gap:10px; margin:0; padding:0; list-style:none; }
+.verity-console .hc-agenda-item { display:grid; gap:6px; padding:14px; border:1px solid var(--theme-border); border-radius:13px; background:var(--theme-raised); }
+.verity-console .hc-agenda-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.verity-console .hc-case-link {
+  min-block-size:0 !important; margin:0 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important;
+  color:var(--theme-accent-strong) !important; font-size:15px !important; font-weight:750 !important; text-align:start; cursor:pointer; font-variant-numeric:tabular-nums;
+}
+.verity-console .hc-case-link:hover { text-decoration:underline; }
+.verity-console .hc-badge { flex:none; padding:3px 9px; border:1px solid #CBD5E1; border-radius:999px; background:#F8FAFC; color:var(--theme-muted); font-size:11px; font-weight:700; white-space:nowrap; }
+.verity-console .hc-badge.is-next { border-color:#B9E2CD; background:var(--theme-success-soft); color:var(--theme-success); }
+.verity-console .hc-cnr { color:var(--theme-subtle); font-size:12px; font-variant-numeric:tabular-nums; }
+.verity-console .hc-parties { display:grid; gap:2px; margin:2px 0 0; color:var(--theme-text); font-size:13px; font-weight:600; line-height:1.4; }
+.verity-console .hc-parties em { color:var(--theme-subtle); font-size:11px; font-style:normal; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+.verity-console .hc-meta { display:grid; gap:4px; margin:4px 0 0; padding-block-start:8px; border-block-start:1px dashed var(--theme-border); }
+.verity-console .hc-meta > div { display:grid; grid-template-columns:72px minmax(0,1fr); gap:8px; font-size:12px; line-height:1.4; }
+.verity-console .hc-meta dt { color:var(--theme-subtle); font-weight:700; }
+.verity-console .hc-meta dd { margin:0; color:var(--theme-text); font-weight:600; overflow-wrap:anywhere; }
+.verity-console .hc-notice { margin:0; padding:12px 14px; border-radius:12px; background:var(--theme-warning-soft); color:#7A4A0B; font-size:13px; }
+.verity-console .hc-footnote { margin:0; color:var(--theme-subtle); font-size:12px; }
+
+@media (max-width:1599px) {
+  .verity-console .hc-agenda-list { grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); }
+}
+@media (max-width:720px) {
+  .verity-console .hc-panel { padding:18px 14px !important; }
+  .verity-console .hc-search { flex-basis:100%; }
+  .verity-console .hc-toolbar { flex-direction:column; align-items:stretch; }
+  .verity-console .hc-month-nav { justify-content:space-between; }
+  .verity-console .hc-actions { display:grid; grid-template-columns:1fr 1fr; }
+  .verity-console .hc-month-input { grid-column:1 / -1; }
+  .verity-console .hc-month-input input { inline-size:100%; }
+  .verity-console .hc-legend .hc-legend-note { margin-inline-start:0; }
+  .verity-console .hc-grid { min-inline-size:0; }
+  .verity-console .hc-grid th { padding:8px 2px; font-size:11px; letter-spacing:0; }
+  .verity-console .hc-cell { block-size:62px; padding:3px; }
+  .verity-console .hc-chips,.verity-console .hc-more,.verity-console .hc-today-tag { display:none !important; }
+  .verity-console .hc-day { justify-content:center !important; padding:0 !important; }
+  .verity-console .hc-mobile-count {
+    display:grid !important; place-items:center; margin:2px auto 0 !important; padding:0 !important;
+    inline-size:26px; min-inline-size:26px; block-size:20px; min-block-size:20px !important;
+    border:0 !important; border-radius:999px !important; background:var(--theme-success-soft) !important;
+    color:var(--theme-success) !important; font-size:11px !important; font-weight:750 !important;
+  }
+}
+/* Neutralise legacy .hearing-agenda rules (680px list cap with inner scroll,
+   18px top margin that offset it from the calendar, per-item borders). */
+.verity-console .hc-agenda { margin:0 !important; background:var(--theme-dense) !important; border-radius:16px !important; }
+.verity-console .hc-agenda > .hc-agenda-list { max-block-size:none; overflow:visible; }
+.verity-console .hc-agenda .hc-agenda-item { padding:14px !important; border:1px solid var(--theme-border) !important; background:var(--theme-raised) !important; }
+.verity-console .hc-agenda .hc-agenda-item p { margin-block:2px 0; font-size:13px; }
+.verity-console .hc-agenda .hc-case-link { display:inline !important; inline-size:auto !important; margin:0 !important; }
+.verity-console .hc-agenda h3 { scroll-margin-block:100px 24px; }
+/* Wide screens: the selected day sits beside the calendar, stays in view and
+   scrolls on its own (declared last so it wins over the reset above). */
+@media (min-width:1600px) {
+  .verity-console .hc-agenda { position:sticky; inset-block-start:16px; max-block-size:calc(100vh - 32px); overflow:auto; }
+}
+
+/* Header without the search box: company switcher on the left, Sync and the
+   account menu on the right, all on one centred row. Flex replaces the old
+   4-column grid, whose first column pushed the switcher away from the edge. */
+.verity-console .console-header { display:flex !important; align-items:center !important; gap:12px !important; }
+.verity-console .console-header .workspace-switcher { flex:0 1 220px; min-inline-size:0; max-inline-size:220px !important; margin:0 auto 0 0 !important; display:grid; gap:2px; align-content:center; }
+.verity-console .console-header .refresh-button { margin-inline-start:auto; flex:none; }
+.verity-console .console-header .profile { flex:none; }
+.verity-console .console-header :is(.refresh-button,.profile-trigger) { block-size:46px; min-block-size:46px !important; }
+@media (max-width:700px) { .verity-console .console-header .workspace-switcher { display:none; } }
+/* A legacy reference-ui rule hid every header .btn on small screens; keep
+   Sync available (icon-only there) and pushed to the right with the account. */
+.verity-console .console-header .refresh-button { display:inline-flex !important; }
+
+/* Profile → Show or hide tabs */
+.verity-console .account-dialog .tab-toggles { display:grid; gap:8px; margin:14px 0 6px; padding:0; list-style:none; }
+.verity-console .account-dialog .tab-toggles li {
+  display:grid; grid-template-columns:36px minmax(0,1fr) auto; align-items:center; gap:12px;
+  padding:10px 12px; border:1px solid var(--theme-border); border-radius:14px; background:var(--theme-raised);
+}
+.verity-console .tab-toggle-icon { display:grid; place-items:center; inline-size:36px; block-size:36px; border-radius:10px; background:var(--theme-selected); color:var(--theme-accent-strong); }
+.verity-console .tab-toggle-copy { display:grid; gap:2px; min-inline-size:0; }
+.verity-console .tab-toggle-copy strong { color:var(--theme-text); font-size:14px; }
+.verity-console .tab-toggle-copy small { color:var(--theme-muted); font-size:12px; }
+.verity-console .tab-switch {
+  position:relative; flex:none; inline-size:44px !important; min-inline-size:44px; block-size:26px; min-block-size:26px !important;
+  margin:0 !important; padding:0 !important; border:0 !important; border-radius:999px !important;
+  background:#CBD5E1 !important; box-shadow:none !important; cursor:pointer; transition:background .18s ease;
+}
+.verity-console .tab-switch > span { position:absolute; inset-block-start:3px; inset-inline-start:3px; inline-size:20px; block-size:20px; border-radius:50%; background:#fff; box-shadow:0 1px 3px rgba(15,36,71,.25); transition:transform .18s ease; }
+.verity-console .tab-switch[aria-checked="true"] { background:var(--theme-accent) !important; }
+.verity-console .tab-switch[aria-checked="true"] > span { transform:translateX(18px); }
+.verity-console .tab-switch:disabled { opacity:.5; cursor:not-allowed; }
+.verity-console .tab-switch:focus-visible { outline:2px solid var(--theme-accent) !important; outline-offset:2px; }
+.verity-console .account-dialog .tab-settings { margin-block-start:18px; padding-block-start:16px; border-block-start:1px solid var(--theme-border); }
+.verity-console .account-dialog .tab-settings h3 { margin:0 0 4px; font-size:16px; color:var(--theme-text); }
+.verity-console .account-dialog .tab-settings > p { margin:0; font-size:13px; }
+
+/* ── Workspace motion ─────────────────────────────────────────────────────
+   Blocks rise in as they scroll into view (Motion.jsx marks them), bars and
+   columns grow from zero once revealed, and values glide when filters change.
+   Nothing animates when reduced motion is requested. */
+@media (prefers-reduced-motion: no-preference) {
+  /* Hidden until revealed; the delayed fallback guarantees nothing can stay
+     invisible if a block is never reported as entering the viewport. */
+  .verity-console [data-reveal="pending"] { opacity:0; animation:reveal-fallback 1ms 4s forwards; }
+  .verity-console dialog[data-reveal] { opacity:1; animation:none; }
+  .verity-console [data-reveal="in"] { animation:reveal-in 620ms var(--motion-ease) backwards; animation-delay:calc(var(--reveal-i, 0) * 70ms); }
+  .verity-console :is([data-reveal="in"] :is(.analytics-bar,.stage-card), .stage-card[data-reveal="in"]) > i > b,
+  .verity-console [data-reveal="in"] :is(.recovery-meter,.metric-share) > i,
+  .verity-console .analytics-metric[data-reveal="in"] .metric-share > i {
+    transform-origin:left center;
+    animation:grow-x 900ms var(--motion-ease) backwards;
+    animation-delay:calc(var(--reveal-i, 0) * 70ms + 180ms);
+  }
+  .verity-console [data-reveal="in"] .activity-bar > i { transform-origin:center bottom; animation:grow-y 800ms var(--motion-ease) backwards; animation-delay:220ms; }
+  .verity-console [data-reveal="in"] .status-donut { animation:donut-in 900ms var(--motion-ease) backwards; animation-delay:120ms; }
+  .verity-console [data-reveal="in"] .hc-chip { animation:reveal-in 420ms var(--motion-ease) backwards; animation-delay:160ms; }
+  .verity-console :is(.analytics-bar > i > b,.stage-card > i > b,.metric-share > i) { transition:inline-size 600ms var(--motion-ease); }
+  .verity-console .activity-bar > i { transition:block-size 600ms var(--motion-ease); }
+  .verity-console .analytics-panel:hover { border-color:#B8D3F5 !important; box-shadow:0 22px 46px rgba(29,78,216,.12) !important; }
+}
+@keyframes reveal-fallback { to { opacity:1; } }
+@keyframes reveal-in { from { opacity:0; transform:translateY(18px) scale(.985); } to { opacity:1; transform:none; } }
+@keyframes grow-x { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+@keyframes grow-y { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+@keyframes donut-in { from { opacity:0; transform:rotate(-120deg) scale(.86); } to { opacity:1; transform:none; } }
+
+/* ── Analytics: pinned filter toolbar ── */
+.verity-console .analytics-filters {
+  position:sticky; inset-block-start:88px; z-index:25;
+  display:flex !important; flex-wrap:wrap; align-items:flex-end; gap:12px !important;
+  padding:14px 16px !important; border-radius:20px !important;
+  background:rgba(248,251,255,.9) !important; backdrop-filter:blur(16px) saturate(140%);
+  box-shadow:0 12px 30px rgba(29,78,216,.08) !important;
+}
+.verity-console .analytics-filters > label { flex:1 1 170px; min-inline-size:0 !important; }
+.verity-console .analytics-filters > label:first-child { flex:2 1 260px; }
+.verity-console .analytics-filters > label > span { font-size:12px; }
+.verity-console .analytics-filters > .analytics-empty { flex-basis:100%; margin:0; }
+.verity-console .analytics-filter-count {
+  display:inline-flex; align-items:center; block-size:44px; padding:0 14px; border-radius:12px;
+  background:var(--theme-dense); color:var(--theme-muted); font-size:13px; font-weight:700; white-space:nowrap;
+}
+.verity-console .analytics-filter-count.is-active { background:var(--theme-selected); color:var(--theme-accent-strong); }
+.verity-console .analytics-clear { flex:none; block-size:44px; min-block-size:44px !important; }
+/* Fill the small strip between the pinned header and toolbar so scrolled
+   content never shows through it (sits in the section gap when not pinned). */
+.verity-console .analytics-filters.is-stuck::before { content:""; position:absolute; inset-inline:-8px; inset-block-end:100%; block-size:12px; background:var(--theme-canvas); pointer-events:none; }
+@media (max-width:700px) { .verity-console .analytics-filters { inset-block-start:78px; } }
+/* Pin the filter bar only where it fits on one or two short rows. */
+@media (max-width:900px) { .verity-console .analytics-filters { position:static; } .verity-console .analytics-filters.is-stuck::before { display:none; } }
+
+/* ── Analytics: KPI cards ── */
+.verity-console .metric-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.verity-console .metric-head > p { margin:0; padding-block-start:4px; }
+.verity-console .metric-icon { display:grid; place-items:center; flex:none; inline-size:36px; block-size:36px; border-radius:11px; background:var(--theme-selected); color:var(--theme-accent-strong); }
+.verity-console .analytics-metric.attention .metric-icon { background:var(--theme-warning-soft); color:var(--theme-warning); }
+.verity-console .analytics-metric.success .metric-icon { background:#fff; color:var(--theme-success); box-shadow:0 0 0 1px #B9E2CD inset; }
+.verity-console .analytics-metric.highlight .metric-icon { background:#E0ECFF; color:var(--theme-accent); }
+.verity-console .analytics-metric strong { margin-block:10px 6px !important; }
+.verity-console .metric-share { display:block; block-size:6px; margin-block-start:12px; border-radius:99px; background:var(--theme-track); overflow:hidden; }
+.verity-console .metric-share > i { display:block; block-size:100%; border-radius:inherit; background:var(--theme-accent); }
+.verity-console .analytics-metric.attention .metric-share > i { background:linear-gradient(90deg,#E9A04D,var(--theme-warning)); }
+.verity-console .analytics-metric.success .metric-share { background:#CDEBDC; }
+.verity-console .analytics-metric.success .metric-share > i { background:linear-gradient(90deg,#34A873,var(--theme-success)); }
+
+/* ── Analytics: overview header accent ── */
+.verity-console .analytics-overview { position:relative; overflow:hidden; }
+.verity-console .analytics-overview::after {
+  content:""; position:absolute; inset-block:-40% -60%; inset-inline-end:-10%; inline-size:46%; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(29,78,216,.14), transparent 70%), radial-gradient(closest-side at 70% 70%, rgba(22,128,90,.10), transparent 70%);
+}
+.verity-console .analytics-overview > * { position:relative; z-index:1; }
+
+/* ── Advocate-wise performance: ranked rows ─────────────────────────────── */
+.verity-console .adv-panel { display:grid; gap:16px; }
+.verity-console .adv-panel > header { margin:0 !important; }
+.verity-console .adv-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.verity-console .adv-summary > div { display:grid; gap:2px; padding:14px 16px; border:1px solid var(--theme-border); border-radius:14px; background:var(--theme-dense); }
+.verity-console .adv-summary strong { color:var(--theme-text) !important; font-size:24px; font-weight:750; font-variant-numeric:tabular-nums; letter-spacing:-.02em; }
+.verity-console .adv-summary span { color:var(--theme-muted); font-size:12px; font-weight:650; }
+
+.verity-console .adv-tools { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+.verity-console .adv-search { position:relative; display:block; flex:1 1 260px; max-inline-size:360px; margin:0; }
+.verity-console .adv-search svg { position:absolute; inset-block-start:50%; inset-inline-start:13px; translate:0 -50%; color:var(--theme-subtle); pointer-events:none; }
+.verity-console .adv-search input { inline-size:100%; block-size:42px; min-block-size:42px !important; box-sizing:border-box; margin:0 !important; padding:0 14px 0 38px !important; border:1px solid var(--theme-border) !important; border-radius:12px !important; background:var(--theme-raised) !important; color:var(--theme-text) !important; font:inherit; font-size:14px; }
+.verity-console .adv-search input:focus-visible { outline:none; border-color:var(--theme-accent) !important; box-shadow:0 0 0 3px rgba(29,78,216,.14); }
+.verity-console .adv-sort { display:inline-flex; flex-wrap:wrap; gap:4px; padding:4px; border:1px solid var(--theme-border); border-radius:12px; background:var(--theme-dense); }
+.verity-console .adv-sort button { min-block-size:34px !important; margin:0 !important; padding:0 12px !important; border:0 !important; border-radius:9px !important; background:transparent !important; box-shadow:none !important; color:var(--theme-muted) !important; font-size:13px !important; font-weight:700 !important; cursor:pointer; }
+.verity-console .adv-sort button:hover:not([aria-pressed="true"]) { background:var(--theme-raised) !important; color:var(--theme-text) !important; }
+.verity-console .adv-sort button[aria-pressed="true"] { background:var(--theme-accent) !important; color:#fff !important; box-shadow:0 6px 14px rgba(29,78,216,.25) !important; }
+
+.verity-console .adv-list { display:grid; gap:10px; margin:0; padding:0; list-style:none; }
+.verity-console .adv-row {
+  display:grid; grid-template-columns:minmax(220px,1.1fr) minmax(220px,1.3fr) minmax(130px,.55fr);
+  grid-template-areas:"who progress tat" "stages stages stages";
+  align-items:center; gap:10px 24px; padding:16px 18px;
+  border:1px solid var(--theme-border); border-radius:16px; background:var(--theme-raised);
+  transition:border-color .2s var(--motion-ease), box-shadow .2s var(--motion-ease), transform .2s var(--motion-ease);
+}
+.verity-console .adv-row:hover { border-color:#B8D3F5; box-shadow:0 12px 28px rgba(29,78,216,.08); transform:translateY(-1px); }
+.verity-console .adv-who { grid-area:who; display:flex; align-items:center; gap:12px; min-inline-size:0; }
+.verity-console .adv-rank { inline-size:22px; flex:none; color:var(--theme-subtle); font-size:13px; font-weight:800; font-variant-numeric:tabular-nums; text-align:end; }
+.verity-console .adv-avatar { display:grid; place-items:center; flex:none; inline-size:42px; block-size:42px; border-radius:13px; font-size:14px; font-weight:800; letter-spacing:.02em; }
+.verity-console .adv-avatar.is-blue { background:#DBEAFE; color:#163EAF; }
+.verity-console .adv-avatar.is-teal { background:#CCF1F5; color:#0B6B7E; }
+.verity-console .adv-avatar.is-violet { background:#E8E3FF; color:#5B3FC4; }
+.verity-console .adv-avatar.is-amber { background:#FFF0D6; color:#8D4709; }
+.verity-console .adv-avatar.is-green { background:#E5F6EE; color:#16805A; }
+.verity-console .adv-avatar.is-rose { background:#FDE4EC; color:#A3244F; }
+.verity-console .adv-name { display:grid; gap:2px; min-inline-size:0; }
+.verity-console .adv-name .advocate-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:0 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; color:var(--theme-text) !important; font-size:15px !important; font-weight:750 !important; text-align:start; cursor:pointer; }
+.verity-console .adv-name .advocate-name:hover { color:var(--theme-accent) !important; text-decoration:underline; }
+.verity-console .adv-name small { color:var(--theme-muted); font-size:12px; font-weight:650; }
+
+.verity-console .adv-progress { grid-area:progress; display:grid; gap:6px; min-inline-size:0; }
+.verity-console .adv-progress-head { display:flex; align-items:baseline; gap:6px; }
+.verity-console .adv-progress-head strong { color:var(--theme-text) !important; font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; }
+.verity-console .adv-progress-head span { color:var(--theme-muted); font-size:12px; font-weight:650; }
+.verity-console .adv-bar { display:flex; gap:2px; block-size:10px; border-radius:99px; background:var(--theme-track); overflow:hidden; }
+.verity-console .adv-bar > i { display:block; block-size:100%; transition:inline-size .6s var(--motion-ease); }
+.verity-console .adv-bar > i:first-child { border-start-start-radius:99px; border-end-start-radius:99px; }
+.verity-console .adv-bar > .is-disposed { background:linear-gradient(90deg,#34A873,var(--theme-success)); }
+.verity-console .adv-bar > .is-pending { background:linear-gradient(90deg,#F0B45C,#D48419); }
+.verity-console .adv-bar > .is-unknown { background:#B6C3D4; }
+.verity-console .adv-counts { display:flex; flex-wrap:wrap; gap:4px 14px; margin:0; }
+.verity-console .adv-count { display:inline-flex; align-items:center; gap:6px; min-block-size:0 !important; margin:0 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; color:var(--theme-muted) !important; font-size:12px !important; font-weight:700 !important; cursor:pointer; }
+.verity-console .adv-count::before { content:""; inline-size:8px; block-size:8px; border-radius:50%; background:#B6C3D4; }
+.verity-console .adv-count.is-disposed::before { background:var(--theme-success); }
+.verity-console .adv-count.is-pending::before { background:#D48419; }
+.verity-console button.adv-count:hover:not(:disabled) { color:var(--theme-accent) !important; text-decoration:underline; }
+.verity-console button.adv-count:disabled { cursor:default; opacity:.7; }
+
+.verity-console .adv-tat { grid-area:tat; display:grid; gap:2px; justify-items:end; text-align:end; }
+.verity-console .adv-tat strong { color:var(--theme-text) !important; font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.verity-console .adv-tat small { color:var(--theme-muted); font-size:12px; font-weight:600; }
+
+.verity-console .adv-stages { grid-area:stages; display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding-block-start:10px; border-block-start:1px dashed var(--theme-border); }
+.verity-console .adv-stages > span { margin-inline-end:4px; color:var(--theme-subtle); font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.verity-console .adv-stage { display:inline-flex; align-items:center; gap:6px; min-block-size:28px !important; margin:0 !important; padding:0 6px 0 10px !important; border:1px solid var(--theme-border) !important; border-radius:999px !important; background:var(--theme-dense) !important; box-shadow:none !important; color:var(--theme-text) !important; font-size:12px !important; font-weight:700 !important; cursor:pointer; }
+.verity-console .adv-stage b { display:grid; place-items:center; min-inline-size:20px; block-size:20px; padding:0 5px; border-radius:999px; background:var(--theme-raised); color:var(--theme-accent-strong); font-size:11px; }
+.verity-console .adv-stage:hover { border-color:var(--theme-accent) !important; }
+.verity-console .adv-stage.is-nbw { border-color:#F0C181 !important; background:var(--theme-warning-soft) !important; color:#8D4709 !important; }
+.verity-console .adv-stage.is-nbw b { color:var(--theme-warning); }
+
+.verity-console .adv-show-all { justify-self:center; min-block-size:40px !important; padding:0 18px !important; border:1px solid var(--theme-border) !important; border-radius:999px !important; background:var(--theme-raised) !important; color:var(--theme-accent-strong) !important; font-weight:700 !important; cursor:pointer; }
+.verity-console .adv-show-all:hover { border-color:var(--theme-accent) !important; }
+.verity-console :is(.adv-sort button,.adv-stage,.adv-count,.adv-show-all,.advocate-name):focus-visible { outline:2px solid var(--theme-accent) !important; outline-offset:2px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .verity-console [data-reveal="in"] .adv-bar > i { transform-origin:left center; animation:grow-x 900ms var(--motion-ease) backwards; animation-delay:260ms; }
+}
+@media (max-width:900px) {
+  .verity-console .adv-row { grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"who tat" "progress progress" "stages stages"; }
+}
+@media (max-width:560px) {
+  .verity-console .adv-summary { grid-template-columns:1fr 1fr 1fr; gap:8px; }
+  .verity-console .adv-summary > div { padding:10px; }
+  .verity-console .adv-summary strong { font-size:18px; }
+  .verity-console .adv-row { grid-template-columns:1fr; grid-template-areas:"who" "progress" "tat" "stages"; padding:14px; }
+  .verity-console .adv-tat { justify-items:start; text-align:start; }
+  .verity-console .adv-search { max-inline-size:none; }
+}
+.verity-console .adv-merged { color:var(--theme-subtle); font-weight:600; cursor:help; }
+
+/* ── Connections page ────────────────────────────────────────────────────
+   Status strip, then search (main) beside connection + how-it-works (side),
+   then search history and workspace admin. */
+.verity-console .cx-page { display:grid; gap:18px; }
+.verity-console .cx-page[hidden] { display:none; }
+.verity-console .cx-overview { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.verity-console .cx-tile { display:grid; align-content:start; gap:6px; padding:16px 18px; border:1px solid var(--theme-border); border-radius:18px; background:var(--theme-raised); box-shadow:0 10px 24px rgba(49,91,145,.06); }
+.verity-console .cx-tile-label { display:flex; align-items:center; gap:8px; color:var(--theme-muted); font-size:12px; font-weight:700; }
+.verity-console .cx-tile strong { color:var(--theme-text) !important; font-size:20px; font-weight:750; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+.verity-console .cx-tile strong span { color:var(--theme-muted); font-size:14px; font-weight:650; }
+.verity-console .cx-tile small { color:var(--theme-muted); font-size:12px; font-weight:600; }
+.verity-console .cx-dot { inline-size:8px; block-size:8px; flex:none; border-radius:50%; background:#94A3B8; }
+.verity-console .is-good .cx-dot { background:var(--theme-success); box-shadow:0 0 0 3px rgba(22,128,90,.15); }
+.verity-console .is-warn .cx-dot { background:#D48419; box-shadow:0 0 0 3px rgba(212,132,25,.15); }
+.verity-console .is-live .cx-dot { background:var(--theme-accent); animation:cx-pulse 1.6s infinite; }
+@keyframes cx-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(29,78,216,.35); } 50% { box-shadow:0 0 0 6px rgba(29,78,216,0); } }
+.verity-console .cx-meter { display:block; block-size:6px; margin-block-start:4px; border-radius:99px; background:var(--theme-track); overflow:hidden; }
+.verity-console .cx-meter > i { display:block; block-size:100%; border-radius:inherit; background:var(--theme-accent); }
+
+.verity-console .cx-grid { display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,340px); gap:18px; align-items:start; }
+.verity-console .cx-main, .verity-console .cx-side { display:grid; gap:18px; min-inline-size:0; }
+.verity-console .cx-card, .verity-console .cx-main > .court-party-search { padding:22px 24px !important; border:1px solid var(--theme-border) !important; border-radius:20px !important; background:var(--theme-raised) !important; box-shadow:0 12px 28px rgba(49,91,145,.07) !important; }
+.verity-console .cx-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-block-end:14px; }
+.verity-console .cx-card-head h2, .verity-console .court-party-search h2 { margin:4px 0 0; font-size:20px; letter-spacing:-.01em; }
+.verity-console .court-party-search .cx-intro { margin:6px 0 16px; color:var(--theme-muted); font-size:14px; }
+.verity-console .cx-note { margin:12px 0 0; color:var(--theme-muted); font-size:13px; line-height:1.5; }
+.verity-console .cx-error { margin:12px 0 0; padding:10px 12px; border-radius:12px; background:#FDECEC; color:#9B1C1C; font-size:13px; }
+.verity-console .cx-callout { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-block-start:14px; padding:12px 14px; border-radius:14px; background:var(--theme-warning-soft); }
+.verity-console .cx-callout p { margin:0; color:#7A4A0B; font-size:13px; }
+
+/* Live sync card */
+.verity-console .cx-state { padding:4px 10px; border-radius:999px; background:var(--theme-dense); color:var(--theme-muted); font-size:12px; font-weight:800; text-transform:capitalize; }
+.verity-console .cx-state.is-fetching { background:var(--theme-selected); color:var(--theme-accent-strong); }
+.verity-console .cx-state.is-complete { background:var(--theme-success-soft); color:var(--theme-success); }
+.verity-console .cx-state.is-attention, .verity-console .cx-state.is-paused { background:var(--theme-warning-soft); color:var(--theme-warning); }
+.verity-console .cx-progress { display:grid; gap:8px; }
+.verity-console .cx-progress-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.verity-console .cx-progress-head strong { color:var(--theme-text) !important; font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; }
+.verity-console .cx-progress-head strong span { color:var(--theme-muted); font-size:14px; font-weight:650; }
+.verity-console .cx-current { color:var(--theme-muted); font-size:12px; font-weight:700; font-variant-numeric:tabular-nums; }
+.verity-console .cx-progress progress { inline-size:100%; block-size:10px; appearance:none; border:0; border-radius:99px; background:var(--theme-track); overflow:hidden; }
+.verity-console .cx-progress progress::-webkit-progress-bar { background:var(--theme-track); border-radius:99px; }
+.verity-console .cx-progress progress::-webkit-progress-value { background:linear-gradient(90deg,#4C82E6,var(--theme-accent)); border-radius:99px; transition:inline-size .4s var(--motion-ease); }
+.verity-console .cx-progress progress::-moz-progress-bar { background:var(--theme-accent); border-radius:99px; }
+.verity-console .cx-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-block-start:14px; }
+.verity-console .cx-stats span { display:grid; gap:2px; padding:10px 12px; border-radius:12px; background:var(--theme-dense); color:var(--theme-muted); font-size:12px; font-weight:700; }
+.verity-console .cx-stats b { color:var(--theme-text); font-size:18px; font-variant-numeric:tabular-nums; }
+.verity-console .cx-stats .is-good b { color:var(--theme-success); }
+.verity-console .cx-stats .is-bad b { color:#B42318; }
+.verity-console .cx-message { margin:12px 0 0; color:var(--theme-text); font-size:14px; }
+.verity-console .cx-sync-controls { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-block-start:16px; }
+.verity-console .cx-segment { display:inline-flex; gap:4px; padding:4px; border:1px solid var(--theme-border); border-radius:12px; background:var(--theme-dense); }
+.verity-console .cx-segment button { min-block-size:36px !important; margin:0 !important; padding:0 12px !important; border:0 !important; border-radius:9px !important; background:transparent !important; box-shadow:none !important; color:var(--theme-muted) !important; font-size:13px !important; font-weight:700 !important; }
+.verity-console .cx-segment button[aria-pressed="true"] { background:var(--theme-raised) !important; color:var(--theme-accent-strong) !important; box-shadow:0 2px 8px rgba(15,36,71,.1) !important; }
+.verity-console .cx-actions { display:flex; gap:8px; }
+
+/* Browser connection + how it works */
+.verity-console .cx-status { display:flex; align-items:flex-start; gap:10px; margin:0 0 14px; padding:12px 14px; border-radius:14px; background:var(--theme-dense); color:var(--theme-text); font-size:13px; line-height:1.45; }
+.verity-console .cx-status .cx-dot { margin-block-start:5px; }
+.verity-console .cx-status.is-good { background:var(--theme-success-soft); }
+.verity-console .cx-status.is-warn { background:var(--theme-warning-soft); }
+.verity-console .cx-wide { inline-size:100%; justify-content:center; margin-block-end:14px; }
+.verity-console .cx-devices { display:grid; gap:8px; margin:0 0 14px; padding:0; list-style:none; }
+.verity-console .cx-devices li { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid var(--theme-border); border-radius:12px; }
+.verity-console .cx-devices li > div { display:grid; gap:2px; min-inline-size:0; }
+.verity-console .cx-devices strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--theme-text); font-size:13px; }
+.verity-console .cx-devices small { color:var(--theme-success); font-size:12px; font-weight:700; }
+.verity-console .cx-devices small.is-muted { color:var(--theme-subtle); }
+.verity-console .cx-link-button { min-block-size:0 !important; margin:0 !important; padding:4px 8px !important; border:0 !important; border-radius:8px !important; background:transparent !important; box-shadow:none !important; color:#B42318 !important; font-size:12px !important; font-weight:700 !important; }
+.verity-console .cx-link-button:hover:not(:disabled) { background:#FDECEC !important; }
+.verity-console .cx-external { display:inline-flex; align-items:center; gap:6px; color:var(--theme-accent-strong) !important; font-size:13px; font-weight:700; text-decoration:none; }
+.verity-console .cx-external:hover { text-decoration:underline; }
+.verity-console .cx-how ol { display:grid; gap:14px; margin:12px 0 0; padding:0; list-style:none; }
+.verity-console .cx-how li { display:grid; grid-template-columns:30px minmax(0,1fr); gap:12px; }
+.verity-console .cx-how li > b { display:grid; place-items:center; inline-size:30px; block-size:30px; border-radius:10px; background:var(--theme-selected); color:var(--theme-accent-strong); font-size:13px; }
+.verity-console .cx-how li > div { display:grid; gap:2px; }
+.verity-console .cx-how strong { color:var(--theme-text); font-size:14px; }
+.verity-console .cx-how span { color:var(--theme-muted); font-size:13px; line-height:1.45; }
+
+/* Search history */
+.verity-console .cx-when { color:var(--theme-muted); font-size:13px; font-weight:700; }
+.verity-console .cx-chips { display:flex; flex-wrap:wrap; gap:6px; margin-block-end:14px; }
+.verity-console .cx-chips span { padding:5px 10px; border-radius:999px; background:var(--theme-dense); border:1px solid var(--theme-border); color:var(--theme-text); font-size:12px; font-weight:650; }
+.verity-console .cx-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-block-end:14px; }
+.verity-console .cx-metrics > div { display:grid; gap:2px; padding:12px 14px; border-radius:14px; background:var(--theme-dense); }
+.verity-console .cx-metrics strong { color:var(--theme-text) !important; font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
+.verity-console .cx-metrics span { color:var(--theme-muted); font-size:12px; font-weight:700; }
+.verity-console .cx-metrics .is-warn strong { color:var(--theme-warning) !important; }
+.verity-console .cx-details { margin-block-start:12px; }
+.verity-console .cx-details summary, .verity-console .cx-workspaces summary { cursor:pointer; color:var(--theme-accent-strong); font-size:14px; font-weight:700; }
+.verity-console .cx-workspaces summary { display:flex; align-items:center; justify-content:space-between; list-style:none; color:var(--theme-text); }
+.verity-console .cx-workspaces summary::-webkit-details-marker { display:none; }
+.verity-console .cx-workspaces summary > span { display:grid; gap:2px; }
+.verity-console .cx-workspaces summary small { color:var(--theme-muted); font-weight:600; font-size:13px; }
+.verity-console .cx-workspaces summary::after { content:"+"; display:grid; place-items:center; inline-size:30px; block-size:30px; border-radius:50%; background:var(--theme-selected); color:var(--theme-accent-strong); font-size:18px; transition:transform .2s; }
+.verity-console .cx-workspaces[open] summary::after { transform:rotate(45deg); }
+.verity-console .cx-workspaces .inline-form { display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; margin-block-start:16px; }
+.verity-console .cx-workspaces .inline-form label { display:grid; gap:6px; flex:1 1 260px; color:var(--theme-muted); font-size:13px; font-weight:700; }
+.verity-console .cx-workspaces .inline-form input { block-size:44px; padding:0 14px; border:1px solid var(--theme-border); border-radius:12px; font:inherit; font-size:14px; }
+
+@media (max-width:1180px) { .verity-console .cx-grid { grid-template-columns:1fr; } .verity-console .cx-side { grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); } }
+@media (max-width:900px) { .verity-console .cx-overview { grid-template-columns:repeat(2,minmax(0,1fr)); } .verity-console .cx-metrics, .verity-console .cx-stats { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:560px) { .verity-console .cx-overview { grid-template-columns:1fr; } .verity-console :is(.cx-card,.cx-main > .court-party-search) { padding:18px !important; } }
+.verity-console .cx-main .cx-how ol { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+@media (max-width:760px) { .verity-console .cx-main .cx-how ol { grid-template-columns:1fr; } }
+.verity-console .cx-main > *, .verity-console .cx-side > * { margin:0 !important; }
+
+/* Labels wrap their field and are spaced by their container's gap. The old
+   global label{margin-bottom:9px} pushed every labelled field above any
+   unlabelled neighbour (Clear buttons, counts) in a row. */
+.verity-console label { margin-bottom: 0; }
+
+/* Analytics: Present (full screen) */
+.verity-console .analytics-overview { align-items: center; }
+.verity-console .analytics-present {
+  flex: none; min-height: 42px !important; padding: 0 20px !important; border: 0 !important; border-radius: 12px !important;
+  background: var(--theme-accent) !important; color: #fff !important; font-weight: 700 !important; box-shadow: 0 8px 18px rgba(29, 78, 216, .22) !important;
+}
+.verity-console .analytics-present:hover { background: var(--theme-accent-strong) !important; }
+.verity-console .analytics-dashboard.is-presenting {
+  overflow: auto; padding: 32px clamp(16px, 3vw, 48px); background: var(--theme-canvas);
+}
+.verity-console .analytics-dashboard.is-presenting .analytics-filters { top: 0 !important; }
+/* Buttons sitting in a filter row match the 44px field height. */
+.verity-console .case-register-filters > .btn { align-self: end; block-size: 44px !important; min-block-size: 44px !important; margin: 0 !important; }
+/* Pinned filter bar is solid, so the cards scrolling under it never show through. */
+.verity-console .analytics-filters.is-stuck { background:#F8FBFF !important; }
+/* An open menu raises its filter bar above the content, but the analytics bar
+   must stay pinned: switching it to position:relative un-stuck it and left the
+   menu floating over the cards. */
+.verity-console .analytics-filters:is(:has(.lc-dropdown.is-open), :has(.court-options)) { position:sticky !important; z-index:40; }
+@media (max-width:900px) { .verity-console .analytics-filters:is(:has(.lc-dropdown.is-open), :has(.court-options)) { position:static !important; } }
+/* Full screen gives the dashboard a fixed height; without this the grid
+   squeezed every row (cards with overflow:hidden shrink to nothing). */
+.verity-console .analytics-dashboard.is-presenting { display:grid; align-content:start; grid-auto-rows:max-content; }
+.verity-console .analytics-dashboard.is-presenting > * { min-block-size:max-content; }
+
+/* Header brand strip: three slides that rise in, hold, and rise out. */
+.verity-console .brand-ticker {
+  position: relative; flex: 1 1 auto; align-self: stretch; min-inline-size: 0; margin-inline: 24px;
+  display: grid; place-items: center; overflow: hidden; min-block-size: 64px;
+}
+.verity-console .bt-slide {
+  grid-area: 1 / 1; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transform: translateY(64px);
+  transition: opacity .45s ease, transform .7s var(--motion-ease);
+  pointer-events: none;
+}
+.verity-console .bt-slide.is-on { opacity: 1; transform: none; }
+.verity-console .bt-slide.is-off { opacity: 0; transform: translateY(-64px); }
+.verity-console .bt-mark { block-size: 52px; inline-size: auto; }
+.verity-console .bt-text {
+  color: var(--theme-text); font-size: 19px; font-weight: 800; letter-spacing: .01em; white-space: nowrap;
+}
+.verity-console .bt-slide:nth-child(2) .bt-text {
+  font-size: 18px; letter-spacing: .22em; text-transform: uppercase;
+  background: linear-gradient(90deg, var(--theme-accent), var(--theme-teal)); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.verity-console .bt-arm { display: inline-flex; align-items: center; gap: 12px; }
+.verity-console .bt-ninjacart { block-size: 38px; inline-size: auto; }
+@media (max-width: 1100px) { .verity-console .brand-ticker { display: none; } }
+@media (prefers-reduced-motion: reduce) { .verity-console .bt-slide { transition: none; } }
+
+/* Workspace switcher: an outlined field box, like the other dropdowns. */
+.verity-console .workspace-switcher .lc-dropdown-trigger {
+  margin:4px 0 0 !important; block-size:40px; min-block-size:40px !important; min-inline-size:180px;
+  padding:0 40px 0 14px !important;
+  background:var(--theme-raised) !important; border:1px solid var(--theme-border) !important; border-radius:12px !important;
+  box-shadow:0 2px 6px rgba(38,83,139,.06) !important;
+}
+.verity-console .workspace-switcher .lc-dropdown-trigger:hover:not(:disabled) { border-color:#9FC5F6 !important; background:var(--theme-raised) !important; }
+.verity-console .workspace-switcher .lc-dropdown.is-open .lc-dropdown-trigger { border-color:var(--theme-accent) !important; background:var(--theme-raised) !important; box-shadow:0 0 0 3px rgba(29,78,216,.14) !important; }
+.verity-console .workspace-switcher .lc-dropdown-chevron { inset-inline-end:8px; border-inline-start:1px solid var(--theme-border); inline-size:30px; }
+.verity-console .workspace-switcher .lc-dropdown-menu { inset-inline:0 auto; }
+/* Centre the brand strip on the whole header, not on the space left between
+   the workspace picker and the Sync / profile buttons. */
+.verity-console .console-header.topbar { position:relative; }
+.verity-console .console-header .brand-ticker {
+  position:absolute; inset-block:0; inset-inline-start:50%; transform:translateX(-50%);
+  inline-size:min(420px, 40%); margin:0; pointer-events:none;
+}
+/* Workspace picker on one line with the header buttons: label beside the box,
+   box the same 46px height as Sync and the profile button. */
+.verity-console .console-header .workspace-switcher {
+  display:flex; flex-direction:row !important; flex-wrap:nowrap; align-items:center; gap:12px; flex:0 1 auto; max-inline-size:440px !important;
+}
+@media (max-width:700px) { .verity-console .console-header .workspace-switcher { display:none; } }
+.verity-console .console-header .workspace-switcher .eyebrow { margin:0 !important; white-space:nowrap; line-height:1.2; }
+.verity-console .console-header .workspace-switcher .lc-dropdown { flex:1 1 auto; min-inline-size:0; }
+.verity-console .console-header .workspace-switcher .lc-dropdown-trigger { margin:0 !important; block-size:46px; min-block-size:46px !important; }
+
+/* Delete workspace (Connections → Company workspaces) */
+.verity-console .cx-workspaces .cx-danger { margin-block-start:22px; padding-block-start:18px; border-block-start:1px solid var(--theme-border); }
+.verity-console .cx-workspaces .btn-danger { block-size:44px; padding:0 18px; border:1px solid #f1b5b5 !important; border-radius:12px; background:#fff5f5 !important; color:#b42318 !important; font-weight:700; }
+.verity-console .cx-workspaces .btn-danger:hover:not(:disabled) { background:#b42318 !important; color:#fff !important; }

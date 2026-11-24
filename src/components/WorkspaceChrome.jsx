@@ -1,14 +1,35 @@
 import React, { useEffect, useRef, useState } from "react";
 import { WorkspaceIcon as Icon } from "./WorkspaceIcon";
 import { LawcoveryLogo } from "./LawcoveryLogo";
+import { BrandTicker } from "./BrandTicker";
+import { Dropdown } from "./Dropdown";
+import { useScrollReveal } from "./Motion";
 import "../theme-system.css";
 
 const nav = [
-  ["analytics", "Analytics", "overview"],
-  ["cases", "Cases", "cases"],
-  ["calendar", "Hearing calendar", "calendar"],
-  ["connections", "Connections", "connection"],
+  ["analytics", "Analytics", "overview", "Portfolio, recovery and turnaround charts"],
+  ["cases", "Cases", "cases", "Case register, filters and CSV export"],
+  ["loan-data", "Loan data", "briefcase", "Import loan amounts from a CSV"],
+  ["calendar", "Hearing calendar", "calendar", "Upcoming hearings by month"],
+  ["flow", "Legal and recovery flow", "flow", "Legal and recovery stages with target days"],
+  ["zonal", "Zone tracker", "pin", "Zone performance and case actions"],
+  ["connections", "Connections", "connection", "eCourts search and browser connection"],
 ];
+
+// Which sidebar tabs a user has chosen to hide. A per-user, per-browser view
+// preference only: hiding a tab never changes or removes workspace data.
+const hiddenTabsKey = (userId) => `lawcovery-hidden-tabs:${userId || "anonymous"}`;
+function readHiddenTabs(userId) {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(hiddenTabsKey(userId)) || "[]");
+    return Array.isArray(value) ? value.filter((id) => nav.some(([tab]) => tab === id)) : [];
+  } catch {
+    return [];
+  }
+}
+function saveHiddenTabs(userId, ids) {
+  try { window.localStorage.setItem(hiddenTabsKey(userId), JSON.stringify(ids)); } catch {}
+}
 export function accountName(user) {
   return (
     [
@@ -34,8 +55,6 @@ export function WorkspaceChrome({
   page,
   onNavigate,
   count,
-  query,
-  onQuery,
   children,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,17 +62,17 @@ export function WorkspaceChrome({
   const [accountView, setAccountView] = useState("");
   const [toast, setToast] = useState(false);
   const [pageTransition, setPageTransition] = useState(0);
-  const [theme, setTheme] = useState(() => {
-    try { return window.localStorage.getItem("lawcovery-theme") || "light"; }
-    catch { return "light"; }
-  });
+  const [hiddenTabs, setHiddenTabs] = useState(() => readHiddenTabs(session.user?.id));
+  const visibleNav = nav.filter(([id]) => !hiddenTabs.includes(id));
   const profile = useRef(null),
     profileButton = useRef(null),
     menuButton = useRef(null),
     sidebar = useRef(null),
-    search = useRef(null),
     dialog = useRef(null),
+    pageContent = useRef(null),
     toastTimer = useRef(null);
+  // Page blocks rise into view as you scroll; re-armed on every navigation.
+  useScrollReveal(pageContent, [page, pageTransition]);
   const name = accountName(session.user);
   const initials = name
     .split(/[\s._-]+/)
@@ -65,10 +84,32 @@ export function WorkspaceChrome({
     workspaces.find((item) => item.id === workspace)?.name ||
     "Select a workspace";
   const currentPage = nav.find(([id]) => id === page) || nav[0];
+  // Start on a visible tab if the default page has been hidden.
   useEffect(() => {
-    document.documentElement.dataset.uiTheme = theme;
-    try { window.localStorage.setItem("lawcovery-theme", theme); } catch {}
-  }, [theme]);
+    if (hiddenTabs.includes(page) && visibleNav[0]) onNavigate(visibleNav[0][0]);
+    // Only on first render: later visits to a hidden page (e.g. an analytics
+    // drill-down into Cases) are deliberate and must not be redirected.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function toggleTab(id) {
+    const hide = !hiddenTabs.includes(id);
+    if (hide && visibleNav.length <= 1) return; // always keep one tab
+    const next = hide ? [...hiddenTabs, id] : hiddenTabs.filter((tab) => tab !== id);
+    setHiddenTabs(next);
+    saveHiddenTabs(session.user?.id, next);
+    if (hide && page === id) {
+      const fallback = nav.find(([tab]) => !next.includes(tab));
+      if (fallback) navigate(fallback[0]);
+    }
+  }
+  useEffect(() => {
+    // The signed-in workspace is intentionally a single, predictable
+    // light-blue experience. Clear a historic preference before paint after
+    // sign-in so an old dark-mode value cannot leak into the workspace.
+    document.documentElement.dataset.uiTheme = "light";
+    document.documentElement.style.colorScheme = "light";
+    try { window.localStorage.removeItem("lawcovery-theme"); } catch {}
+  }, []);
   function navigate(value) {
     onNavigate(value);
     setPageTransition((value) => value + 1);
@@ -108,17 +149,12 @@ export function WorkspaceChrome({
         if (document.querySelector("dialog[open]")) return;
         event.preventDefault();
         setProfileOpen(false);
-        if (
-          !window.matchMedia ||
-          window.matchMedia("(min-width: 701px)").matches
-        )
-          search.current?.focus();
-        else {
-          navigate("cases");
-          requestAnimationFrame(() =>
-            document.getElementById("workspace-case-search")?.focus(),
-          );
-        }
+        // Search lives on the Cases page; the shortcut takes you there
+        // unless the Cases tab has been hidden.
+        if (hiddenTabs.includes("cases")) return;
+        navigate("cases");
+        // Wait a tick for the Cases page to render before focusing its search.
+        setTimeout(() => document.getElementById("workspace-case-search")?.focus(), 0);
       }
     }
     document.addEventListener("pointerdown", pointer);
@@ -176,7 +212,6 @@ export function WorkspaceChrome({
       >
         <a className="console-brand brand" href="/" aria-label="Lawcovery home">
           <LawcoveryLogo />
-          <small>Legal intelligence</small>
         </a>
         <button
           className="mobile-close"
@@ -190,7 +225,7 @@ export function WorkspaceChrome({
         </button>
         <div className="nav-label">Legal collections</div>
         <nav className="sidebar-nav" aria-label="Workspace views">
-          {nav.map(([id, label, icon]) => (
+          {visibleNav.map(([id, label, icon]) => (
             <button
               key={id}
               className={`nav-item ${page === id ? "active" : ""}`}
@@ -201,11 +236,6 @@ export function WorkspaceChrome({
             >
               <Icon name={icon} />
               <span>{label}</span>
-              {id === "cases" && (
-                <span className="nav-badge" aria-hidden="true">
-                  {count}
-                </span>
-              )}
             </button>
           ))}
         </nav>
@@ -248,7 +278,7 @@ export function WorkspaceChrome({
             <LawcoveryLogo />
           </a>
           <nav className="topbar-nav" aria-label="Primary workspace views">
-            {nav.map(([id, label]) => (
+            {visibleNav.map(([id, label]) => (
               <button
                 key={id}
                 aria-pressed={page === id}
@@ -261,46 +291,20 @@ export function WorkspaceChrome({
           </nav>
           <label className="workspace-switcher">
             <span className="eyebrow">Company workspace</span>
-            <select
-              aria-label="Company workspace"
+            <Dropdown
+              ariaLabel="Company workspace"
               disabled={busy || loading}
               value={workspace}
-              onChange={(event) => {
+              placeholder="Select a workspace"
+              onChange={(value) => {
                 setProfileOpen(false);
-                onWorkspace(event.target.value);
+                onWorkspace(value);
               }}
-            >
-              {!workspace && <option value="">Select a workspace</option>}
-              {workspaces.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              options={workspaces.map((item) => ({ value: item.id, label: item.name }))}
+            />
           </label>
           <div className="topbar-spacer" />
-          <form
-            className="global-search"
-            role="search"
-            onSubmit={(event) => {
-              event.preventDefault();
-              navigate("cases");
-            }}
-          >
-            <Icon name="search" size={17} />
-            <input
-              ref={search}
-              type="search"
-              aria-label="Search all cases"
-              placeholder="Search cases, parties, courts..."
-              value={query}
-              onChange={(event) => {
-                onQuery(event.target.value);
-                onNavigate("cases");
-              }}
-            />
-            <kbd aria-hidden="true">⌘ K</kbd>
-          </form>
+          <BrandTicker />
           <button
             className="btn btn-outline refresh-button"
             disabled={!workspace || busy}
@@ -308,16 +312,6 @@ export function WorkspaceChrome({
           >
             <Icon name="refresh" size={16} />
             {busy ? "Syncing…" : "Sync"}
-          </button>
-          <button
-            className="theme-toggle"
-            type="button"
-            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          >
-            <Icon name={theme === "dark" ? "sun" : "moon"} size={17} />
-            <span>{theme === "dark" ? "Light" : "Dark"}</span>
           </button>
           <div ref={profile} className="profile">
             <button
@@ -331,7 +325,6 @@ export function WorkspaceChrome({
               <span className="avatar">{initials}</span>
               <span className="profile-summary">
                 <strong>{name}</strong>
-                <small>Company workspace</small>
               </span>
               <span className={`profile-chevron ${profileOpen ? "open" : ""}`}>
                 ⌄
@@ -389,7 +382,7 @@ export function WorkspaceChrome({
           <span>Workspace view</span>
           <strong>{currentPage[1]}</strong>
         </div>
-        <div className="workspace-page-transition" key={`content-${page}-${pageTransition}`}>
+        <div ref={pageContent} className="workspace-page-transition" key={`content-${page}-${pageTransition}`}>
           {children}
         </div>
       </div>
@@ -416,9 +409,10 @@ export function WorkspaceChrome({
             Close
           </button>
           <h2 id="account-dialog-title">
-            {accountView === "profile" ? "Your profile" : "Workspace access"}
+            {accountView === "profile" ? "Profile settings" : "Workspace access"}
           </h2>
           {accountView === "profile" ? (
+            <>
             <dl>
               <dt>Name</dt>
               <dd>{name}</dd>
@@ -427,6 +421,38 @@ export function WorkspaceChrome({
               <dt>Company workspace</dt>
               <dd>{company}</dd>
             </dl>
+            <section className="tab-settings" aria-labelledby="tab-settings-title">
+              <h3 id="tab-settings-title">Sidebar tabs</h3>
+              <p className="muted">Choose which tabs appear in your sidebar. Hidden tabs keep all their data and can be shown again at any time.</p>
+              <ul className="tab-toggles">
+                {nav.map(([id, label, icon, description]) => {
+                  const shown = !hiddenTabs.includes(id);
+                  const locked = shown && visibleNav.length <= 1;
+                  return (
+                    <li key={id}>
+                      <span className="tab-toggle-icon"><Icon name={icon} size={18} /></span>
+                      <span className="tab-toggle-copy">
+                        <strong>{label}</strong>
+                        <small>{locked ? "At least one tab must stay visible" : description}</small>
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        className="tab-switch"
+                        aria-checked={shown}
+                        aria-label={`Show ${label} tab`}
+                        disabled={locked}
+                        onClick={() => toggleTab(id)}
+                      >
+                        <span aria-hidden="true" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+                          <p className="muted">Saved for your account on this browser.</p>
+            </section>
+            </>
           ) : (
             <>
               <p>Company workspaces available to your signed-in account.</p>

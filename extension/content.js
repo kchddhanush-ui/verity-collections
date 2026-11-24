@@ -122,8 +122,6 @@
       schedule();
     }
   });
-  // A content heartbeat drives the next item after a short delay. Durable alarms
-  // provide a slower fallback when Chrome throttles hidden tabs.
   async function tickBatch() {
     try {
       const result = await chrome.runtime.sendMessage({ type: "BATCH_TICK" });
@@ -131,6 +129,8 @@
     } catch { return; } // Reloading the extension requires refreshing this tab.
     setTimeout(tickBatch, 5000);
   }
+  // The worker now paces the queue itself; this only refreshes the on-page notice
+  // and nudges the queue when the tab is visible.
   setTimeout(tickBatch, 5000);
   schedule();
 })();

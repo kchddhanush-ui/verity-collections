@@ -76,31 +76,33 @@
 @media(max-width:980px){.verity-console .console-sidebar{inset:0 auto 0 0;block-size:100dvh;border-radius:0;transform:translateX(-105%);transition:transform .2s ease}.verity-console .console-sidebar.sidebar-open{transform:translateX(0)}.verity-console .console-body{margin-inline-start:0}.verity-console .console-header{margin:12px;inset-block-start:12px}.verity-console .console-main{padding:22px 12px 42px}.verity-console .mobile-menu{border-radius:11px}.verity-console .scrim{backdrop-filter:blur(3px)}}
 @media(max-width:700px){.verity-console .console-header{gap:8px;padding:9px}.verity-console .workspace-switcher{max-inline-size:120px}.verity-console .global-search{display:none}.verity-console .console-title,.analytics-overview{padding:18px}.verity-console .console-main{padding-top:16px}.verity-console .case-register-filters{padding:11px}}
 
-/* Structural pass: mirrors the reference's pill navbar + compact icon dock. */
+/* Structural pass: mirrors the reference's pill navbar + full workspace sidebar.
+   Keep navigation content visible on desktop; the console shell owns the column. */
 @media (min-width: 981px) {
-  .verity-console.app-shell { padding: 24px 48px 64px 92px; }
+  .verity-console.app-shell { padding: 24px; }
   .verity-console .console-sidebar {
-    inset: 128px auto 64px 24px;
-    inline-size: 52px;
-    padding: 8px;
-    overflow: visible;
+    inset: 0 auto auto 0;
+    inline-size: 244px;
+    padding: 24px 14px 18px;
+    overflow: auto;
     border-radius: 28px;
   }
   .verity-console .console-sidebar .console-brand,
   .verity-console .console-sidebar .nav-label,
   .verity-console .console-sidebar .audit-card,
-  .verity-console .console-sidebar .workspace-status { display: none; }
-  .verity-console .sidebar-nav { gap: 8px; }
+  .verity-console .console-sidebar .workspace-status { display: grid; }
+  .verity-console .sidebar-nav { gap: 6px; }
   .verity-console .sidebar-nav .nav-item {
-    grid-template-columns: 1fr;
-    inline-size: 36px;
-    min-block-size: 36px;
-    padding: 8px;
-    border-radius: 50%;
-    place-items: center;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    inline-size: 100%;
+    min-block-size: 46px;
+    padding: 12px;
+    border-radius: 13px;
+    place-items: initial;
+    align-items: center;
   }
   .verity-console .sidebar-nav .nav-item > span:not(.nav-badge),
-  .verity-console .sidebar-nav .nav-badge { display: none; }
+  .verity-console .sidebar-nav .nav-badge { display: inline; }
   .verity-console .sidebar-nav .nav-item > svg { inline-size: 18px; block-size: 18px; }
   .verity-console .console-body { margin-inline-start: 0; }
   .verity-console .console-header {

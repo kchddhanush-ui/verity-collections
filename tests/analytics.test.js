@@ -4,6 +4,7 @@ import {
   addDays,
   analyticsOptions,
   buildAnalytics,
+  disposalDays,
   caseStatus,
   caseType,
   filterCases,
@@ -264,8 +265,14 @@ import {
   activitySeries,
   advocatePerformance,
   caseAdvocates,
+  advocateKey,
+  businessType,
+  loanType,
+  LOAN_TYPES,
+  matchesLender,
   nbwInsight,
   pendingStageCards,
+  recoveryAnalytics,
   scopeCases,
 } from "../src/lib/analytics.js";
 
@@ -294,6 +301,19 @@ test("court (contains) and filing-year scope", () => {
   assert.equal(scopeCases(rows, { year: "2024" }).length, 1);
   assert.equal(scopeCases(rows, { court: "court", year: "2025" }).length, 1);
   assert.equal(scopeCases(rows, {}).length, 2);
+});
+test("business type and lender scope use the captured case data and combine with other filters", () => {
+  const rows = [
+    row(1, { business_type: "Secured", lender: "Niyogin", filing_date: "10th January 2024" }),
+    row(2, { business_type: "Unsecured", petitioners: ["Trillianloans Private Limited"], filing_date: "5th May 2025" }),
+    row(3, { case_type: "P.C.R. - PRIVATE COMPLAINTS", lender: "IDFC" }),
+  ];
+  assert.equal(businessType(rows[0]), "Secured");
+  assert.equal(businessType(rows[2]), "P.C.R.");
+  assert.equal(matchesLender(rows[1], "Trillianloans"), true);
+  assert.equal(scopeCases(rows, { businessType: "Secured", lender: "Niyogin", year: "2024" }).length, 1);
+  assert.equal(scopeCases(rows, { lender: "IDFC" }).length, 1);
+  assert.equal(analyticsOptions(rows).businessTypes.includes("Secured"), true);
 });
 test("advocate performance counts disposed vs pending-by-stage and filing-to-disposal TAT", () => {
   const mk = (id, status, stage, filing, disposal, advocate) =>
@@ -342,4 +362,99 @@ test("NBW insight reports pending share and how many disposed cases passed throu
   assert.equal(insight.sample, 2);
   assert.equal(insight.throughNbw, 1);
   assert.equal(insight.throughRate, 50);
+});
+test("recovery analytics derives totals and percentage from imported INR values", () => {
+  const rows = [
+    row(1, { db_amount: 1000, pos_recovered: 250, lender: "IDFC", business_type: "Retail", case_status: "Pending" }),
+    row(2, { db_amount: 500, pos_recovered: 500, lender: "IDFC", business_type: "Retail", case_status: "Disposed" }),
+    row(3, { db_amount: "not-an-amount", pos_recovered: 20 }),
+  ];
+  const recovery = recoveryAnalytics(rows);
+  assert.equal(recovery.totalLoan, 1500);
+  assert.equal(recovery.totalRecovered, 750);
+  assert.equal(recovery.outstanding, 750);
+  assert.equal(recovery.percentage, 50);
+});
+test("recovery analytics prefers the dedicated case amount columns", () => {
+  const records = [
+    { ...row(1, { db_amount: 1, pos_recovered: 1 }), db_amount: 2000, pos_recovered: 500 },
+  ];
+  const recovery = recoveryAnalytics(records);
+  assert.equal(recovery.totalLoan, 2000);
+  assert.equal(recovery.totalRecovered, 500);
+  assert.equal(recovery.outstanding, 1500);
+  assert.equal(recovery.percentage, 25);
+});
+test("recovery counts a loan once even when several cases carry it", () => {
+  const laha = { db_amount: 5408844, pos_recovered: 492201, pos_as_of_nov_16: 4916643 };
+  const rows = [
+    // One loan pursued through a P.C.R. and the C.C. it became, with a casing difference.
+    { ...row(1, { respondents: ["1) LAHA FRUITS AGENCY"], case_type: "P.C.R. - PRIVATE COMPLAINTS", case_status: "Disposed" }), ...laha },
+    { ...row(2, { respondents: ["1) Laha Fruits Agency"], case_type: "C.C. - CRIMINAL CASES", case_status: "Pending" }), ...laha },
+    // Co-accused and "REP BY" text do not make it a different borrower.
+    { ...row(3, { respondents: ["1) LAHA FRUITS AGENCY REP BY ITS PROPRIETOR X2) Y"], case_type: "C.C. - CRIMINAL CASES", case_status: "Pending" }), ...laha },
+    // Different borrowers that share round amounts stay separate loans.
+    { ...row(4, { respondents: ["1) MOHAMMAD SHAKEEL"], case_status: "Pending" }), db_amount: 100000, pos_recovered: 0, pos_as_of_nov_16: 100000 },
+    { ...row(5, { respondents: ["1) VARAM TRADERS"], case_status: "Pending" }), db_amount: 100000, pos_recovered: 0, pos_as_of_nov_16: 100000 },
+  ];
+  const recovery = recoveryAnalytics(rows);
+  assert.equal(recovery.caseCount, 5);
+  assert.equal(recovery.loanCount, 3);
+  assert.equal(recovery.totalLoan, 5408844 + 200000);
+  assert.equal(recovery.totalRecovered, 492201);
+  assert.equal(recovery.outstanding, 5408844 + 200000 - 492201);
+  assert.equal(recovery.records.length, 5);
+});
+test("time to disposal excludes P.C.R. complaints, which are disposed when registered as a C.C.", () => {
+  const rows = [
+    // A complaint taken on file the same day it was filed.
+    row(1, { case_type: "P.C.R. - PRIVATE COMPLAINTS", case_status: "Disposed", filing_date: "04-01-2024", decision_date: "04th January 2024" }),
+    row(2, { case_type: "P.C.R. - PRIVATE COMPLAINTS", case_status: "Disposed", filing_date: "04-05-2024", decision_date: "09th July 2024" }),
+    // The criminal cases they became: these are the real disposals.
+    row(3, { case_type: "C.C. - CRIMINAL CASES", case_status: "Disposed", filing_date: "04-01-2024", decision_date: "30th August 2025" }),
+    row(4, { case_type: "C.C. - CRIMINAL CASES", case_status: "Disposed", filing_date: "02-08-2024", decision_date: "19th June 2025" }),
+  ];
+  const today = "2026-11-17";
+  const model = buildAnalytics(rows, { today });
+  const cc = [604, 321]; // 2024-01-04 -> 2025-08-30, 2024-08-02 -> 2025-06-19
+  assert.equal(model.tatSamples, 2);
+  assert.equal(model.averageTat, (cc[0] + cc[1]) / 2);
+  assert.equal(model.medianDays, (cc[0] + cc[1]) / 2);
+  assert.equal(disposalDays(rows[0], today), null);
+  assert.equal(disposalDays(rows[2], today), cc[0]);
+  // Disposal counts still include the complaints; only the duration ignores them.
+  assert.equal(model.disposed, 4);
+});
+
+test("loan type filter offers the fixed product list and matches the case's loan type field", () => {
+  assert.equal(LOAN_TYPES.length, 16);
+  assert.equal(LOAN_TYPES[0], "Business Loan");
+  assert.equal(LOAN_TYPES.at(-1), "BNPL");
+  const rows = [
+    row(1, { loan_type: "msme loan" }),
+    row(2, { loan_type: "Two-Wheeler Loan" }),
+    row(3, { case_type: "C.C. - CRIMINAL CASES" }),
+  ];
+  assert.equal(loanType(rows[0]), "MSME Loan");
+  assert.equal(loanType(rows[1]), "Two Wheeler Loan");
+  assert.equal(loanType(rows[2]), "", "court case type is not a loan product");
+  assert.deepEqual(scopeCases(rows, { loanType: "MSME Loan" }).map((r) => r.id), [rows[0].id]);
+  assert.equal(scopeCases(rows, { loanType: "Car Loan" }).length, 0);
+});
+
+test("advocate spellings that differ only by honorifics, dots, spacing or case are one advocate", () => {
+  const spellings = ["C.H.DODDEGOWDA", "C H DODDEGOWDA", "C.H. DODDEGOWDA", "Sri. C.H. Doddegowda", "SRI. C . H. DODDEGOWDA", "SRI.C H .DODDEGOWDA ADVOCATE"];
+  const rows = spellings.map((name, i) => row(i + 1, { case_status: "Pending", petitioners: [`1) NINJACART Advocate- ${name}`] }));
+  rows.push(row(20, { case_status: "Pending", petitioners: ["1) NINJACART Advocate- HARISHA M T"] }));
+  rows.push(row(21, { case_status: "Pending", petitioners: ["1) NINJACART Advocate- HARISHA M"] }));
+  assert.equal(new Set(spellings.map(advocateKey)).size, 1);
+  const result = advocatePerformance(rows, "2026-11-17");
+  const dodde = result.find((r) => advocateKey(r.label) === "CHDODDEGOWDA");
+  assert.equal(dodde.total, 6);
+  assert.equal(dodde.spellings.length > 1, true);
+  // Different letters stay separate.
+  assert.ok(result.some((r) => r.label === "HARISHA M"));
+  assert.ok(result.some((r) => r.label === "HARISHA M T"));
+  // A case listing the same advocate twice counts once.
+  assert.deepEqual(caseAdvocates(row(30, { petitioners: ["1) X Advocate- C.H.DODDEGOWDA", "2) Y Advocate- Sri. C H Doddegowda"] })).length, 1);
 });

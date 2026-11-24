@@ -11,6 +11,20 @@ export function WorkspaceIcon({ name, size = 20 }) {
         <rect x="14" y="14" width="7" height="7" rx="1" />
       </>
     ),
+    pin: (
+      <>
+        <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+        <circle cx="12" cy="9.5" r="2.5" />
+      </>
+    ),
+    flow: (
+      <>
+        <circle cx="5" cy="6" r="2" />
+        <circle cx="19" cy="12" r="2" />
+        <circle cx="5" cy="18" r="2" />
+        <path d="M7 6h6a4 4 0 0 1 4 4M17 14a4 4 0 0 1-4 4H7" />
+      </>
+    ),
     cases: <path d="M3 6.5h7l2 2h9v10.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />,
     calendar: (
       <>

@@ -4,23 +4,22 @@ button:disabled{cursor:wait;opacity:.65}input:disabled{opacity:.65}.auth-loading
 
 /* Original lettering with colours that adapt to light and dark surfaces. */
 .brand .lawcovery-logo {
-  --logo-accent: #6251df;
-  --logo-outline: #c4bde5;
-  color: #221d50;
   display: block;
   inline-size: 256px;
   max-inline-size: 100%;
   min-inline-size: 0;
   block-size: auto;
-  aspect-ratio: 1070 / 256;
+  aspect-ratio: 1200 / 412.22;
   object-fit: contain;
 }
-.story-panel .lawcovery-logo,
-.verity-console .console-brand > .lawcovery-logo {
-  --logo-accent: #8fe9eb;
-  --logo-outline: #bab1ff52;
-  color: #f5f3ff;
+.story-panel > .brand {
+  align-self:flex-start;
+  padding:8px 12px;
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 12px 28px rgba(3,21,34,.18);
 }
+.story-panel > .brand .lawcovery-logo { inline-size:min(240px,60vw); }
 @media (forced-colors: active) {
   .brand .lawcovery-logo,
   .verity-console .console-brand > .lawcovery-logo {

@@ -1,10 +1,45 @@
 /* Reads only the opened case section. Never copies forms, CAPTCHA, scripts or session URLs. */
 (() => {
-  const version = "1.1.0";
+  const version = "1.1.0"; // Accepted by ingest_case_capture; bump only with a matching migration.
   const searchVersion = "1.0.0";
   const source =
     "https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index";
   const text = (node) => (node?.textContent || "").replace(/\s+/g, " ").trim();
+  // Text of a node split at <br> and block boundaries. textContent alone
+  // glues "1) A<br>2) B" into "1) A2) B".
+  function lines(node) {
+    let out = "";
+    const walk = (n) => {
+      if (n.nodeType === 3) out += n.nodeValue;
+      else if (n.nodeName === "BR") out += "\n";
+      else if (n.nodeType === 1) {
+        const block = /^(DIV|P|LI|TR|UL|OL)$/.test(n.nodeName);
+        if (block) out += "\n";
+        n.childNodes.forEach(walk);
+        if (block) out += "\n";
+      }
+    };
+    walk(node);
+    return out.split("\n").map((line) => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+  }
+  // One entry per numbered party ("1) …", "2) …"), each with its own
+  // "Advocate- …" lines, joined back to the single-line form the app expects
+  // ("1) NAME Advocate- X"). A line that merely repeats the one above (some
+  // court records enter the name twice) is dropped.
+  function parties(items) {
+    const result = [];
+    for (const item of items) {
+      let current = null;
+      for (const line of lines(item)) {
+        if (!current || /^\d+\)\s*/.test(line)) {
+          current = [];
+          result.push(current);
+        }
+        if (current[current.length - 1]?.replace(/^\d+\)\s*/, "") !== line.replace(/^\d+\)\s*/, "")) current.push(line);
+      }
+    }
+    return result.map((party) => party.join(" ")).filter(Boolean);
+  }
   function visible(node) {
     if (!node?.isConnected) return false;
     for (let el = node; el && el.nodeType === 1; el = el.parentElement) {
@@ -56,8 +91,13 @@
         .trim();
       const field = fields[label];
       const td = th.nextElementSibling;
-      if (field && td?.tagName === "TD" && text(td) && text(td) !== "-")
-        data[field] = text(td);
+      if (!field || td?.tagName !== "TD") continue;
+      let value = text(td);
+      // eCourts marks unknown dates "Date Not Updated", sometimes after a date
+      // ("12th January 2024 Date Not Updated"). Keep only a real date.
+      if (/_date$/.test(field)) value = value.replace(/\(?\s*date\s+not\s+updated\s*\)?/gi, "").trim();
+      // "-", "---", "—" and similar mean "not recorded".
+      if (value && !/^[\s'"\-—–.]+$/.test(value)) data[field] = value;
     }
     const cnrCell = [...table.querySelectorAll("th")].find(
       (th) => text(th).toLowerCase() === "cnr number",
@@ -68,9 +108,7 @@
       ["petitioners", ".Petitioner_Advocate_table li"],
       ["respondents", ".Respondent_Advocate_table li"],
     ]) {
-      const values = [...root.querySelectorAll(selector)]
-        .map(text)
-        .filter(Boolean);
+      const values = parties([...root.querySelectorAll(selector)]);
       if (values.length) data[key] = values;
     }
     for (const [key, selector] of [
@@ -83,9 +121,10 @@
       if (values.length) data[key] = values;
     }
     // Status is explicit in some layouts, otherwise read the case's own business links.
+    // Use the latest hearing's business link, not the oldest.
     const statusLink =
-      root
-        .querySelector('.history_table a[onclick*="viewBusiness"]')
+      [...root.querySelectorAll('.history_table a[onclick*="viewBusiness"]')]
+        .at(-1)
         ?.getAttribute("onclick") || "";
     if (!data.case_status && /['"]Disposed['"]/.test(statusLink))
       data.case_status = "Disposed";

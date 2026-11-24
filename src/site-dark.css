@@ -1,5 +1,72 @@
-/* Shared colour foundation for entry, recovery and unauthenticated screens. */
-:root { color:#e9f8fa; background:#06111b; }
-body { background:#06111b; color:#e9f8fa; }
-.login-layout { background:#06111b; }.story-panel { background:radial-gradient(circle at 78% 35%,#12647766,transparent 42%),#071b29; }.form-panel { background:#091d2b!important; color:#dff4f5; }.top-note,.form-intro,.demo-note,.prototype-note,.form-panel footer { color:#91b3bd!important; }.text-button { color:#80eee8!important; }.welcome-icon { background:#123748!important; color:#6aeee5!important; }.form-eyebrow { color:#8bc8ce!important; }.input-wrap { border-color:#2d5260!important; background:#0b2534!important; color:#9bc3ca!important; }.input-wrap input { color:#efffff!important; }.input-wrap input::placeholder { color:#7f9ea8!important; }.primary-button { background:linear-gradient(135deg,#5be3dc,#258cad)!important; color:#00232c!important; }.demo-button { border-color:#315968!important; background:#0d2938!important; color:#dff9fa!important; }.divider span:first-child,.divider span:last-child { background:#294c59!important; }.login-layout dialog,.recovery-card { border-color:#315665!important; background:#0b2534!important; color:#ecffff!important; }.recovery-card p,.login-layout dialog p { color:#a5c4cb!important; }
-.public-site { --lp-paper:#071923; --lp-surface:#0b2230; --lp-ink:#e9f8fa; --lp-muted:#a1c0c7; --lp-green:#257f92; --lp-forest:#05131d; --lp-brass:#64ddd6; --lp-gold:#97f5e9; --lp-rule:#244957; }.public-site .lp-dark { background:#05131d; color:#efffff; }.public-site .lp-header,.public-site .lp-partners { background:#0b2230; }.public-site .lp-hero { background:linear-gradient(90deg,#071923 0 72%,#05131d 72%); }.public-site .lp-login { border-color:#356171; }.public-site .lp-button { background:#287f92; }.public-site .lp-button:hover { background:#1d6679; }
+/* Shared light foundation for the entry screens (sign-in, password recovery,
+   loading, demo workspace and their dialogs). Same palette and type as the
+   public site and the client workspace. (File name kept for import stability.) */
+:root { color:#0f2447; background:#f3f8ff; font-family:"DM Sans", system-ui, sans-serif; }
+body { background:#f3f8ff; color:#0f2447; }
+
+/* Inputs and buttons used by the login form, reset dialog and recovery card. */
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) label { color:#0f2447; font-size:13px; font-weight:700; margin-bottom:8px; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .input-wrap { block-size:52px; padding:0 14px; gap:10px; border:1px solid #d6e4f5; border-radius:14px; background:#fff; color:#6d829e; transition:border-color .2s, box-shadow .2s; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .input-wrap:focus-within { border-color:#1d4ed8; box-shadow:0 0 0 4px rgba(29,78,216,.12); }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .input-wrap input { block-size:50px; color:#0f2447; font-size:15px; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .input-wrap input::placeholder { color:#93a5bd; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .eye-button { color:#6d829e; border-radius:8px; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .eye-button:hover { color:#1d4ed8; background:#eef4ff; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .primary-button { block-size:52px; margin-top:22px; padding:0 20px; border-radius:14px; background:#1d4ed8; color:#fff; font-size:15px; font-weight:700; box-shadow:0 12px 26px rgba(29,78,216,.28); }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .primary-button:hover:not(:disabled) { background:#163eaf; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .primary-button:disabled { opacity:.7; cursor:progress; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .status-message { color:#a95c0d; font-size:13px; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .text-button { color:#163eaf; font-size:13px; font-weight:700; }
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) :is(button,input,a):focus-visible { outline:3px solid #1d4ed8; outline-offset:3px; }
+/* A text field inside .input-wrap is focused via the wrapper's ring
+   (.input-wrap:focus-within); a second outline on the bare input showed as a
+   square blue box inside the rounded field. */
+:is(.lg-page,.entry-dialog,.recovery-card,.auth-loading,.workspace) .input-wrap input:focus-visible { outline:none; }
+
+/* Dialogs (request access, reset password, help) */
+.entry-dialog { border:1px solid #d6e4f5; border-radius:24px; padding:32px; color:#0f2447; background:#fff; box-shadow:0 40px 100px rgba(15,36,71,.28); }
+.entry-dialog::backdrop { background:rgba(15,36,71,.45); backdrop-filter:blur(6px); }
+.entry-dialog h2 { font-family:"Manrope", sans-serif; font-size:26px; font-weight:750; letter-spacing:-.02em; color:#0f2447; }
+.entry-dialog p { color:#415a77; font-size:15px; line-height:1.7; }
+.entry-dialog .welcome-icon { display:grid; place-items:center; inline-size:48px; block-size:48px; margin-bottom:18px; border-radius:14px; background:#dbeafe; color:#163eaf; }
+.entry-dialog .dialog-close { color:#415a77; border-radius:10px; padding:6px; }
+.entry-dialog .dialog-close:hover { background:#eef4ff; color:#163eaf; }
+
+/* Loading and password recovery */
+.auth-loading { min-block-size:100svh; display:grid; place-content:center; justify-items:center; gap:16px; background:radial-gradient(60% 50% at 70% 30%, #dbeafe, transparent 70%), #f3f8ff; color:#415a77; }
+.auth-loading .lawcovery-logo { block-size:64px; }
+.recovery-card { inline-size:min(440px, calc(100vw - 32px)); padding:32px; border:1px solid #d6e4f5; border-radius:24px; background:#fff; box-shadow:0 30px 70px rgba(15,36,71,.12); }
+.recovery-card h2 { font-family:"Manrope", sans-serif; font-size:26px; color:#0f2447; }
+.recovery-card p { color:#415a77; font-size:14px; line-height:1.6; }
+.recovery-label { margin-top:18px; }
+
+/* Demo workspace */
+.workspace { background:#f3f8ff; }
+.workspace header { background:#fff; border-color:#d6e4f5; }
+.workspace .brand .lawcovery-logo { block-size:36px; }
+.workspace-main h1 { font-family:"Manrope", sans-serif; color:#0f2447; }
+.workspace-main > p, .metrics span, .metrics small, .empty-state p, .workspace > footer { color:#415a77; }
+.workspace .eyebrow { color:#1d4ed8; }
+.metrics > div, .empty-state { border-color:#d6e4f5; border-radius:18px; }
+.empty-icon { background:#dbeafe; color:#163eaf; }
+.connection-status { background:#dbeafe; color:#163eaf; }
+
+/* Request access form (login page dialog) */
+.entry-dialog.is-wide { inline-size:min(560px, calc(100vw - 32px)); max-inline-size:none; }
+.entry-dialog .access-form { display:grid; gap:4px; }
+.entry-dialog .access-form > p:first-child { margin:0 0 14px; }
+.entry-dialog .access-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 14px; }
+.entry-dialog .access-field { display:grid; gap:0; min-inline-size:0; }
+.entry-dialog .access-wide { grid-column:1 / -1; }
+.entry-dialog .access-optional { color:#6d829e; font-weight:600; }
+.entry-dialog .access-field .input-wrap { block-size:46px; }
+.entry-dialog .access-field .input-wrap input { block-size:44px; font-size:14px; }
+.entry-dialog .access-field textarea { inline-size:100%; min-block-size:84px; padding:10px 14px; border:1px solid #d6e4f5; border-radius:14px; background:#fff; color:#0f2447; font:inherit; font-size:14px; resize:vertical; box-sizing:border-box; }
+.entry-dialog .access-field textarea:focus-visible { outline:none; border-color:#1d4ed8; box-shadow:0 0 0 4px rgba(29,78,216,.12); }
+.entry-dialog .access-honeypot { position:absolute; inline-size:1px; block-size:1px; opacity:0; pointer-events:none; inset-inline-start:-9999px; }
+.entry-dialog .access-form .primary-button { justify-content:center; margin-top:18px; }
+.entry-dialog .access-sent { display:grid; gap:6px; padding:16px 18px; border:1px solid #b9e2cd; border-radius:16px; background:#e5f6ee; }
+.entry-dialog .access-sent p { margin:0; color:#14532d; }
+.entry-dialog .access-sent strong { color:#0f2447; }
+.entry-dialog .access-sent .primary-button { justify-content:center; margin-top:14px; }
+@media (max-width:560px) { .entry-dialog .access-grid { grid-template-columns:1fr; } .entry-dialog.is-wide { padding:24px; } }

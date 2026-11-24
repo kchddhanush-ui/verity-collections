@@ -373,7 +373,11 @@ async function claimCourtSearch(dashboardTab, connectionId, key, request, reload
       const restoringOwnSearch = restoreSearch && previous?.tabId === tab.id &&
         previous.connectionId === connectionId && stored.batch?.connectionId === connectionId &&
         stored.batch.state === "attention";
-      if ((stored.batch?.tabId === tab.id && stored.batch.state !== "complete" && !restoringOwnSearch) ||
+      // Only a queue that is actively fetching holds the tab. A queue stopped for
+      // attention or paused needs this very tab to repeat its search, so blocking
+      // it here left no way to recover from Lawcovery.
+      const holdsTab = stored.batch?.tabId === tab.id && ["waiting", "fetching"].includes(stored.batch.state);
+      if ((holdsTab && !restoringOwnSearch) ||
           Object.entries(stored).some(([name, item]) => name.startsWith("pending:") && item.tabId === tab.id)) {
         busy = true;
         continue;
@@ -526,7 +530,7 @@ async function dashboard(message, sender) {
   const config = await dashboardConfig(origin);
   if (message.action === "PING")
     return {
-      version: "1.10.2", editableCourtSearch: true, autoOpenCourtTab: true, reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
+      version: "1.10.7", editableCourtSearch: true, autoOpenCourtTab: true, reloadCourtTab: true, partySearch: true, partyCaptcha: true, partyBackground: true, reuseCourtTab: true, autoConnect: true,
       connected: Boolean(config?.enabled && Date.parse(config.expiresAt) > Date.now()),
       automaticFetchMode: "missing",
     };
@@ -724,6 +728,15 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 // Only identifiers, fetch mode and progress persist; audited ingest stores snapshots.
+// The worker paces the queue itself. Content-script timers are throttled to about
+// once a minute in hidden tabs, which left background fetches crawling; the
+// 30-second alarm stays as a fallback if Chrome stops this worker.
+const CASE_GAP_MS = 2500;
+let kickTimer;
+function kickBatch(delay = CASE_GAP_MS) {
+  clearTimeout(kickTimer);
+  kickTimer = setTimeout(() => runBatch().catch(() => {}), delay + 100);
+}
 function batchSummary(batch) {
   return {
     id: batch.id, state: batch.state, mode: batch.mode || "missing",
@@ -785,6 +798,7 @@ async function prepareBatch(previous, config, mode) {
   // including connections whose older configuration remembered "existing".
   await chrome.storage.local.set({ batch, config: { ...config, fetchMode: "missing" } });
   await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
+  if (batch.state === "waiting") kickBatch();
   return { batch: batchSummary(batch) };
 }
 async function enqueueBatch(capture, tabId, config, searchSession) {
@@ -796,6 +810,19 @@ async function enqueueBatch(capture, tabId, config, searchSession) {
   )), b => b.toString(16).padStart(2, "0")).join("");
   const { batch: old } = await chrome.storage.local.get("batch");
   if (old?.fingerprint === fingerprint && old.connectionId === config.connectionId) return;
+  // Repeating the same search after eCourts expired it must continue the stopped
+  // queue (including a "Refresh existing details" run), not start a new one.
+  const sameCases = (old?.sourceCnrs || old?.cnrs)?.length === sourceCnrs.length &&
+    sourceCnrs.every(cnr => (old.sourceCnrs || old.cnrs).includes(cnr));
+  if (sameCases && old.connectionId === config.connectionId && !old.needsClassification &&
+      ["attention", "paused"].includes(old.state) && old.index < old.cnrs.length) {
+    await chrome.storage.local.set({ batch: { ...old, fingerprint, tabId, state: "waiting", nextAt: Date.now() + 3000,
+      message: `Search restored. Continuing from case ${old.index + 1} of ${old.cnrs.length}…`,
+      updatedAt: new Date().toISOString() } });
+    await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
+    kickBatch(3000);
+    return;
+  }
   await prepareBatch({ sourceCnrs, fingerprint, tabId }, config, "missing");
 }
 // Called under the save/config lock. A non-blocking navigation lock avoids
@@ -822,7 +849,7 @@ async function controlBatch(action) {
     message: paused ? "Paused. An already opened case may finish saving." : "Resuming remaining cases…",
     updatedAt: new Date().toISOString() };
   await chrome.storage.local.set({ batch: next });
-  if (!paused) await chrome.alarms.create("batch", { periodInMinutes: 0.5 });
+  if (!paused) { await chrome.alarms.create("batch", { periodInMinutes: 0.5 }); kickBatch(0); }
   return { batch: batchSummary(next) };
 }
 async function runBatch(tabId) {
@@ -839,8 +866,10 @@ async function runBatch(tabId) {
         return await prepareBatch(latest, now, "missing");
       });
     }
-    if (["paused", "complete", "attention"].includes(batch.state) || Date.now() < batch.nextAt)
+    if (["paused", "complete", "attention"].includes(batch.state) || Date.now() < batch.nextAt) {
+      if (batch.state === "waiting") kickBatch(Math.max(0, batch.nextAt - Date.now()));
       return { batch: batchSummary(batch) };
+    }
     const cnr = batch.cnrs[batch.index];
     if (!cnr) return {};
     // Updates to the same queue are serialised with config changes and pause controls.
@@ -855,6 +884,7 @@ async function runBatch(tabId) {
         return next;
       });
     }
+    let keepAlive;
     try {
       // Another user/manual capture may have saved this CNR since selection.
       const coverage = await detailCoverage(config, [cnr]);
@@ -862,14 +892,23 @@ async function runBatch(tabId) {
         const index = batch.index + 1;
         const next = await update({ index, skipped: (batch.skipped || 0) + 1,
           failed: batch.failed.filter(c => c !== cnr),
-          state: index === batch.cnrs.length ? "complete" : "waiting", nextAt: Date.now() + 5000,
+          state: index === batch.cnrs.length ? "complete" : "waiting", nextAt: Date.now() + CASE_GAP_MS,
           message: `${cnr} skipped: it no longer matches the selected fetch mode.` });
+        if (next?.state === "waiting") kickBatch();
         return { batch: next ? batchSummary(next) : null };
       }
       // A pause, replaced search or revoked connection during coverage lookup
       // must not open another source case.
       if (!await update({ state: "fetching", message: `Fetching ${cnr}…` })) return {};
-      const response = await chrome.tabs.sendMessage(batch.tabId, { type: "LOAD_CASE", cnr, force: true });
+      // Keep this worker alive while eCourts loads: Chrome stops an idle worker
+      // after 30 s, which left the queue stuck on "Fetching".
+      keepAlive = setInterval(() => chrome.runtime.getPlatformInfo().catch(() => {}), 15000);
+      // eCourts is slow and occasionally drops one request; retry once before failing.
+      let response = await chrome.tabs.sendMessage(batch.tabId, { type: "LOAD_CASE", cnr, force: true });
+      if (response?.error && !/repeat the search/i.test(response.error)) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        response = await chrome.tabs.sendMessage(batch.tabId, { type: "LOAD_CASE", cnr, force: true });
+      }
       if (response?.error) throw new Error(response.error);
       if (response?.capture?.cnr !== cnr) throw new Error("Case identity mismatch. Nothing was saved.");
       const result = await navigator.locks.request("verity-sync", async () => {
@@ -879,17 +918,37 @@ async function runBatch(tabId) {
         return await handle({ type: "CAPTURE", capture: response.capture },
           { id: chrome.runtime.id, url: source, tab: { id: batch.tabId } });
       });
-      if (!result.saved) throw new Error(result.message || "Save not confirmed. Check the connection before resuming.");
+      if (!result.saved) throw Object.assign(new Error(result.message || "Save not confirmed. Check the connection before resuming."), { stop: true });
       const index = batch.index + 1;
-      const next = await update({ index, saved: (batch.saved ?? batch.index) + 1,
+      const next = await update({ index, saved: (batch.saved ?? batch.index) + 1, streak: 0,
         failed: batch.failed.filter(c => c !== cnr),
-        state: index === batch.cnrs.length ? "complete" : "waiting", nextAt: Date.now() + 5000,
+        state: index === batch.cnrs.length ? "complete" : "waiting", nextAt: Date.now() + CASE_GAP_MS,
         message: index === batch.cnrs.length ? "Selected cases processed. Saved checks and audit history retained." : `${index} of ${batch.cnrs.length} processed. Next case shortly.` });
+      if (next?.state === "waiting") kickBatch();
       return { batch: next ? batchSummary(next) : null };
     } catch (e) {
-      const next = await update({ state: "attention", failed: [...new Set([...batch.failed, cnr])],
+      // One stubborn case must not hold up the rest: note it and move on. Stop
+      // only when the search is gone, the save/connection failed, or several
+      // cases in a row fail (eCourts session or CAPTCHA problem).
+      const streak = (batch.streak || 0) + 1;
+      const failed = [...new Set([...batch.failed, cnr])];
+      const index = batch.index + 1;
+      if (!e.stop && !/repeat the search|captcha|session|background|disconnected|connection|Receiving end/i.test(e.message) && streak < 3) {
+        const done = index === batch.cnrs.length;
+        const next = await update({ index, failed, streak, nextAt: Date.now() + CASE_GAP_MS,
+          state: done ? "complete" : "waiting",
+          message: done
+            ? `Selected cases processed. ${failed.length} could not be loaded; fetch again to retry them.`
+            : `${cnr} could not be loaded (${e.message.replace(/\.$/, "")}). Continuing with the next case.` });
+        if (next?.state === "waiting") kickBatch();
+        return { batch: next ? batchSummary(next) : null };
+      }
+      const next = await update({ state: "attention", failed, streak: 0,
         message: `${e.message} Check eCourts/CAPTCHA and the connection, then resume.`, nextAt: 0 });
       return { batch: next ? batchSummary(next) : null };
+    }
+    finally {
+      clearInterval(keepAlive);
     }
   });
 }

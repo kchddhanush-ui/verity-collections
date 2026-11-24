@@ -74,3 +74,36 @@ test("Decision Date is captured separately from Disposal Date on a disposed case
     undefined,
   );
 });
+test("party cells keep each numbered party separate and drop repeated lines", () => {
+  const d = doc();
+  d.querySelector(".Respondent_Advocate_table").innerHTML =
+    "<li>1) KOTESHWAR TRADING COMPANY AND ANOTHER<br>2) NILESH PATIDAR</li>";
+  d.querySelector(".Petitioner_Advocate_table").innerHTML =
+    "<li>1) NINJACART SERVICES PVT.LTD<br>NINJACART SERVICES PVT.LTD<br>&nbsp;&nbsp;Advocate- HARISHA.M<br></li>";
+  const result = VerityParser.extract(d, () => true);
+  assert.deepEqual(result.data.respondents, ["1) KOTESHWAR TRADING COMPANY AND ANOTHER", "2) NILESH PATIDAR"]);
+  assert.deepEqual(result.data.petitioners, ["1) NINJACART SERVICES PVT.LTD Advocate- HARISHA.M"]);
+});
+test("the standard single-party layout is unchanged", () => {
+  const result = VerityParser.extract(doc(), () => true);
+  assert.deepEqual(result.data.petitioners, ["1) Example Finance Pvt Ltd Advocate- EXAMPLE ADVOCATE"]);
+  assert.deepEqual(result.data.respondents, ["1) EXAMPLE RESPONDENT"]);
+});
+test("'Date Not Updated' and dash placeholders are not saved as values", () => {
+  const d = doc();
+  const cell = (label) => [...d.querySelectorAll(".case_details_table th, .case_status_table th")]
+    .find((th) => th.textContent.trim().toLowerCase().replace(/\s*:\s*$/, "") === label)?.nextElementSibling;
+  cell("next hearing date").textContent = "18th December 2026 Date Not Updated";
+  cell("first hearing date").textContent = "Date Not Updated";
+  const result = VerityParser.extract(d, () => true);
+  assert.equal(result.data.next_hearing_date, "18th December 2026");
+  assert.equal("first_hearing_date" in result.data, false);
+  // A dash-only stage is "not recorded". With no stage and no status the page
+  // is incomplete, so it is not captured rather than saved with "---".
+  const d2 = doc();
+  const stage = [...d2.querySelectorAll(".case_details_table th, .case_status_table th")]
+    .find((th) => th.textContent.trim().toLowerCase().replace(/\s*:\s*$/, "") === "case stage").nextElementSibling;
+  stage.textContent = "---";
+  const r2 = VerityParser.extract(d2, () => true);
+  assert.ok(!r2 || !("case_stage" in r2.data));
+});

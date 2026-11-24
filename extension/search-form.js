@@ -24,14 +24,34 @@
   let submitting = false;
   globalThis.VerityPartySearch = { get submitting() { return submitting; } };
 
-  async function waitFor(read, timeout = 12000) {
-    const deadline = Date.now() + timeout;
-    do {
-      const result = read();
-      if (result) return result;
-      await new Promise((resolve) => setTimeout(resolve, 150));
-    } while (Date.now() < deadline);
-    return null;
+  // Re-checks on every page change instead of polling: Chrome throttles timers in
+  // hidden tabs to about once a minute, which made background searches time out.
+  function waitFor(read, timeout = 12000) {
+    return new Promise((resolve, reject) => {
+      let done = false, timer, interval;
+      const observer = new MutationObserver(check);
+      function finish(error, value) {
+        if (done) return;
+        done = true;
+        observer.disconnect();
+        clearTimeout(timer);
+        clearInterval(interval);
+        document.removeEventListener("load", check, true);
+        error ? reject(error) : resolve(value);
+      }
+      function check() {
+        if (done) return;
+        try {
+          const result = read();
+          if (result) finish(null, result);
+        } catch (error) { finish(error); }
+      }
+      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true });
+      document.addEventListener("load", check, true); // CAPTCHA image loads
+      timer = setTimeout(() => { check(); finish(null, null); }, timeout);
+      interval = setInterval(check, 250); // Fast when visible; the observer covers hidden tabs.
+      check();
+    });
   }
 
   const captchaImage = () => document.querySelector("#div_captcha_party #captcha_image");
@@ -249,15 +269,14 @@
       assertSelections();
       return {};
     }
-    const deadline = Date.now() + 12000;
-    while (Date.now() < deadline) {
+    const loaded = await waitFor(() => {
       assertSelections();
       const current = field(index + 1);
       const choices = options(index + 1);
       const usable = [...(current?.options || [])].filter((option) => !option.disabled && option.value && option.value !== "0");
-      if (choices.length && usable.every((option) => !oldOptions.has(option))) return { options: choices };
-      await new Promise((resolve) => setTimeout(resolve, 150));
-    }
+      return choices.length && usable.every((option) => !oldOptions.has(option)) ? { options: choices } : null;
+    });
+    if (loaded) return loaded;
     throw new Error("eCourts did not load the next court list. Start a new search or open eCourts directly.");
   }
 

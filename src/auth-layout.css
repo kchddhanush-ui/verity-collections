@@ -1,169 +1,76 @@
-/* The sign-in and recovery flows share the workspace's spacing and type scale. */
-.login-layout .auth-home-link {
-  margin-inline-end: auto;
-  color: #657960;
-  font-size: 11px;
-  text-decoration: none;
-  min-block-size: 36px;
-  display: inline-flex;
-  align-items: center;
+/* Client login: the same light canvas, type and floating 3D case stack as the
+   public homepage, with a single focused sign-in card. */
+.lg-page {
+  min-block-size: 100svh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background:
+    radial-gradient(55% 55% at 22% 40%, #dbeafe 0%, transparent 70%),
+    radial-gradient(40% 40% at 90% 90%, #e5f6ee 0%, transparent 70%),
+    #f3f8ff;
+  color: #0f2447;
+  font-family: "DM Sans", system-ui, sans-serif;
+  overflow-x: clip;
 }
-.login-layout .auth-home-link:hover { text-decoration: underline; }
-.login-layout {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  min-block-size: 100dvh;
+.lg-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; inline-size: min(1180px, 100% - 48px); margin-inline: auto; padding-block: 18px; }
+.lg-brand { display: inline-flex; }
+.lg-brand .lawcovery-logo { block-size: 76px; }
+.lg-header-links { display: flex; align-items: center; gap: 8px; }
+.lg-back { padding: 9px 14px; border-radius: 999px; color: #415a77; font-size: 14px; font-weight: 650; text-decoration: none; }
+.lg-back:hover { background: #fff; color: #0f2447; }
+.lg-link { border: 0; background: none; padding: 9px 4px; color: #163eaf; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.lg-link:hover { text-decoration: underline; }
+.lg-header-links .lg-link { padding: 9px 16px; border-radius: 999px; background: #0f2447; color: #fff; }
+.lg-header-links .lg-link:hover { background: #163eaf; text-decoration: none; }
+
+.lg-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(360px, 440px); align-items: center; gap: clamp(32px, 6vw, 88px); inline-size: min(1180px, 100% - 48px); margin-inline: auto; padding-block: 24px 40px; }
+.lg-story { display: grid; gap: 18px; justify-items: start; }
+.lg-eyebrow { display: inline-flex; align-items: center; gap: 8px; margin: 0; color: #1d4ed8; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.lg-pulse { inline-size: 8px; block-size: 8px; border-radius: 50%; background: #16805a; animation: lp-pulse 2.4s infinite; box-shadow: 0 0 0 0 rgba(22,128,90,.5); }
+.lg-story h1 { margin: 0; font-family: "Manrope", sans-serif; font-size: clamp(40px, 4.6vw, 64px); font-weight: 800; line-height: 1.04; letter-spacing: -.045em; color: #0f2447; }
+.lg-story h1 em { font-style: normal; background: linear-gradient(90deg, #1d4ed8, #0f8ca5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lg-lede { max-inline-size: 500px; margin: 0; color: #415a77; font-size: 18px; line-height: 1.6; }
+.lg-visual { display: grid; place-items: center; inline-size: 100%; min-block-size: 380px; margin-block: 36px 4px; }
+.lg-visual .cs3d { inline-size: min(380px, 100%); }
+.lg-visual .cs3d-card { inline-size: 270px; }
+.lg-features { display: flex; flex-wrap: wrap; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.lg-features li { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid #d6e4f5; border-radius: 999px; background: rgba(255,255,255,.8); color: #415a77; font-size: 14px; font-weight: 650; }
+.lg-features svg { color: #1d4ed8; }
+
+.lg-card { display: grid; gap: 6px; padding: clamp(26px, 3vw, 36px); border: 1px solid #d6e4f5; border-radius: 28px; background: rgba(255,255,255,.92); backdrop-filter: blur(18px); box-shadow: 0 30px 80px rgba(15,36,71,.14); animation: lg-rise .6s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes lg-rise { from { opacity: 0; transform: perspective(1200px) rotateX(10deg) translateY(24px); } }
+.lg-card-icon { display: grid; place-items: center; inline-size: 48px; block-size: 48px; margin-bottom: 12px; border-radius: 14px; background: #dbeafe; color: #163eaf; }
+.lg-card h2 { margin: 6px 0 2px; font-family: "Manrope", sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -.03em; color: #0f2447; }
+.lg-intro { margin: 0 0 18px; color: #415a77; font-size: 15px; }
+.lg-form { display: grid; }
+.lg-form .password-label { display: flex; align-items: center; justify-content: space-between; margin: 18px 0 8px; }
+.lg-form .password-label label { margin: 0; }
+.lg-form .password-label .lg-link { padding: 0; font-size: 13px; }
+.lg-card .divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 14px; color: #6d829e; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.lg-card .divider span:first-child, .lg-card .divider span:last-child { flex: 1; block-size: 1px; background: #d6e4f5; }
+.lg-card .demo-button { display: flex; align-items: center; justify-content: center; gap: 10px; inline-size: 100%; block-size: 50px; border: 1px solid #d6e4f5; border-radius: 14px; background: #fff; color: #163eaf; font-size: 15px; font-weight: 700; }
+.lg-card .demo-button:hover { background: #eef4ff; border-color: #9fc5f6; }
+.lg-card .demo-note { margin: 10px 0 0; text-align: center; color: #6d829e; font-size: 13px; }
+.lg-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #e3ecf8; }
+.lg-card .prototype-note { display: inline-flex; align-items: center; gap: 8px; color: #6d829e; font-size: 13px; }
+.lg-card .green-dot { inline-size: 7px; block-size: 7px; border-radius: 50%; background: #16805a; }
+.lg-footer { padding-block: 18px; text-align: center; color: #6d829e; font-size: 13px; }
+
+@media (max-width: 900px) {
+  .lg-grid { grid-template-columns: 1fr; padding-block: 8px 32px; }
+  .lg-card { order: -1; }
+  .lg-visual { min-block-size: 280px; }
 }
-.login-layout .story-panel {
-  padding: clamp(28px, 3.2vw, 52px);
+@media (max-width: 560px) {
+  .lg-header, .lg-grid { inline-size: calc(100% - 32px); }
+  .lg-back { display: none; }
+  .lg-brand .lawcovery-logo { block-size: 54px; }
+  .lg-visual { display: none; }
+  .lg-card-foot { flex-direction: column; align-items: flex-start; }
 }
-.login-layout .story-content {
-  max-inline-size: 520px;
-  padding-block-start: 20px;
+@media (prefers-reduced-motion: reduce) {
+  .lg-card, .lg-pulse { animation: none; }
 }
-.login-layout h1 {
-  font-size: clamp(40px, 2rem + 2vw, 64px);
-  letter-spacing: -0.045em;
-}
-.login-layout .story-content > p {
-  font-size: 14px;
-  line-height: 1.8;
-}
-.login-layout .form-panel {
-  padding: clamp(24px, 3vw, 44px);
-  background: #fcfdfa;
-}
-.login-layout .form-content {
-  max-inline-size: 390px;
-  padding-block: 32px;
-}
-.login-layout .form-content h2 {
-  font-size: 34px;
-  letter-spacing: -0.045em;
-}
-.login-layout .form-intro {
-  font-size: 14px;
-  margin-block-end: 30px;
-}
-.login-layout .top-note {
-  flex-wrap: wrap;
-  font-size: 12px;
-  gap: 6px;
-}
-.login-layout .top-note button {
-  font-size: 12px;
-  min-block-size: 36px;
-}
-.login-layout label,
-.recovery-card label {
-  font-size: 12px;
-}
-.login-layout .input-wrap,
-.recovery-card .input-wrap {
-  border-color: #d3dfd2;
-  border-radius: 10px;
-}
-.login-layout .input-wrap input,
-.recovery-card .input-wrap input {
-  min-block-size: 52px;
-  font-size: 14px;
-}
-.login-layout .password-label button {
-  font-size: 12px;
-  min-block-size: 32px;
-}
-.login-layout .eye-button {
-  min-inline-size: 36px;
-  min-block-size: 36px;
-}
-.login-layout .primary-button,
-.recovery-card .primary-button {
-  min-block-size: 50px;
-  font-size: 13px;
-  border-radius: 10px;
-}
-.login-layout .demo-button {
-  min-block-size: 48px;
-  font-size: 13px;
-  border-radius: 10px;
-}
-.login-layout .demo-note {
-  font-size: 11px;
-  line-height: 1.6;
-}
-.login-layout .prototype-note {
-  font-size: 10px;
-  flex-wrap: wrap;
-  line-height: 1.7;
-}
-.login-layout .form-eyebrow {
-  font-size: 10px;
-}
-.login-layout .form-panel footer {
-  gap: 12px;
-  font-size: 11px;
-}
-.login-layout .form-panel footer button {
-  min-block-size: 36px;
-  font-size: 11px;
-}
-.login-layout .status-message,
-.recovery-card .status-message {
-  font-size: 12px;
-}
-.login-layout .input-wrap:focus-within,
-.recovery-card .input-wrap:focus-within {
-  outline: 2px solid #5b8053;
-  outline-offset: 2px;
-  box-shadow: none;
-}
-.login-layout .feature-strip {
-  flex-wrap: wrap;
-  gap: 16px;
-}
-.recovery-card {
-  max-inline-size: 440px;
-  padding: clamp(22px, 4vw, 36px);
-}
-.recovery-card h2 {
-  font-size: 28px;
-  letter-spacing: -0.04em;
-}
-@media (min-width: 761px) and (max-height: 850px) {
-  .login-layout .story-panel,
-  .login-layout .form-panel {
-    padding-block: 24px;
-  }
-  .login-layout .form-content {
-    padding-block: 24px;
-  }
-  .login-layout .art {
-    height: 240px;
-  }
-  .login-layout .welcome-icon {
-    margin-block-end: 18px;
-  }
-  .login-layout .form-intro {
-    margin-block-end: 22px;
-  }
-  .login-layout .divider {
-    margin-block: 22px 16px;
-  }
-}
-@media (max-width: 760px) {
-  .login-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .login-layout .form-panel {
-    min-block-size: 100dvh;
-    padding: 24px;
-  }
-  .login-layout .form-content {
-    padding-block: 36px;
-  }
-  .login-layout .story-panel {
-    padding: 32px 24px;
-  }
-  .login-layout .story-content {
-    padding-block-start: 32px;
-  }
-}
+.lg-card-foot { flex-wrap: wrap; }
+.lg-access-note { display: inline-flex; align-items: center; gap: 4px; color: #415a77; font-size: 13px; }
+.lg-access-note .lg-link { padding: 0; font-size: 13px; }

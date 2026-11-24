@@ -58,7 +58,8 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
   };
   let listener;
   runInNewContext(script, {
-    Event, setTimeout, URL, crypto,
+    Event, setTimeout, clearTimeout, setInterval, clearInterval, URL, crypto,
+    MutationObserver: class { observe() {} disconnect() {} },
     location: { origin: "https://services.ecourts.gov.in" },
     VerityParser: {
       visible: () => true,
@@ -86,6 +87,9 @@ test("guided party search relays a live CAPTCHA and saves only fresh results aft
       throw new Error("Unexpected selector: " + selector);
     },
     querySelectorAll: () => [],
+    documentElement: {},
+    addEventListener() {},
+    removeEventListener() {},
     createElement(tag) {
       assert.equal(tag, "canvas");
       return {

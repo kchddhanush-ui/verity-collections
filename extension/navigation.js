@@ -26,7 +26,7 @@
     {
       force = false,
       isVisible = VerityParser.visible,
-      timeoutMs = 20000,
+      timeoutMs = 25000,
       settleMs = 600,
     } = {},
   ) {
@@ -74,15 +74,18 @@
         attributes: true,
         attributeFilter: ["style", "class", "hidden", "aria-hidden"],
       });
-      deadline = setTimeout(
-        () =>
-          finish(
-            new Error(
-              "Action needed on eCourts: the case did not finish loading. Check CAPTCHA, session expiry or portal errors, then retry.",
-            ),
-          ),
-        timeoutMs,
-      );
+      deadline = setTimeout(() => {
+        // Report what eCourts is showing (session expired, invalid request…).
+        const shown = [...doc.querySelectorAll("#msg-danger, .alert-danger, .modal.show, .modal.in, #validateError, .errormsg")]
+          .filter((el) => { try { return isVisible(el); } catch { return false; } })
+          .map((el) => (el.textContent || "").replace(/\s+/g, " ").trim())
+          .filter(Boolean)[0];
+        finish(new Error(shown
+          ? `eCourts said: "${shown.slice(0, 160)}"`
+          : doc.visibilityState === "hidden"
+            ? "eCourts did not load this case while its tab was in the background. Keep the eCourts tab as the open tab in its own window, then resume."
+            : "eCourts did not finish loading this case in time. Retry, or open the eCourts tab to see whether it shows a message."));
+      }, timeoutMs);
       try {
         // viewHistory handles the AJAX load. Do not also follow the tokenised href,
         // which can reload the document and disconnect the extension response.

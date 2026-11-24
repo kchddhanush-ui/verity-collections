@@ -1,16 +1,20 @@
 import { CourtPartySearch } from "./components/CourtPartySearch";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./lib/supabase";
 import "./workspace-theme.css";
 import { mergePortfolio } from "./lib/portfolio";
 import { WorkspaceIcon } from "./components/WorkspaceIcon";
 import { HearingCalendar } from "./components/HearingCalendar";
 import { parseCourtDate } from "./lib/hearings";
-import { currentRecordedStage, previousRecordedStage } from "./lib/caseStages";
+import { currentRecordedStage, decisionOrLatestStatusDate, previousRecordedStage } from "./lib/caseStages";
 import { caseCsv } from "./lib/csv";
 import { buildAnalytics, caseStatus, filterCases, courtName, filingYear } from "./lib/analytics";
 import { WorkspaceChrome } from "./components/WorkspaceChrome";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
+import { RecoveryFlow } from "./components/RecoveryFlow";
+import { ZonalActions } from "./components/ZonalActions";
+import { LoanDataImport } from "./components/LoanDataImport";
+import { Dropdown } from "./components/Dropdown";
 import { extensionRequest } from "./lib/extensionBridge";
 
 function partyColumns(values = []) {
@@ -37,6 +41,11 @@ const labels = {
   case_status: "Status",
   case_stage: "Stage",
   filing_number: "Filing number",
+  db_amount: "Original Loan Amount",
+  pos_recovered: "Amount Recovered",
+  pos_as_of_nov_16: "POS as of Nov 16",
+  outstanding_amount: "Outstanding Amount",
+  recovery_percentage: "Recovery Percentage",
   filing_date: "Filing date",
   registration_date: "Registration date",
   first_hearing_date: "First hearing",
@@ -58,8 +67,17 @@ const labels = {
 const fieldLabel = (key) =>
   labels[key] || key.replace(/_/g, " ").replace(/^./, (letter) => letter.toUpperCase());
 const factOrder = new Map(Object.keys(labels).map((key, index) => [key, index]));
-function caseFacts(data) {
-  return Object.entries(data)
+function caseFacts(data, loanData = {}) {
+  // Cases without imported loan data must not show "₹NaN" rows: drop empty
+  // loan fields instead of formatting them as currency.
+  const loan = Object.fromEntries(Object.entries(loanData).filter(([, value]) => value != null && value !== ""));
+  const fields = { ...data, ...loan };
+  const dbAmount = Number(fields.db_amount), recovered = Number(fields.pos_recovered);
+  const derived = Number.isFinite(dbAmount) && dbAmount >= 0 ? {
+    outstanding_amount: Math.max(0, dbAmount - (Number.isFinite(recovered) ? recovered : 0)),
+    recovery_percentage: dbAmount ? ((Number.isFinite(recovered) ? recovered : 0) / dbAmount) * 100 : null,
+  } : {};
+  return Object.entries({ ...fields, ...derived })
     .filter(([, value]) => !Array.isArray(value))
     .sort(([left], [right]) =>
       (factOrder.get(left) ?? 999) - (factOrder.get(right) ?? 999) ||
@@ -115,6 +133,14 @@ function Table({ headers, rows, label, caseList = false }) {
     </div>
   );
 }
+
+// "17 Nov 2026" for summaries where the time of day is noise.
+const shortDate = (value) => {
+  const instant = Date.parse(value || "");
+  return Number.isFinite(instant)
+    ? new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }).format(new Date(instant))
+    : "—";
+};
 
 export function CaseWorkspace({ session, onSignOut, pending }) {
   const [workspaces, setWorkspaces] = useState([]),
@@ -311,6 +337,25 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
       const id = await call("create_workspace", { p_name: name });
       setWorkspaces((old) => [...old, { id, name }]);
       setWorkspace(id);
+    });
+  }
+  async function deleteWorkspace(e) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const current = workspaces.find((w) => w.id === workspace);
+    if (!current) return;
+    const typed = String(new FormData(form).get("confirm") || "").trim();
+    if (typed !== current.name) {
+      setError(`Type "${current.name}" exactly to delete this workspace.`);
+      return;
+    }
+    if (!window.confirm(`Delete "${current.name}" and all its cases permanently? This cannot be undone.`)) return;
+    await perform(async () => {
+      await call("delete_workspace", { p_workspace: current.id, p_confirm_name: typed });
+      const rest = workspaces.filter((w) => w.id !== current.id);
+      setWorkspaces(rest);
+      setWorkspace(rest[0]?.id || "");
+      form.reset();
     });
   }
   function connect() {
@@ -530,10 +575,30 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   }
   const currentCaseFilters = caseFilters?.workspace === workspace ? caseFilters : { values: {}, respondent: "" };
   const respondentQuery = currentCaseFilters.respondent.trim().toLowerCase();
-  const filtered = filterCases(cases, { ...currentCaseFilters.values, search: query })
+  const { stage: selectedStage = "", ...baseCaseFilters } = currentCaseFilters.values;
+  // The stage menu deliberately mirrors the "Current stage" column, including
+  // cases whose latest stage only exists in the saved hearing history.
+  const caseStages = useMemo(
+    () => [...new Set(cases
+      .filter((item) => item.hasDetails)
+      .map((item) => currentRecordedStage(item.data))
+      .filter((stage) => stage && stage !== "—"))]
+      .sort((left, right) => left.localeCompare(right)),
+    [cases],
+  );
+  const stageCounts = useMemo(
+    () => new Map(caseStages.map((stage) => [
+      stage,
+      cases.filter((item) => item.hasDetails && currentRecordedStage(item.data) === stage).length,
+    ])),
+    [cases, caseStages],
+  );
+  const filtered = filterCases(cases, { ...baseCaseFilters, search: query })
+    .filter((item) => !selectedStage || (item.hasDetails && currentRecordedStage(item.data) === selectedStage))
     .filter((item) => !respondentQuery || partyColumns(item.data.respondents).names.toLowerCase().includes(respondentQuery))
     .filter((item) => !currentCaseFilters.cnrs || currentCaseFilters.cnrs.has(item.cnr));
   const showingConnections = portfolioView === "connections";
+  const showingLoanData = portfolioView === "loan-data";
   const setCaseFilter = (key, value) => setCaseFilters((previous) => {
     const current = previous?.workspace === workspace ? previous : { values: {}, respondent: "" };
     return key === "respondent"
@@ -568,15 +633,16 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
   };
   const caseHeaders = [
     "Case number", "Case type", "CNR number", "Filing number", "Filing date",
-    "Decision date", "Respondent", "Petitioner", "Petitioner advocate",
+    "Decision / latest status date", "Respondent", "Petitioner", "Petitioner advocate",
     "Current stage", "Previous stage", "Next hearing",
   ];
   const caseValues = (item) => {
     const petitioner = partyColumns(item.data.petitioners);
+    const statusDate = decisionOrLatestStatusDate(item);
     return [
       item.data.case_reference || item.data.registration_number || item.cnr,
       item.data.case_type || "", item.cnr, item.data.filing_number || "",
-      item.data.filing_date || "", item.data.decision_date || "",
+      item.data.filing_date || "", statusDate.value,
       partyColumns(item.data.respondents).names, petitioner.names,
       petitioner.advocates, currentRecordedStage(item.data),
       previousRecordedStage(item.data), item.data.next_hearing_date || "",
@@ -592,6 +658,18 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const importLoanData = async (filename, preview) => {
+    const rows = preview.matched.map((row) => ({ case_id: row.case.id, db_amount: row.db_amount, pos_recovered: row.pos_recovered, pos_as_of_nov_16: row.pos_as_of_nov_16 }));
+    const { data, error: importError } = await supabase.rpc("import_loan_data", {
+      p_workspace: workspace,
+      p_filename: filename,
+      p_rows: rows,
+      p_summary: { total: preview.total, unmatched: preview.unmatched.length, ambiguous: preview.ambiguous.length, duplicates: preview.duplicates.length, invalid: preview.invalid.length, no_data: preview.noData.length },
+    });
+    if (importError) throw importError;
+    await refresh();
+    return data;
   };
   return (
     <WorkspaceChrome
@@ -622,30 +700,21 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
         id="workspace-content"
         tabIndex="-1"
       >
-        {portfolioView !== "calendar" && portfolioView !== "analytics" && (
+        {portfolioView !== "calendar" && portfolioView !== "analytics" && portfolioView !== "flow" && portfolioView !== "zonal" && (
           <div className="console-title page-heading">
             <div>
               <p className="console-eyebrow">
-                YOUR WORKSPACE / {showingConnections ? "CONNECTIONS" : "CASES"}
+                YOUR WORKSPACE / {showingConnections ? "CONNECTIONS" : showingLoanData ? "LOAN DATA" : "CASES"}
               </p>
-              <h1>{showingConnections ? "Connected to your workflow." : "Your case portfolio."}</h1>
+              <h1>{showingConnections ? "Connected to your workflow." : showingLoanData ? "Import loan and recovery data." : "Your case portfolio."}</h1>
               <p>
                 {showingConnections
                   ? "Manage your company workspace and automatic eCourts capture."
-                  : "Find a case, review its progress, and see the latest saved details."}
+                  : showingLoanData
+                    ? "Upload a validated CSV to update loan amounts on matching saved cases."
+                    : "Find a case, review its progress, and see the latest saved details."}
               </p>
             </div>
-            {showingConnections && (
-              <a
-                className="console-link button-primary btn btn-primary"
-                href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <WorkspaceIcon name="external" size={17} />
-                Open eCourts
-              </a>
-            )}
           </div>
         )}
         {error && (
@@ -659,133 +728,214 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           </div>
         )}
         {workspace && (
-          <div hidden={portfolioView !== "connections"}>
-            <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} onCaptureChallenge={batch?.current ? focusCourt : undefined} onSaved={() => perform(refresh)} />
-          </div>
-        )}
-        {portfolioView === "connections" && batch && (
-          <section
-            className="case-fetch-status batch-capture-panel card sync-card"
-            aria-label="Automatic case detail capture"
-          >
-            <div className="batch-heading">
-              <div>
-                <p className="panel-kicker">COURT SYNC</p>
-                <h2>Automatic detail capture</h2>
+          <div className="cx-page" hidden={portfolioView !== "connections"}>
+            {portfolioView === "connections" && (() => {
+              const extensionOk = connectionStatus?.state === "connected";
+              const detailed = cases.filter((item) => item.hasDetails).length;
+              const latest = searches[0];
+              const running = batch && !["complete"].includes(batch.state);
+              return (
+                <div className="cx-overview" aria-label="Connection status">
+                  <div className={`cx-tile ${extensionOk ? "is-good" : "is-warn"}`}>
+                    <span className="cx-tile-label"><i className="cx-dot" />Chrome extension</span>
+                    <strong>{extensionOk ? "Connected" : connectionStatus ? "Not connected" : "Checking…"}</strong>
+                    <small>{extensionOk ? "Captures save to this workspace" : "See Browser connection"}</small>
+                  </div>
+                  <div className="cx-tile">
+                    <span className="cx-tile-label">Latest eCourts search</span>
+                    <strong>{latest ? shortDate(latest.captured_at) : "No searches yet"}</strong>
+                    <small>{latest ? `${latest.reported_cases ?? "—"} cases reported · ${latest.loaded_rows - latest.skipped_rows} captured` : "Run a party-name search below"}</small>
+                  </div>
+                  <div className="cx-tile">
+                    <span className="cx-tile-label">Case details saved</span>
+                    <strong>{detailed.toLocaleString("en-IN")} <span>of {cases.length.toLocaleString("en-IN")}</span></strong>
+                    <span className="cx-meter" aria-hidden="true"><i style={{ inlineSize: `${cases.length ? (detailed / cases.length) * 100 : 0}%` }} /></span>
+                  </div>
+                  <div className={`cx-tile ${running ? "is-live" : ""}`}>
+                    <span className="cx-tile-label"><i className="cx-dot" />Automatic capture</span>
+                    <strong>{batch ? batch.state.charAt(0).toUpperCase() + batch.state.slice(1) : "Idle"}</strong>
+                    <small>{batch?.total ? `${batch.processed ?? batch.saved} of ${batch.total} processed` : "Starts after a search"}</small>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="cx-grid">
+              <div className="cx-main">
+                <CourtPartySearch key={workspace} dashboardPayload={dashboardPayload} onCaptureChallenge={batch?.current ? focusCourt : undefined} onSaved={() => perform(refresh)} />
+
+                {portfolioView === "connections" && batch && (
+                  <section className="cx-card cx-sync batch-capture-panel" aria-label="Automatic case detail capture">
+                    <header className="cx-card-head">
+                      <div>
+                        <p className="panel-kicker">COURT SYNC</p>
+                        <h2>Automatic detail capture</h2>
+                      </div>
+                      <span className={`cx-state is-${batch.state}`}>{batch.state}</span>
+                    </header>
+                    <div className="cx-progress">
+                      <div className="cx-progress-head">
+                        <strong>{batch.processed ?? batch.saved} <span>of {batch.total || 0} processed</span></strong>
+                        {batch.current && <span className="cx-current">Now: {batch.current}</span>}
+                      </div>
+                      <progress aria-label="Selected cases processed" max={batch.total || 1} value={batch.processed ?? batch.saved} />
+                    </div>
+                    <div className="cx-stats" role="status">
+                      <span className="is-good"><b>{batch.saved}</b>saved</span>
+                      <span><b>{batch.skipped || 0}</b>skipped</span>
+                      <span><b>{batch.waiting}</b>remaining</span>
+                      <span className={batch.failed ? "is-bad" : ""}><b>{batch.failed}</b>failed</span>
+                    </div>
+                    {batch.message && <p className="cx-message">{batch.message}</p>}
+                    <div className="cx-sync-controls">
+                      <div className="cx-segment" role="group" aria-label="What to fetch">
+                        <button aria-pressed={batch.mode === "missing"} disabled={batchBusy || batch.state === "fetching"} onClick={() => batchControl("BATCH_START", "missing")}>Fetch missing details</button>
+                        <button aria-pressed={batch.mode === "existing"} disabled={batchBusy || batch.state === "fetching"} onClick={() => batchControl("BATCH_START", "existing")}>Refresh existing details</button>
+                      </div>
+                      <div className="cx-actions">
+                        <button className="btn" disabled={batchBusy || ["paused", "attention", "complete"].includes(batch.state)} onClick={() => batchControl("BATCH_PAUSE")}>Pause</button>
+                        <button className="btn btn-primary" disabled={batchBusy || !["paused", "attention"].includes(batch.state)} onClick={() => batchControl("BATCH_RESUME")}>Resume</button>
+                      </div>
+                    </div>
+                    <p className="cx-note">
+                      {batch.mode === "existing" ? "One-time refresh of already saved cases." : "Only cases without saved details are fetched."}
+                      {batch.sourceTotal != null && ` ${batch.sourceTotal} cases in the loaded search`}
+                      {batch.existingDetails != null && batch.missingDetails != null && ` · ${batch.existingDetails} already saved · ${batch.missingDetails} missing before this run`}.
+                    </p>
+                    {batch.current && (
+                      <div className="cx-callout">
+                        <p>If eCourts asks for a CAPTCHA, enter it in the capture tab, then resume.</p>
+                        <button className="btn" type="button" onClick={focusCourt}>Show eCourts / CAPTCHA</button>
+                      </div>
+                    )}
+                    {batchError && <p className="cx-error" role="alert">{batchError}</p>}
+                  </section>
+                )}
+
+                {portfolioView === "connections" && fetchStatus && !selected && (
+                  <div className="cx-card cx-fetch case-fetch-status" role="status">
+                    {fetching && <progress aria-label="Fetching court case details" />}
+                    <p>{fetchStatus.message}</p>
+                    {fetchStatus.actionNeeded && (
+                      <div className="cx-callout">
+                        <p>Complete any CAPTCHA or repeat the search in eCourts, then use View or Refresh from eCourts again.</p>
+                        <button className="btn" onClick={focusCourt}>Go to eCourts tab</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {portfolioView === "connections" && (
+                    <section className="cx-card cx-how">
+                      <p className="panel-kicker">HOW IT WORKS</p>
+                      <ol>
+                        <li><b>1</b><div><strong>Connect Chrome</strong><span>The Lawcovery extension links to this workspace once.</span></div></li>
+                        <li><b>2</b><div><strong>Search by party name</strong><span>Pick the court, enter the party and type the CAPTCHA.</span></div></li>
+                        <li><b>3</b><div><strong>Details save automatically</strong><span>Cases are fetched one at a time; every update keeps an audit trail.</span></div></li>
+                      </ol>
+                    </section>
+                )}
               </div>
-              <span className="coverage-badge">{batch.state}</span>
-              <div className="batch-actions">
-                {" "}
-                <button
-                  disabled={
-                    batchBusy ||
-                    ["paused", "attention", "complete"].includes(batch.state)
-                  }
-                  onClick={() => batchControl("BATCH_PAUSE")}
-                >
-                  Pause queue
-                </button>{" "}
-                <button
-                  disabled={
-                    batchBusy || !["paused", "attention"].includes(batch.state)
-                  }
-                  onClick={() => batchControl("BATCH_RESUME")}
-                >
-                  Resume queue
-                </button>
-              </div>
+
+              {portfolioView === "connections" && (
+                <aside className="cx-side">
+                  <section className="cx-card cx-browser">
+                    <header className="cx-card-head">
+                      <div>
+                        <p className="panel-kicker">BROWSER CONNECTION</p>
+                        <h2>Chrome capture</h2>
+                      </div>
+                    </header>
+                    <p className={`cx-status ${connectionStatus?.state === "connected" ? "is-good" : "is-warn"}`} role="status">
+                      <i className="cx-dot" />{connectionStatus?.message || "Checking Chrome connection…"}
+                    </p>
+                    {["disconnected", "different"].includes(connectionStatus?.state) && (
+                      <button className="btn btn-primary cx-wide" disabled={busy} onClick={connect}>Connect this workspace</button>
+                    )}
+                    {connections.some((c) => !c.revoked_at) && (
+                      <ul className="cx-devices">
+                        {/* Revoked connections are history, not devices: hide them. */}
+                        {connections.filter((c) => !c.revoked_at).map((c) => {
+                          const state = c.revoked_at ? "Revoked" : new Date(c.expires_at) < new Date() ? "Expired" : `Expires ${date(c.expires_at)}`;
+                          return (
+                            <li key={c.id}>
+                              <div>
+                                <strong>{c.label}</strong>
+                                <small className={c.revoked_at || state === "Expired" ? "is-muted" : ""}>{state}</small>
+                              </div>
+                              {!c.revoked_at && (
+                                <button className="cx-link-button" disabled={busy} onClick={() => perform(async () => { await call("revoke_capture_connection", { p_id: c.id }); await refresh(); })}>Revoke</button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    <a className="cx-external" href="https://services.ecourts.gov.in/ecourtindia_v6/?p=casestatus/index" target="_blank" rel="noreferrer">
+                      <WorkspaceIcon name="external" size={15} /> Open eCourts
+                    </a>
+                  </section>
+
+                </aside>
+              )}
             </div>
-            <fieldset className="batch-fetch-modes" disabled={batchBusy}>
-              <legend>Choose what to fetch</legend>
-              <div className="batch-mode-options">
-                <button
-                  aria-pressed={batch.mode === "missing"}
-                  disabled={batch.state === "fetching"}
-                  onClick={() => batchControl("BATCH_START", "missing")}
-                >
-                  Fetch missing details
-                </button>
-                <button
-                  aria-pressed={batch.mode === "existing"}
-                  disabled={batch.state === "fetching"}
-                  onClick={() => batchControl("BATCH_START", "existing")}
-                >
-                  Refresh existing details
-                </button>
-              </div>
-              <p>
-                Missing means no saved case detail record; a search row alone
-                does not count. Each option starts a new queue for the loaded
-                eCourts search. Refresh existing details applies to this run
-                only. Every new search fetches missing details.
-              </p>
-            </fieldset>
-            <p>
-              <strong>
-                Mode:{" "}
-                {batch.mode === "existing"
-                  ? "One-time refresh of existing details"
-                  : "Fetch missing details"}
-              </strong>
-              {batch.sourceTotal != null &&
-                ` · ${batch.sourceTotal} cases in the loaded source search`}
-            </p>
-            {batch.existingDetails != null && batch.missingDetails != null && (
-              <p>
-                Before this run:{" "}
-                <strong>{batch.existingDetails} already saved</strong>
-                {" · "}
-                <strong>{batch.missingDetails} missing details</strong>.
-                {batch.mode === "missing" &&
-                  " Only missing details are selected for fetching."}
-              </p>
+
+            {portfolioView === "connections" && searches[0] && (
+              <section className="cx-card cx-history" aria-labelledby="search-summary-heading">
+                <header className="cx-card-head">
+                  <div>
+                    <p className="panel-kicker">SOURCE COVERAGE</p>
+                    <h2 id="search-summary-heading">Latest eCourts search</h2>
+                  </div>
+                  <span className="cx-when">{shortDate(searches[0].captured_at)}</span>
+                </header>
+                <div className="cx-chips">
+                  {Object.values(searches[0].search_context).filter(Boolean).map((value) => <span key={value}>{value}</span>)}
+                </div>
+                <div className="cx-metrics">
+                  <div><strong>{searches[0].reported_cases ?? "—"}</strong><span>Cases reported</span></div>
+                  <div><strong>{searches[0].loaded_rows - searches[0].skipped_rows}</strong><span>Rows captured</span></div>
+                  <div><strong>{searches[0].total_establishments ?? "—"}</strong><span>Establishments</span></div>
+                  <div className={searches[0].skipped_rows ? "is-warn" : ""}><strong>{searches[0].skipped_rows}</strong><span>Rows skipped</span></div>
+                </div>
+                {searches[0].court_totals?.length > 0 && (
+                  <Table label="Court totals reported by eCourts" headers={["Court / establishment", "Reported cases"]} rows={searches[0].court_totals.map((c) => [c.court, c.reported_cases])} />
+                )}
+                <details className="cx-details">
+                  <summary>Previous searches ({searches.length})</summary>
+                  <Table
+                    label="Search capture history"
+                    headers={["Observed", "Selection", "Reported cases", "Captured rows"]}
+                    rows={searches.map((c) => [date(c.captured_at), Object.values(c.search_context).filter(Boolean).join(" · "), c.reported_cases, c.loaded_rows - c.skipped_rows])}
+                  />
+                </details>
+                <p className="cx-note">Totals are for that search and court selection, not company-wide. Overlapping searches are not added together.</p>
+              </section>
             )}
-            <progress
-              aria-label="Selected cases processed"
-              hidden={!batch.total}
-              max={batch.total || 1}
-              value={batch.processed ?? batch.saved}
-            />
-            <div className="batch-summary">
-              <p role="status">
-                <strong>
-                  {batch.processed ?? batch.saved} of {batch.total}
-                </strong>{" "}
-                processed · {batch.saved} saved · {batch.skipped || 0} skipped ·{" "}
-                {batch.waiting} remaining · {batch.failed} failed
-              </p>
-              {batch.current && <p>Current case: {batch.current}</p>}
-            </div>
-            <p>{batch.message}</p>
-            {batch.current && (
-              <div className="capture-challenge-actions">
-                <p>If eCourts requests a CAPTCHA, open the capture tab below and enter it there. Then resume the queue.</p>
-                <button className="btn" type="button" onClick={focusCourt}>Show eCourts / CAPTCHA</button>
-              </div>
-            )}
-            <details>
-              <summary>Capture guidance</summary>
-              <p>
-                Keep your eCourts tab open. Cases are fetched one at a time with
-                a delay between requests. Complete any CAPTCHA there, then
-                resume if needed.
-              </p>
-            </details>
-            {batchError && <p role="alert">{batchError}</p>}
-          </section>
-        )}
-        {portfolioView === "connections" && fetchStatus && !selected && (
-          <div className="case-fetch-status" role="status">
-            {fetching && <progress aria-label="Fetching court case details" />}
-            <p>{fetchStatus.message}</p>
-            {fetchStatus.actionNeeded && (
-              <>
-                <p>
-                  Complete any CAPTCHA or repeat the search in eCourts, then use
-                  View or Refresh from eCourts again.
-                </p>
-                <button onClick={focusCourt}>Go to eCourts tab</button>
-              </>
+
+            {portfolioView === "connections" && (
+              <details className="cx-card cx-workspaces">
+                <summary>
+                  <span><strong>Company workspaces</strong><small>Create a separate workspace for another company</small></span>
+                </summary>
+                <form className="inline-form" onSubmit={createWorkspace}>
+                  <label>
+                    Company name
+                    <input name="name" required maxLength="120" placeholder="Your company" />
+                  </label>
+                  <button className="btn btn-primary" disabled={busy}>Create workspace</button>
+                </form>
+                <p className="cx-note">Each workspace keeps its case records separate. Only workspace members can access them.</p>
+                {workspace && (
+                  <form className="inline-form cx-danger" onSubmit={deleteWorkspace}>
+                    <label>
+                      Delete “{workspaces.find((w) => w.id === workspace)?.name}” — type its name to confirm
+                      <input name="confirm" required maxLength="120" autoComplete="off" placeholder={workspaces.find((w) => w.id === workspace)?.name} />
+                    </label>
+                    <button className="btn btn-danger" disabled={busy}>Delete workspace</button>
+                  </form>
+                )}
+                {workspace && <p className="cx-note">Deletes the workspace with all its cases, captures and imports. Only the owner who created it can do this.</p>}
+              </details>
             )}
           </div>
         )}
@@ -793,7 +943,7 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
           <p role="status">Loading workspaces…</p>
         ) : (
           <>
-            {(!workspace || portfolioView === "connections") && (
+            {!workspace && (
               <div className="workspace-setup">
                 <details className="console-panel" open={!workspaces.length}>
                   <summary>Create a company workspace</summary>
@@ -820,152 +970,19 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
               <>
                 {portfolioView === "analytics" ? (
                   <AnalyticsDashboard cases={cases} onDrillDown={openAnalyticsCases} />
+                ) : portfolioView === "flow" ? (
+                  <RecoveryFlow />
+                ) : portfolioView === "zonal" ? (
+                  <ZonalActions cases={cases} />
                 ) : portfolioView === "calendar" ? (
                   <HearingCalendar
                     key={workspace}
                     cases={cases}
                     onOpenCase={openSavedCase}
                   />
-                ) : showingConnections ? (
-                  <div className="connections-layout connections-grid">
-                    {" "}
-                    <section className="console-panel connection-panel card browser-card">
-                      <div className="panel-kicker">
-                        <WorkspaceIcon name="connection" size={18} />
-                        BROWSER CONNECTION
-                      </div>
-                      <h2>Chrome capture connection</h2>
-                      <p>
-                        Lawcovery connects the installed Chrome extension after you sign in.
-                        Chrome may ask you to allow access to your Supabase project once.
-                        Then use Search by party name to run an eCourts search and enter its CAPTCHA.
-                      </p>
-                      <p role="status">{connectionStatus?.message || "Checking Chrome connection…"}</p>
-                      {["disconnected", "different"].includes(connectionStatus?.state) && (
-                        <button disabled={busy} onClick={connect}>
-                          Connect this workspace
-                        </button>
-                      )}
-                      <ul className="connection-list">
-                        {connections.map((c) => (
-                          <li key={c.id}>
-                            <span>
-                              {c.label} ·{" "}
-                              {c.revoked_at
-                                ? "Revoked"
-                                : new Date(c.expires_at) < new Date()
-                                  ? "Expired"
-                                  : `Expires ${date(c.expires_at)}`}
-                            </span>
-                            {!c.revoked_at && (
-                              <button
-                                disabled={busy}
-                                onClick={() =>
-                                  perform(async () => {
-                                    await call("revoke_capture_connection", {
-                                      p_id: c.id,
-                                    });
-                                    await refresh();
-                                  })
-                                }
-                              >
-                                Revoke
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </section>
-                    <aside className="connection-help console-panel assurance">
-                      <WorkspaceIcon name="shield" size={26} />
-                      <h3>Automatic updates. Clear history.</h3>
-                      <p>
-                        Run a party-name search in Lawcovery or search directly in
-                        eCourts. The extension fetches missing details one at a time.
-                        Choose Refresh existing details to update already-saved
-                        cases.
-                      </p>
-                      <ul>
-                        <li>
-                          Keep your eCourts tab open while the queue runs.
-                        </li>
-                        <li>Pause and resume from the progress panel.</li>
-                        <li>Every saved update keeps its own audit trail.</li>
-                      </ul>
-                    </aside>
-                    {searches[0] && (
-                      <section
-                        className="console-panel card source-summary"
-                        aria-labelledby="search-summary-heading"
-                      >
-                        <p className="panel-kicker">SOURCE COVERAGE</p>
-                        <h2 id="search-summary-heading">
-                          Latest eCourts search
-                        </h2>
-                        <p>
-                          This is the total reported for this search and court
-                          selection, not a company-wide or nationwide total.
-                          Searches can overlap; their totals are not added
-                          together.
-                        </p>
-                        <div className="search-summary-metrics">
-                          <strong>
-                            Establishments:{" "}
-                            {searches[0].total_establishments ?? "Not reported"}
-                          </strong>
-                          <strong>
-                            Reported cases:{" "}
-                            {searches[0].reported_cases ?? "Not reported"}
-                          </strong>
-                          <strong>
-                            Rows captured:{" "}
-                            {searches[0].loaded_rows - searches[0].skipped_rows}
-                          </strong>
-                        </div>
-                        <p className="muted">
-                          Observed {date(searches[0].captured_at)} ·{" "}
-                          {Object.values(searches[0].search_context)
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </p>
-                        {searches[0].skipped_rows > 0 && (
-                          <p role="status">
-                            {searches[0].skipped_rows} rows could not be
-                            identified safely and were skipped.
-                          </p>
-                        )}
-                        <Table
-                          label="Court totals reported by eCourts"
-                          headers={["Court / establishment", "Reported cases"]}
-                          rows={searches[0].court_totals.map((c) => [
-                            c.court,
-                            c.reported_cases,
-                          ])}
-                        />
-                        <details>
-                          <summary>Previous search captures</summary>
-                          <Table
-                            label="Search capture history"
-                            headers={[
-                              "Observed",
-                              "Selection",
-                              "Reported cases",
-                              "Captured rows",
-                            ]}
-                            rows={searches.map((c) => [
-                              date(c.captured_at),
-                              Object.values(c.search_context)
-                                .filter(Boolean)
-                                .join(" · "),
-                              c.reported_cases,
-                              c.loaded_rows - c.skipped_rows,
-                            ])}
-                          />
-                        </details>
-                      </section>
-                    )}
-                  </div>
-                ) : (
+                ) : showingLoanData ? (
+                  <LoanDataImport cases={cases} onImport={importLoanData} />
+                ) : showingConnections ? null : (
                   <>
                     <section className="console-panel card cases-card">
                       <div className="section-heading cases-title">
@@ -976,29 +993,31 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       </div>
                       <div className="case-register-filters">
                         <label>Court name
-                          <select value={currentCaseFilters.values.court || ""}
-                            onChange={(event) => setCaseFilter("court", event.target.value)}>
-                            <option value="">All courts</option>
-                            {[...new Set(cases.map(courtName))].sort().map((court) => <option key={court}>{court}</option>)}
-                          </select>
+                          <Dropdown ariaLabel="Court name" value={currentCaseFilters.values.court || ""}
+                            onChange={(value) => setCaseFilter("court", value)}
+                            options={[{ value: "", label: "All courts" }, ...[...new Set(cases.map(courtName))].sort()]} />
                         </label>
                         <label>Filing year
-                          <select value={currentCaseFilters.values.year || ""}
-                            onChange={(event) => setCaseFilter("year", event.target.value)}>
-                            <option value="">All years</option>
-                            {[...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse().map((year) => <option key={year}>{year}</option>)}
-                          </select>
+                          <Dropdown ariaLabel="Filing year" value={currentCaseFilters.values.year || ""}
+                            onChange={(value) => setCaseFilter("year", value)}
+                            options={[{ value: "", label: "All years" }, ...[...new Set(cases.map(filingYear).filter(Boolean))].sort().reverse()]} />
                         </label>
                         <label>Case details
-                          <select value={currentCaseFilters.values.details || ""}
-                            onChange={(event) => {
-                              setCaseFilter("details", event.target.value);
+                          <Dropdown ariaLabel="Case details" value={currentCaseFilters.values.details || ""}
+                            onChange={(value) => {
+                              setCaseFilter("details", value);
                               perform(refresh);
-                            }}>
-                            <option value="">All cases</option>
-                            <option value="available">Available · {cases.filter((item) => item.hasDetails).length}</option>
-                            <option value="missing">Not available · {cases.filter((item) => !item.hasDetails).length}</option>
-                          </select>
+                            }}
+                            options={[
+                              { value: "", label: "All cases" },
+                              { value: "available", label: `Available · ${cases.filter((item) => item.hasDetails).length}` },
+                              { value: "missing", label: `Not available · ${cases.filter((item) => !item.hasDetails).length}` },
+                            ]} />
+                        </label>
+                        <label>Current stage
+                          <Dropdown ariaLabel="Current stage" value={selectedStage}
+                            onChange={(value) => setCaseFilter("stage", value)}
+                            options={[{ value: "", label: "All stages" }, ...caseStages.map((stage) => ({ value: stage, label: `${stage} · ${stageCounts.get(stage)}` }))]} />
                         </label>
                         <label>Respondent name
                           <input type="search" value={currentCaseFilters.respondent || ""}
@@ -1030,12 +1049,13 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                           label="Saved court cases"
                           headers={[
                             "Case number", "Case type", "CNR number", "Filing number",
-                            "Filing date", "Decision date", "Respondent", "Petitioner",
+                            "Filing date", "Decision / latest status date", "Respondent", "Petitioner",
                             "Petitioner advocate", "Current stage", "Previous stage", "Next hearing",
                           ]}
                           rows={filtered.map((c) => {
                             const petitioner = partyColumns(c.data.petitioners);
                             const respondent = partyColumns(c.data.respondents);
+                            const statusDate = decisionOrLatestStatusDate(c);
                             return [
                               <button
                                 className="case-open"
@@ -1048,7 +1068,12 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                               c.cnr,
                               c.data.filing_number || "—",
                               c.data.filing_date || "—",
-                              c.data.decision_date || "—",
+                              statusDate.source === "latest-status" ? (
+                                <span className="case-date-fallback" title="Latest status capture date">
+                                  <span>{statusDate.value}</span>
+                                  <small>Latest status</small>
+                                </span>
+                              ) : statusDate.value,
                               respondent.names,
                               petitioner.names,
                               petitioner.advocates,
@@ -1158,14 +1183,21 @@ export function CaseWorkspace({ session, onSignOut, pending }) {
                       {tab === "details" && (
                         <>
                           <dl className="case-facts">
-                            {caseFacts(selected.data)
+                            {caseFacts(selected.data, {
+                              // Columns are the current source of truth. The
+                              // fallback allows pre-migration records to stay
+                              // readable until their next loan-data import.
+                              db_amount: selected.db_amount ?? selected.data?.db_amount,
+                              pos_recovered: selected.pos_recovered ?? selected.data?.pos_recovered,
+                              pos_as_of_nov_16: selected.pos_as_of_nov_16 ?? selected.data?.pos_as_of_nov_16,
+                            })
                               .map(([k, v]) => (
                                 <div key={k} className={
                                   ["court_number_judge", "parties_text"].includes(k)
                                     ? "case-fact-wide" : undefined
                                 }>
                                   <dt>{fieldLabel(k)}</dt>
-                                  <dd>{show(v)}</dd>
+                                  <dd>{["db_amount", "pos_recovered", "pos_as_of_nov_16", "outstanding_amount"].includes(k) ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Number(v)) : k === "recovery_percentage" && v != null ? `${Number(v).toFixed(1)}%` : show(v)}</dd>
                                 </div>
                               ))}
                           </dl>

@@ -11,6 +11,50 @@ export function caseType(item) {
   )?.[1];
   return (type || reference || "Type not recorded").toUpperCase();
 }
+const firstText = (item, fields) => {
+  for (const field of fields) {
+    const value = tidy(item.data?.[field]);
+    if (value) return value;
+  }
+  return "";
+};
+
+// Older captures expose the operational business grouping as `case_type`; newer
+// integrations may persist it under one of the explicit business-type fields.
+// This keeps the filter tied to values that are actually present in each record.
+export const businessType = (item) =>
+  firstText(item, ["business_type", "businessType", "business_category", "businessCategory"])
+  || caseType(item);
+
+// Loan products offered in the analytics "Loan type" filter, in display order.
+export const LOAN_TYPES = [
+  "Business Loan", "MSME Loan", "Personal Loan", "EXI", "Machinery Term Loan",
+  "Loan Against Property", "ECLGS", "Channel Finance", "Two Wheeler Loan",
+  "Consumer Durable Loan", "Car Loan", "Truck Loan", "Retailer Finance",
+  "Trade Finance", "Payment Assurance", "BNPL",
+];
+const loanKeyText = (value) => tidy(value).toLowerCase().replace(/[^a-z0-9]/g, "");
+// A case's loan product, read from an explicit loan-type field (court data
+// does not carry one). Matched case- and punctuation-insensitively to the list.
+export function loanType(item) {
+  const raw = firstText(item, ["loan_type", "loanType", "product_type", "productType", "loan_product"]);
+  if (!raw) return "";
+  return LOAN_TYPES.find((type) => loanKeyText(type) === loanKeyText(raw)) || raw;
+}
+const normalisedLender = (value) => tidy(value).toLocaleLowerCase().replace(/[^a-z0-9]/g, "");
+export function matchesLender(item, lender) {
+  if (!lender) return true;
+  const needle = normalisedLender(lender);
+  const direct = firstText(item, ["lender", "lender_name", "lenderName", "lending_partner", "lendingPartner"]);
+  const parties = [
+    direct,
+    item.data?.parties_text,
+    ...(Array.isArray(item.data?.petitioners) ? item.data.petitioners : []),
+    ...(Array.isArray(item.data?.respondents) ? item.data.respondents : []),
+  ];
+  return parties.some((value) => normalisedLender(value).includes(needle));
+}
+export const LENDERS = ["Trillianloans", "Niyogin", "IDFC", "Gromor"];
 export function caseStatus(item) {
   if (!item.hasDetails) return "Listed only";
   const value = tidy(item.data?.case_status).toLowerCase();
@@ -29,6 +73,49 @@ export const caseStage = (item) => {
 };
 export const percentage = (count, total) =>
   total ? Math.round((count / total) * 1000) / 10 : null;
+// The main respondent, normalised so "1) Balaji Traders" and "1) BALAJI
+// TRADERS" compare equal. Co-accused ("2) ...") and "REP BY ..." are dropped.
+export function primaryRespondent(item) {
+  const first = Array.isArray(item.data?.respondents) ? item.data.respondents[0] : item.data?.respondent;
+  return String(first || "")
+    .replace(/^\s*1\)\s*/, "")
+    .replace(/(\s*\d\).*$)|(\s*,?\s*REP(\.|RESENTED)?\s+BY.*$)/i, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+// One loan is often pursued through several court cases (a P.C.R. and the
+// C.C. it becomes, refilings, appeals); the loan sheet repeats the same
+// amounts on each. A loan is the same respondent with identical amounts.
+// Amounts alone are not enough: unrelated borrowers share round figures.
+export const loanKey = (item, db, recovered, pos) =>
+  [primaryRespondent(item) || `case:${item.id || item.cnr}`, db, recovered ?? 0, pos ?? 0].join("|");
+
+export function recoveryAnalytics(cases) {
+  const amount = (value) => { const parsed = Number(value); return Number.isFinite(parsed) && parsed >= 0 ? parsed : null; };
+  // Dedicated case columns are canonical. The JSON fallback keeps analytics
+  // correct for records imported before the column migration was applied.
+  const records = cases.map((item) => {
+    const db = amount(item.db_amount ?? item.data?.db_amount);
+    const recovered = amount(item.pos_recovered ?? item.data?.pos_recovered);
+    const pos = amount(item.pos_as_of_nov_16 ?? item.data?.pos_as_of_nov_16);
+    return { item, db, recovered, key: loanKey(item, db, recovered, pos) };
+  }).filter((row) => row.db != null);
+  // Sum each loan once, however many cases carry it.
+  const sumLoans = (rows) => {
+    const loans = new Map(rows.map((row) => [row.key, row]));
+    let loan = 0, recovered = 0;
+    loans.forEach((row) => { loan += row.db; recovered += row.recovered || 0; });
+    return { loan, recovered, loans: loans.size };
+  };
+  const totals = sumLoans(records);
+  return {
+    totalLoan: totals.loan, totalRecovered: totals.recovered,
+    outstanding: Math.max(0, totals.loan - totals.recovered),
+    percentage: percentage(totals.recovered, totals.loan),
+    loanCount: totals.loans, caseCount: records.length, records,
+  };
+}
 const dayNumber = (day) => {
   const [y, m, d] = day.split("-").map(Number);
   return Date.UTC(y, m - 1, d) / 86400000;
@@ -48,6 +135,21 @@ export const startDate = (item, today) =>
 const closureDate = (item, today) =>
   pastDate(item.data?.disposal_date, today) ||
   pastDate(item.data?.decision_date, today);
+// A P.C.R. (private complaint) is "disposed" when the court takes it on file
+// and registers it as a C.C. - usually the same day. That is a registration
+// step, not a resolution, so it must not count toward time to disposal: in
+// the live portfolio 340 of 415 P.C.R. disposals were same-day, which pulled
+// the average from ~11 months down to under 4.
+export const TAT_EXCLUDED_TYPES = new Set(["P.C.R."]);
+export const countsTowardTat = (item) => !TAT_EXCLUDED_TYPES.has(caseType(item));
+// Filing -> disposal in days for a disposed case, or null when it has no
+// usable dates or is a complaint-registration step.
+export function disposalDays(item, today) {
+  if (!countsTowardTat(item)) return null;
+  const filing = pastDate(item.data?.filing_date, today);
+  const closed = closureDate(item, today);
+  return filing && closed && closed >= filing ? dayNumber(closed) - dayNumber(filing) : null;
+}
 function median(values) {
   if (!values.length) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -66,6 +168,7 @@ export function analyticsOptions(cases) {
   return {
     courts: [...new Set(cases.map(courtName))].sort(),
     types: [...new Set(cases.map(caseType))].sort(),
+    businessTypes: [...new Set(cases.map(businessType))].sort(),
     stages: [
       ...new Set(cases.filter((c) => c.hasDetails).map(caseStage)),
     ].sort(),
@@ -261,7 +364,10 @@ export function buildAnalytics(
       if (month) month.decisions++;
     }
   }
+  // Median uses the explicit Decision Date (registration date when filing is
+  // missing); P.C.R. complaints are excluded for the same reason as the average.
   const durations = disposed
+    .filter(countsTowardTat)
     .map((item) => {
       const start = startDate(item, today),
         decision = pastDate(item.data?.decision_date, today);
@@ -278,10 +384,8 @@ export function buildAnalytics(
   }
   closedCases.sort((a, b) => (b.day || "").localeCompare(a.day || "") || a.item.cnr.localeCompare(b.item.cnr));
   const tatRecords = closedCases.flatMap(({ item, day: closed }) => {
-    const filing = pastDate(item.data?.filing_date, today);
-    return filing && closed && closed >= filing
-      ? [{ item, filing, closed, days: dayNumber(closed) - dayNumber(filing) }]
-      : [];
+    const days = disposalDays(item, today);
+    return days === null ? [] : [{ item, filing: pastDate(item.data?.filing_date, today), closed, days }];
   });
   const tatDurations = tatRecords.map(row => row.days);
   const averageTat = tatDurations.length ? tatDurations.reduce((sum, days) => sum + days, 0) / tatDurations.length : null;
@@ -453,9 +557,8 @@ export function courtPerformanceRows(cases, today = indiaToday()) {
     }
     if (status === "Disposed") {
       row.disposed++;
-      const filing = pastDate(item.data?.filing_date, today);
-      const closed = closureDate(item, today);
-      if (filing && closed && closed >= filing) row.tatDays.push(dayNumber(closed) - dayNumber(filing));
+      const days = disposalDays(item, today);
+      if (days !== null) row.tatDays.push(days);
     }
     groups.set(label, row);
   }
@@ -471,10 +574,38 @@ export function courtPerformanceRows(cases, today = indiaToday()) {
   });
 }
 
+// The same advocate is recorded in many spellings on court pages:
+// "C.H.DODDEGOWDA", "C H DODDEGOWDA", "Sri. C.H. Doddegowda",
+// "SRI.C H .DODDEGOWDA ADVOCATE". Honorifics, a trailing "Advocate", case,
+// spacing and punctuation never distinguish two people, so they are dropped
+// for matching. Different letters (e.g. "HARISHA M" vs "HARISHA M T") are kept
+// apart: merging those would be a guess.
+const HONORIFIC = /^(?:SRI|SHRI|SMT|SHRIMATI|KUMARI|MR|MRS|MS|DR|ADV|ADVOCATE)\b\.?\s*/;
+function stripAdvocateName(value) {
+  let name = tidy(value).replace(/^\d+\)\s*/, "").toUpperCase();
+  name = name.replace(/[\s.,;:-]*\bADVOCATE\b[\s.,;:-]*$/, "");
+  for (let previous = ""; previous !== name; ) { previous = name; name = name.replace(HONORIFIC, ""); }
+  return name;
+}
+export const advocateKey = (value) => stripAdvocateName(value).replace(/[^A-Z]/g, "");
+// Display form: "C . H. DODDEGOWDA" / "C.H.DODDEGOWDA" -> "C.H. DODDEGOWDA".
+export function cleanAdvocateName(value) {
+  return stripAdvocateName(value)
+    .replace(/\s*\.\s*/g, ".")
+    .replace(/\.(?=[A-Z]{2,})/g, ". ")
+    .replace(/[.,;]+$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+const rawAdvocates = (item) =>
+  (Array.isArray(item.data?.petitioners) ? item.data.petitioners : [])
+    .flatMap((value) => String(value).split(/\bAdvocate\s*[-:]\s*/i).slice(1))
+    .map(cleanAdvocateName)
+    .filter((name) => advocateKey(name));
+
 export function caseAdvocate(item) {
-  const values = Array.isArray(item.data?.petitioners) ? item.data.petitioners : [];
-  const names = values.flatMap((value) => String(value).split(/\bAdvocate\s*[-:]\s*/i).slice(1))
-    .map((value) => tidy(value).replace(/^\d+\)\s*/, "")).filter(Boolean);
+  const seen = new Set();
+  const names = rawAdvocates(item).filter((name) => !seen.has(advocateKey(name)) && seen.add(advocateKey(name)));
   return names.length ? names.join("; ") : "Advocate not recorded";
 }
 
@@ -535,24 +666,25 @@ export function filingYears(cases) {
 }
 
 // Court is a "contains" search so typing part of a court name works; year is exact.
-export function scopeCases(cases, { court = "", year = "" } = {}) {
+export function scopeCases(cases, { court = "", year = "", businessType: selectedBusinessType = "", loanType: selectedLoanType = "", lender = "" } = {}) {
   const needle = tidy(court).toUpperCase();
   return cases.filter(
     (item) =>
       (!year || filingYear(item) === year) &&
-      (!needle || courtName(item).includes(needle)),
+      (!needle || courtName(item).includes(needle)) &&
+      (!selectedBusinessType || businessType(item) === selectedBusinessType) &&
+      (!selectedLoanType || loanType(item) === selectedLoanType) &&
+      matchesLender(item, lender),
   );
 }
 
 // Every advocate named against the petitioner. A case with two advocates is
 // counted once under each of them.
 export function caseAdvocates(item) {
-  const values = Array.isArray(item.data?.petitioners) ? item.data.petitioners : [];
-  const names = values
-    .flatMap((value) => String(value).split(/\bAdvocate\s*[-:]\s*/i).slice(1))
-    .map((value) => tidy(value).replace(/^\d+\)\s*/, "").replace(/[.,;]+$/, "").toUpperCase())
-    .filter(Boolean);
-  return names.length ? [...new Set(names)] : ["Advocate not recorded"];
+  // One entry per person, even if a case lists the same advocate twice.
+  const byKey = new Map();
+  for (const name of rawAdvocates(item)) if (!byKey.has(advocateKey(name))) byKey.set(advocateKey(name), name);
+  return byKey.size ? [...byKey.values()] : ["Advocate not recorded"];
 }
 
 // Pending cases per stage, with the share of all pending cases.
@@ -649,10 +781,12 @@ export function advocatePerformance(cases, today = indiaToday()) {
   for (const item of cases) {
     if (!item.hasDetails) continue; // listed-only cases have no status yet
     const status = caseStatus(item);
-    for (const label of caseAdvocates(item)) {
+    for (const name of caseAdvocates(item)) {
+      const key = advocateKey(name) || name;
       const row =
-        groups.get(label) ||
-        { label, cases: [], pendingCases: [], disposedCases: [], stages: new Map(), tatDays: [] };
+        groups.get(key) ||
+        { label: name, spellings: new Map(), cases: [], pendingCases: [], disposedCases: [], stages: new Map(), tatDays: [] };
+      row.spellings.set(name, (row.spellings.get(name) || 0) + 1);
       row.cases.push(item);
       if (status === "Pending") {
         row.pendingCases.push(item);
@@ -660,16 +794,17 @@ export function advocatePerformance(cases, today = indiaToday()) {
         row.stages.set(stage, [...(row.stages.get(stage) || []), item]);
       } else if (status === "Disposed") {
         row.disposedCases.push(item);
-        const filing = pastDate(item.data?.filing_date, today);
-        const closed = closureDate(item, today);
-        if (filing && closed && closed >= filing) row.tatDays.push(dayNumber(closed) - dayNumber(filing));
+        const days = disposalDays(item, today);
+        if (days !== null) row.tatDays.push(days);
       }
-      groups.set(label, row);
+      groups.set(key, row);
     }
   }
   return [...groups.values()]
     .map((row) => ({
-      label: row.label,
+      // Show the spelling used on most of this advocate's cases.
+      label: [...row.spellings].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0],
+      spellings: [...row.spellings.keys()],
       total: row.cases.length,
       pending: row.pendingCases.length,
       disposed: row.disposedCases.length,
