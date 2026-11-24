@@ -1,0 +1,251 @@
+/* Recovery flow tab: a presentable, animated stage-by-stage legal workflow. */
+.rf {
+  --rf-pre: #0F8CA5;
+  --rf-pre-soft: #E0F4F8;
+  --rf-lit: #1D4ED8;
+  --rf-lit-soft: #DBEAFE;
+  --rf-enf: #7C3AED;
+  --rf-enf-soft: #EDE5FD;
+  display: grid;
+  gap: 18px;
+  color: var(--theme-text, #0F2447);
+}
+.rf .pre { --c: var(--rf-pre); --soft: var(--rf-pre-soft); }
+.rf .lit { --c: var(--rf-lit); --soft: var(--rf-lit-soft); }
+.rf .enf { --c: var(--rf-enf); --soft: var(--rf-enf-soft); }
+
+.rf-head, .rf-steps, .rf-detail, .rf-roadmap {
+  border: 1px solid var(--theme-border, #CADCF3);
+  border-radius: 24px;
+  background: var(--theme-raised, #fff);
+  box-shadow: var(--theme-shadow);
+}
+
+/* Header */
+.rf-head {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px;
+  padding: 30px 32px;
+  background: radial-gradient(circle at 100% 0%, rgba(124, 58, 237, .10), transparent 26rem),
+    radial-gradient(circle at 0% 100%, rgba(15, 140, 165, .10), transparent 24rem), var(--theme-raised, #fff);
+  animation: rf-rise .6s var(--motion-ease, ease) backwards;
+}
+.rf-kicker { margin: 0; color: var(--theme-accent, #1D4ED8); font-size: 12px; font-weight: 800; letter-spacing: .14em; }
+.rf-head h1 { margin: 8px 0 8px; font-size: clamp(26px, 2.5vw, 36px); line-height: 1.1; letter-spacing: -.03em; }
+.rf-lede { margin: 0; max-width: 64ch; color: var(--theme-muted, #415A77); font-size: 15px; line-height: 1.5; }
+.rf-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.rf-btn {
+  min-height: 42px; padding: 0 18px; border: 1px solid var(--theme-border, #CADCF3); border-radius: 12px;
+  background: var(--theme-raised, #fff); color: var(--theme-text, #0F2447); font: inherit; font-weight: 700; cursor: pointer;
+  transition: transform var(--motion-fast, 160ms) ease, box-shadow var(--motion-fast, 160ms) ease, background var(--motion-fast, 160ms) ease;
+}
+.rf-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(38, 83, 139, .14); }
+.rf-btn:disabled { opacity: .45; cursor: default; }
+.rf button:focus-visible { outline: 3px solid rgba(29, 78, 216, .35); outline-offset: 2px; }
+.rf-primary { border-color: transparent; background: var(--theme-accent, #1D4ED8); color: #fff; }
+.rf-primary:hover:not(:disabled) { background: var(--theme-accent-strong, #163EAF); }
+
+/* Phases */
+.rf-phases { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.rf-phase {
+  display: flex; align-items: center; gap: 14px; padding: 14px 18px; border: 1px solid var(--theme-border, #CADCF3);
+  border-radius: 18px; background: var(--theme-raised, #fff);
+  transition: background .4s ease, border-color .4s ease, transform .4s var(--motion-ease, ease), box-shadow .4s ease;
+}
+.rf-phase-num {
+  display: grid; place-items: center; flex: none; inline-size: 34px; block-size: 34px; border-radius: 10px;
+  background: var(--soft); color: var(--c); font-weight: 800;
+}
+.rf-phase div { display: grid; gap: 2px; }
+.rf-phase strong { font-size: 15px; }
+.rf-phase div span { color: var(--theme-muted, #415A77); font-size: 13px; font-weight: 700; }
+.rf-phase.is-current { background: var(--soft); border-color: var(--c); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(38, 83, 139, .12); }
+.rf-phase.is-current .rf-phase-num { background: var(--c); color: #fff; }
+
+/* Stepper */
+.rf-steps {
+  position: relative; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 10px;
+  margin: 0; padding: 32px 22px 26px; list-style: none;
+}
+.rf-track {
+  position: absolute; inset-inline: calc(22px + (100% - 44px - 70px) / 16); inset-block-start: 54px;
+  block-size: 4px; border-radius: 4px; background: var(--theme-track, #DCEAFD); overflow: hidden;
+}
+.rf-track b {
+  display: block; block-size: 100%; inline-size: calc(var(--progress) * 100%);
+  background: linear-gradient(90deg, var(--rf-pre), var(--rf-lit) 50%, var(--rf-enf));
+  background-size: calc(100% / max(var(--progress), .001)) 100%;
+  transition: inline-size .9s var(--motion-ease, ease);
+}
+.rf-step { position: relative; min-width: 0; animation: rf-rise .6s var(--motion-ease, ease) backwards; animation-delay: calc(120ms + var(--i) * 80ms); }
+.rf-step button {
+  display: grid; justify-items: center; gap: 8px; inline-size: 100%; padding: 0 4px 4px; border: 0; background: none;
+  color: inherit; font: inherit; text-align: center; cursor: pointer;
+}
+.rf-node {
+  position: relative; z-index: 1; display: grid; place-items: center; inline-size: 48px; block-size: 48px; border-radius: 50%;
+  border: 3px solid var(--soft); background: var(--theme-raised, #fff); color: var(--c); font-size: 17px; font-weight: 800;
+  transition: background .4s ease, color .4s ease, transform .4s var(--motion-ease, ease), box-shadow .4s ease, border-color .4s ease;
+}
+.rf-step.is-done .rf-node { background: var(--c); border-color: var(--c); color: #fff; }
+.rf-step.is-active .rf-node {
+  background: var(--c); border-color: var(--c); color: #fff; transform: scale(1.14);
+  box-shadow: 0 0 0 7px var(--soft), 0 12px 26px rgba(15, 36, 71, .22);
+}
+.rf-step.is-active .rf-node::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--c);
+  animation: rf-pulse 1.8s ease-out infinite;
+}
+.rf-name { min-block-size: 2.5em; font-size: 14px; font-weight: 700; line-height: 1.25; color: var(--theme-muted, #415A77); transition: color .3s ease; }
+.rf-step.is-active .rf-name, .rf-step.is-done .rf-name { color: var(--theme-text, #0F2447); }
+.rf-day {
+  padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--c);
+  font-size: 12px; font-weight: 800; white-space: nowrap; transition: background .4s ease, color .4s ease;
+}
+.rf-step.is-active .rf-day { background: var(--c); color: #fff; }
+.rf-gap {
+  position: absolute; z-index: 2; inset-block-start: 2px; inset-inline-start: calc(50% + 34px); inline-size: calc(100% - 58px);
+  overflow: hidden; color: var(--theme-subtle, #6D829E); font-size: 11px; font-weight: 700; text-align: center;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+
+/* Stage detail */
+.rf-detail {
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr) auto; align-items: stretch; gap: 18px;
+  padding: 24px 26px; border-inline-start: 6px solid var(--c);
+  animation: rf-swap .5s var(--motion-ease, ease);
+}
+.rf-detail-title { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.rf-detail-num {
+  display: grid; place-items: center; flex: none; inline-size: 64px; block-size: 64px; border-radius: 18px;
+  background: var(--soft); color: var(--c); font-size: 24px; font-weight: 800;
+}
+.rf-detail-title p { margin: 0; color: var(--c); font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.rf-detail-title h2 { margin: 4px 0 8px; font-size: clamp(20px, 1.7vw, 26px); line-height: 1.15; letter-spacing: -.02em; }
+.rf-window { display: inline-block; padding: 5px 12px; border-radius: 10px; background: var(--c); color: #fff; font-size: 13px; font-weight: 800; }
+.rf-detail-block { padding: 14px 16px; border-radius: 16px; background: var(--theme-dense, #F4F8FF); }
+.rf-detail-block h3 { margin: 0; color: var(--theme-subtle, #6D829E); font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.rf-detail-block p { margin: 6px 0 0; font-size: 15px; line-height: 1.5; }
+.rf-nav { display: grid; align-content: center; gap: 10px; }
+
+/* Roadmap */
+.rf-roadmap { padding: 26px 28px 18px; overflow: hidden; animation: rf-rise .6s var(--motion-ease, ease) .3s backwards; }
+.rf-roadmap > header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.rf-roadmap h2 { margin: 6px 0 0; font-size: 20px; letter-spacing: -.02em; }
+.rf-roadmap > header > span { color: var(--theme-muted, #415A77); font-size: 13px; font-weight: 700; }
+.rf-road { position: relative; block-size: 350px; margin-block-start: 8px; }
+
+.rf-axis { position: absolute; inset-inline: 0; inset-block-start: calc(50% - 26px); block-size: 52px; }
+.rf-axis > span { position: absolute; inset-inline-start: calc(var(--from) * 100%); inline-size: calc((var(--to) - var(--from)) * 100%); }
+.rf-axis-band {
+  inset-block: 0; background: var(--soft); display: flex; align-items: flex-start; padding: 7px 12px 0; box-sizing: border-box;
+  animation: rf-grow .8s var(--motion-ease, ease) .4s backwards; transform-origin: left center;
+}
+.rf-axis-band.pre { border-radius: 12px 0 0 12px; }
+.rf-axis-band.enf { border-radius: 0 12px 12px 0; }
+.rf-axis-band em {
+  color: var(--c); font-size: 10.5px; white-space: nowrap; font-style: normal; font-weight: 800;
+  letter-spacing: .08em; text-transform: uppercase; opacity: .85;
+}
+.rf-axis-span {
+  inset-block-start: 29px; block-size: 10px; min-inline-size: 10px; border-radius: 6px; background: color-mix(in srgb, var(--c) 28%, transparent);
+  transition: background .5s ease;
+}
+.rf-axis-span.is-reached { background: var(--c); }
+.rf-axis-window {
+  inset-block-start: 26px; block-size: 16px; border-radius: 6px;
+  background: repeating-linear-gradient(135deg, rgba(15, 140, 165, .22) 0 6px, transparent 6px 12px);
+}
+.rf-axis-now {
+  inset-inline-start: calc(var(--x) * 100%) !important; inline-size: 22px !important; block-size: 22px;
+  inset-block-start: 23px; margin-inline-start: -11px; border-radius: 50%;
+  background: var(--theme-text, #0F2447); border: 4px solid #fff; box-shadow: 0 0 0 4px rgba(15, 36, 71, .15), 0 8px 18px rgba(15, 36, 71, .3);
+  transition: inset-inline-start 1s var(--motion-ease, ease);
+}
+
+.rf-mile {
+  position: absolute; inset-inline-start: calc(var(--x) * 100%); inline-size: 0; display: flex; flex-direction: column;
+  padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer;
+  animation: rf-fade .5s ease backwards; animation-delay: calc(500ms + var(--i) * 90ms);
+}
+/* The workspace styles every button as a centred flex box; a milestone must
+   stay a zero-width, left-aligned anchor so its card and stem line up. */
+.verity-console .rf .rf-mile, .rf .rf-mile {
+  align-items: flex-start !important; justify-content: flex-start !important;
+  min-inline-size: 0 !important; min-block-size: 0 !important; inline-size: 0 !important;
+  padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; transform: none !important;
+}
+.rf-mile.above { inset-block-end: calc(50% + 26px); }
+.rf-mile.below { inset-block-start: calc(50% + 26px); flex-direction: column-reverse; }
+.rf-mile-stem { inline-size: 2px; block-size: 34px; margin-inline-start: -1px; background: color-mix(in srgb, var(--c) 35%, transparent); transition: background .4s ease; }
+.rf-mile.is-reached .rf-mile-stem { background: var(--c); }
+.rf-mile-card {
+  display: grid; gap: 3px; inline-size: 176px; padding: 12px 14px; box-sizing: border-box;
+  transform: translateX(calc(var(--x) * -100%));
+  border: 1.5px solid var(--theme-border, #CADCF3); border-radius: 16px; background: var(--theme-raised, #fff);
+  transition: border-color .4s ease, background .4s ease, box-shadow .4s ease, translate .4s var(--motion-ease, ease);
+}
+.rf-mile:hover .rf-mile-card { translate: 0 -2px; box-shadow: 0 10px 22px rgba(38, 83, 139, .14); }
+.rf-mile.below:hover .rf-mile-card { translate: 0 2px; }
+.rf-mile-card small { color: var(--theme-subtle, #6D829E); font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.rf-mile-card strong { font-size: 15px; line-height: 1.2; }
+.rf-mile-card em { color: var(--c); font-size: 13px; font-style: normal; font-weight: 800; }
+.rf-mile.is-reached .rf-mile-card { border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+.rf-mile.is-active .rf-mile-card {
+  border-color: var(--c); background: var(--c); color: #fff; box-shadow: 0 14px 30px color-mix(in srgb, var(--c) 35%, transparent);
+}
+.rf-mile.is-active .rf-mile-card :is(small, em) { color: rgba(255, 255, 255, .85); }
+
+/* Workspace-wide button, heading and text styles are stronger than plain class
+   selectors; pin the parts of this page they would otherwise repaint. */
+.verity-console .rf .rf-kicker { color: var(--theme-accent, #1D4ED8) !important; }
+.verity-console .rf .rf-btn {
+  min-height: 42px !important; padding: 0 18px !important; border: 1px solid var(--theme-border, #CADCF3) !important;
+  border-radius: 12px !important; background: var(--theme-raised, #fff) !important; color: var(--theme-text, #0F2447) !important;
+  font-size: 15px !important; font-weight: 700 !important; box-shadow: none !important;
+}
+.verity-console .rf .rf-btn.rf-primary { border-color: transparent !important; background: var(--theme-accent, #1D4ED8) !important; color: #fff !important; }
+.verity-console .rf .rf-btn.rf-primary:hover:not(:disabled) { background: var(--theme-accent-strong, #163EAF) !important; }
+.verity-console .rf .rf-btn:disabled { opacity: .45 !important; }
+.verity-console .rf .rf-step button {
+  min-height: 0 !important; padding: 0 4px 4px !important; border: 0 !important; border-radius: 0 !important;
+  background: none !important; box-shadow: none !important; transform: none !important;
+}
+.verity-console .rf .rf-head h1, .verity-console .rf .rf-detail-title h2, .verity-console .rf .rf-roadmap h2 { font-weight: 800 !important; color: var(--theme-text, #0F2447) !important; }
+.verity-console .rf .rf-mile.is-active .rf-mile-card strong { color: #fff !important; }
+.verity-console .rf .rf-mile.is-active .rf-mile-card :is(small, em) { color: rgba(255, 255, 255, .88) !important; }
+.verity-console .rf .rf-mile-card strong { color: var(--theme-text, #0F2447); }
+.verity-console .rf .rf-detail-block h3 { color: var(--theme-subtle, #6D829E) !important; }
+
+/* Present mode */
+.rf.is-presenting { overflow: auto; padding: 32px; background: var(--theme-canvas, #EAF3FF); align-content: start; }
+.rf.is-presenting .rf-head h1 { font-size: clamp(30px, 3vw, 44px); }
+.rf.is-presenting .rf-detail-block p { font-size: 17px; }
+
+@keyframes rf-rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes rf-fade { from { opacity: 0; } }
+@keyframes rf-grow { from { transform: scaleX(0); } }
+@keyframes rf-swap { from { opacity: 0; transform: translateY(10px); } }
+@keyframes rf-pulse { from { opacity: .7; transform: scale(1); } to { opacity: 0; transform: scale(1.45); } }
+
+@media (max-width: 1280px) {
+  .rf-detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .rf-detail-title { grid-column: 1 / -1; }
+  .rf-nav { grid-column: 1 / -1; display: flex; justify-content: space-between; }
+  .rf-mile-card { inline-size: 148px; padding: 10px 12px; }
+}
+@media (max-width: 900px) {
+  .rf-head, .rf-detail, .rf-roadmap { padding: 20px 16px; }
+  .rf-phases { grid-template-columns: minmax(0, 1fr); }
+  .rf-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 22px; padding: 22px 16px; }
+  .rf-track, .rf-gap { display: none; }
+  .rf-detail { grid-template-columns: minmax(0, 1fr); }
+  /* The roadmap becomes a vertical list on small screens. */
+  .rf-road { block-size: auto; display: grid; gap: 10px; padding-inline-start: 18px; border-inline-start: 3px solid var(--theme-track, #DCEAFD); }
+  .rf-axis { display: none; }
+  .rf-mile, .rf-mile.above, .rf-mile.below, .verity-console .rf .rf-mile { position: static; inline-size: auto !important; flex-direction: row; }
+  .rf-mile-stem { display: none; }
+  .rf-mile-card { inline-size: 100%; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rf *, .rf *::after, .rf { animation: none !important; transition: none !important; }
+}

@@ -1,9 +1,20 @@
-import React, { useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
+import './auth-layout.css';
+import './site-dark.css';
+import './public-site.css';
 import { supabase } from './lib/supabase';
 import { useAuth } from './useAuth';
+import { extensionRequest } from './lib/extensionBridge';
 import { ResetRequest, RecoveryForm } from './PasswordRecovery';
+import { AccessRequestForm } from './AccessRequest';
+import { LawcoveryLogo } from './components/LawcoveryLogo';
+import { PublicLanding } from './components/PublicLanding';
+import { CaseStack3D } from './components/CaseStack3D';
+import { resolveEntryView } from './lib/entry-view';
+
+const CaseWorkspace = lazy(() => import('./CaseWorkspace').then(module => ({ default: module.CaseWorkspace })));
 
 function Icon({name, size=20, ...props}) {
   const paths = {
@@ -17,23 +28,20 @@ function Icon({name, size=20, ...props}) {
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>{paths[name] || paths.folder}</svg>;
 }
-function Brand() {return <div className="brand"><span className="brand-icon"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="m6 8 10 18L26 8M10 8l6 11 6-11" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg></span><span>verity<span className="brand-dot">.</span></span></div>}
-function Illustration() {return <div className="art" aria-hidden="true">
-  <div className="orbit orbit-one"/><div className="orbit orbit-two"/>
-  <div className="float-label"><span className="green-dot"/> A clearer perspective</div>
-  <div className="case-card"><div className="case-top"><span className="small-icon"><Icon name="folder"/></span><span>YOUR LEGAL PORTFOLIO</span><span className="dots">•••</span></div><div className="case-title">Every detail. Connected.</div><div className="illustration-bars"><i/><i/><i/></div><div className="case-divider"/><div className="case-bottom"><span>Cases & documents</span><span className="pill">In one place <span>↗</span></span></div></div>
-  <div className="scales"><svg viewBox="0 0 200 210" fill="none"><path d="M100 30v148M55 183h90M72 175h56M35 64h130M100 30l-8 10h16l-8-10ZM53 65l-27 59h54L53 65ZM147 65l-27 59h54l-27-59Z" stroke="#cfb982" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/><path d="M25 124c0 27 56 27 56 0M119 124c0 27 56 27 56 0" fill="#cfb982" fillOpacity=".2" stroke="#cfb982" strokeWidth="4"/><circle cx="100" cy="52" r="7" fill="#cfb982"/></svg></div>
-  <div className="document"><span/><span/><span/><div><Icon name="shield" size={17}/> Clarity at every step</div></div>
-</div>}
+function Brand() {return <div className="brand"><LawcoveryLogo /></div>}
 function App() {
   const auth = useAuth();
+  const entryView = resolveEntryView(window.location, auth);
+  useEffect(() => {
+    document.title = entryView === 'public' ? 'Lawcovery | Legal Recovery' : entryView === 'login' ? 'Lawcovery | Client login' : 'Lawcovery | Legal Recovery';
+  }, [entryView]);
   const [pending, setPending] = useState(false);
   const [showPassword,setShowPassword]=useState(false);
   const [message,setMessage]=useState('');
-  const [demo,setDemo]=useState(false);
   const [dialogType,setDialogType]=useState('');
+  const [dialogKey,setDialogKey]=useState(0);
   const dialog=useRef(null);
-  function openDialog(type) {setDialogType(type); dialog.current.showModal();}
+  function openDialog(type) {setDialogType(type); setDialogKey(k=>k+1); dialog.current.showModal();}
   async function onSubmit(e) {
     e.preventDefault();
     if (!supabase) { setMessage(auth.configurationError); return; }
@@ -43,29 +51,73 @@ function App() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: data.get('email').trim(), password: data.get('password') });
       if (error) { setMessage(error.message); return; }
-      form.reset(); setDemo(false);
+      form.reset();
     } catch { setMessage('Unable to connect to Supabase. Check your connection and try again.'); }
     finally { setPending(false); }
   }
   async function signOut() {
     setPending(true); setMessage('');
     try {
+      const { error: revokeError } = await supabase.rpc('revoke_my_capture_connections');
+      if (revokeError && !['PGRST202', '42883'].includes(revokeError.code)) { setMessage('Could not revoke extension connections. Check your connection and try signing out again.'); return; }
       const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) { setMessage(error.message); return; }
-      setDemo(false);
+      await extensionRequest('RELEASE_CONNECTION', {
+        projectUrl: import.meta.env.VITE_SUPABASE_URL?.trim(),
+        accessToken: auth.session?.access_token,
+      }).catch(() => {});
     } catch { setMessage('Unable to sign out. Please try again.'); }
     finally { setPending(false); }
   }
-  if (auth.loading) return <main className="auth-loading" role="status"><Brand/><p>Opening your workspace…</p></main>;
-  if (auth.recovering && auth.session) return <RecoveryForm onComplete={() => { window.history.replaceState({}, '', window.location.pathname); auth.setRecovering(false); }}/>;
+  if (entryView === 'loading') return <main className="auth-loading" role="status"><Brand/><p>Opening Lawcovery…</p></main>;
+  if (entryView === 'recovery') return <RecoveryForm onComplete={() => { window.history.replaceState({}, '', window.location.pathname); auth.setRecovering(false); }}/>;
+  if (entryView === 'public') return <PublicLanding/>;
+
+  if (entryView === 'workspace') return <><Suspense fallback={<main className="auth-loading" role="status"><Brand/><p>Opening your workspace…</p></main>}><CaseWorkspace key={auth.session.user.id} session={auth.session} onSignOut={signOut} pending={pending}/></Suspense>{message && <p className="signout-error" role="alert">{message}</p>}</>;
 
   return <>
-    {demo || auth.session ? <div className="workspace"><header><Brand/><button className="text-button" disabled={pending} onClick={auth.session ? signOut : ()=>{setDemo(false);setMessage('');}}>{auth.session ? (pending ? 'Signing out…' : 'Sign out') : 'Back to login'} <Icon name="arrow" size={16}/></button></header><main className="workspace-main"><span className="eyebrow">YOUR COMPANY WORKSPACE</span><h1>A clearer view starts here.</h1><p>{auth.session ? `Signed in as ${auth.session.user.email}. Your eCourts data source is not connected yet.` : 'This is a demo workspace. No live company data is shown.'}</p><p role="status" className="status-message">{message}</p><div className="metrics">{['Total cases','Pending cases','Disposed cases','Upcoming hearings'].map(t=><div key={t}><span>{t}</span><strong>—</strong><small>Awaiting data connection</small></div>)}</div><section className="empty-state"><span className="empty-icon"><Icon name="folder" size={32}/></span><h2>Your case portfolio, in one place.</h2><p>Once a court data source is connected, your company’s cases and status updates will appear here.</p><span className="connection-status">eCourts integration · Coming next</span></section></main><footer>Verity · Legal collections, in focus.</footer></div> :
-    <main className="login-layout">
-      <section className="story-panel"><Brand/><div className="story-content"><span className="eyebrow"><span/> LEGAL COLLECTIONS, IN FOCUS</span><h1>Every case.<br/>A clearer <em>picture.</em></h1><p>One place to understand your company’s cases,<br className="desktop-break"/> follow their progress, and see what’s next.</p><Illustration/><div className="feature-strip"><span><Icon name="folder" size={17}/> Case visibility</span><span><Icon name="shield" size={17}/> Company workspace</span><span><Icon name="arrow" size={17}/> Clear next steps</span></div></div><div className="story-footer"><span>Built for teams. Designed for clarity.</span><span>01 / THE BIGGER PICTURE</span></div></section>
-      <section className="form-panel"><div className="top-note">New to Verity? <button className="text-button" onClick={()=>openDialog('access')}>Request access <span>↗</span></button></div><div className="form-content"><div className="welcome-icon"><Icon name="lock" size={24}/></div><span className="eyebrow form-eyebrow">YOUR WORKSPACE AWAITS</span><h2>Welcome back.</h2><p className="form-intro">Sign in to see the bigger picture.</p><form onSubmit={onSubmit}><label htmlFor="email">Work email</label><div className="input-wrap"><Icon name="mail"/><input id="email" name="email" type="email" placeholder="you@company.com" autoComplete="username" spellCheck="false" required disabled={pending}/></div><div className="password-label"><label htmlFor="password">Password</label><button className="text-button" type="button" onClick={()=>openDialog('reset')}>Forgot password?</button></div><div className="input-wrap"><Icon name="lock"/><input id="password" name="password" type={showPassword?'text':'password'} placeholder="Enter your password" autoComplete="current-password" required disabled={pending}/><button className="eye-button" type="button" aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(!showPassword)}><Icon name="eye" size={19}/></button></div><button className="primary-button" type="submit" disabled={pending}>{pending ? 'Signing in…' : 'Sign in to your workspace'} <Icon name="arrow" size={19}/></button><p className="status-message" role="status">{message || auth.error}</p></form><div className="divider"><span/> <span>TAKE A LOOK AROUND</span> <span/></div><button className="demo-button" onClick={()=>setDemo(true)}>Explore the demo <Icon name="arrow" size={18}/></button><p className="demo-note">No account needed. No live company data.</p><div className="prototype-note"><span className="green-dot"/> {auth.configurationError ? 'Supabase setup required' : 'Email & password sign-in'} <span>·</span> Verity</div></div><footer><span>© {new Date().getFullYear()} Verity</span><button className="text-button" onClick={()=>openDialog('help')}>Need help?</button></footer></section>
-    </main>}
-    <dialog ref={dialog} onClick={e=>{if(e.target===e.currentTarget)dialog.current.close();}}><button className="dialog-close" autoFocus aria-label="Close dialog" onClick={()=>dialog.current.close()}><Icon name="close"/></button><span className="welcome-icon"><Icon name={dialogType==='reset'?'lock':'shield'} size={24}/></span><h2>{dialogType==='reset'?'Reset your password':dialogType==='access'?'Join your company workspace':'Here to help'}</h2>{dialogType==='reset' ? <ResetRequest key={dialogType}/> : <><p>{dialogType==='access'?'Ask your organisation administrator to create your account in Supabase Authentication. Public account registration is not available in this portal.':'Use the email and password provided by your administrator. If sign-in fails, confirm your email or request a password reset. Court data integration is coming next.'}</p><button className="primary-button" onClick={()=>dialog.current.close()}>Got it <Icon name="arrow" size={18}/></button></>}</dialog>
+    <div className="lg-page">
+      <header className="lg-header">
+        <a className="lg-brand" href="?view=home" aria-label="Lawcovery home"><LawcoveryLogo /></a>
+        <nav className="lg-header-links" aria-label="Sign-in help">
+          <a className="lg-back" href="?view=home">← Back to home</a>
+          <button className="lg-link" type="button" onClick={()=>openDialog('access')}>Request access</button>
+        </nav>
+      </header>
+      <main className="lg-grid">
+        <section className="lg-story" aria-labelledby="lg-story-title">
+          <p className="lg-eyebrow"><span className="lg-pulse" />Client workspace</p>
+          <h1 id="lg-story-title">Every case.<br /><em>A clearer picture.</em></h1>
+          <p className="lg-lede">One place to follow your company’s cases, hearings and recovery progress, with a full history of every update.</p>
+          <div className="lg-visual"><CaseStack3D idle /></div>
+        </section>
+        <section className="lg-card" aria-labelledby="lg-form-title">
+          <span className="lg-card-icon"><Icon name="lock" size={22} /></span>
+          <p className="lg-eyebrow">Your workspace awaits</p>
+          <h2 id="lg-form-title">Welcome back.</h2>
+          <p className="lg-intro">Sign in with the work email your administrator set up.</p>
+          <form onSubmit={onSubmit} className="lg-form">
+            <label htmlFor="email">Work email</label>
+            <div className="input-wrap"><Icon name="mail" /><input id="email" name="email" type="email" placeholder="you@company.com" autoComplete="username" spellCheck="false" required disabled={pending} /></div>
+            <div className="password-label"><label htmlFor="password">Password</label><button className="lg-link" type="button" onClick={()=>openDialog('reset')}>Forgot password?</button></div>
+            <div className="input-wrap"><Icon name="lock" /><input id="password" name="password" type={showPassword?'text':'password'} placeholder="Enter your password" autoComplete="current-password" required disabled={pending} /><button className="eye-button" type="button" aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(!showPassword)}><Icon name="eye" size={19} /></button></div>
+            <button className="primary-button" type="submit" disabled={pending}>{pending ? 'Signing in…' : 'Sign in to your workspace'} <Icon name="arrow" size={19} /></button>
+            <p className="status-message" role="status">{message || auth.error}</p>
+          </form>
+          <footer className="lg-card-foot">
+            <span className="prototype-note"><span className="green-dot" /> {auth.configurationError ? 'Supabase setup required' : 'Secure email & password sign-in'}</span>
+            <span className="lg-access-note">New to Lawcovery? <button className="lg-link" type="button" onClick={()=>openDialog('access')}>Request access</button></span>
+          </footer>
+        </section>
+      </main>
+      <footer className="lg-footer">© {new Date().getFullYear()} Lawcovery · Legal recovery for overdue portfolios</footer>
+    </div>
+    <dialog className={`entry-dialog ${dialogType==='access'?'is-wide':''}`} ref={dialog} onClick={e=>{if(e.target===e.currentTarget)dialog.current.close();}}>
+      <button className="dialog-close" autoFocus aria-label="Close dialog" onClick={()=>dialog.current.close()}><Icon name="close"/></button>
+      <span className="welcome-icon"><Icon name={dialogType==='reset'?'lock':'shield'} size={24}/></span>
+      <h2>{dialogType==='reset'?'Reset your password':'Request workspace access'}</h2>
+      {dialogType==='reset' ? <ResetRequest key={dialogKey}/> : <AccessRequestForm key={dialogKey} onDone={()=>dialog.current.close()}/>}
+    </dialog>
   </>;
 }
 createRoot(document.getElementById('root')).render(<App/>);

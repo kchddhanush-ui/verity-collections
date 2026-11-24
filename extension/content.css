@@ -1,0 +1,14 @@
+#verity-sync-notice {
+  position: fixed;
+  inset: auto 18px 18px auto;
+  z-index: 2147483647;
+  max-width: 360px;
+  padding: 12px 18px;
+  border: 1px solid #d4b779;
+  border-radius: 10px;
+  background: #142d29;
+  color: #fff;
+  font: 14px/1.5 system-ui;
+  box-shadow: 0 6px 25px #0003;
+  pointer-events: none;
+}

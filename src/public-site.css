@@ -1,0 +1,305 @@
+/* Lawcovery public site: light, calm, and 3D on scroll.
+   The palette and type match the client workspace (DM Sans + Manrope, blue
+   accent on a pale blue canvas). Motion is driven by the --p variable set in
+   PublicLanding.jsx; everything is static when reduced motion is requested. */
+.public-site {
+  --ink: #0f2447;
+  --muted: #415a77;
+  --subtle: #6d829e;
+  --accent: #1d4ed8;
+  --accent-strong: #163eaf;
+  --accent-soft: #dbeafe;
+  --canvas: #f3f8ff;
+  --canvas-2: #eaf3ff;
+  --surface: #ffffff;
+  --line: #d6e4f5;
+  --green: #16805a;
+  --green-soft: #e5f6ee;
+  --amber: #a95c0d;
+  --amber-soft: #fff3df;
+  --shadow: 0 24px 60px rgba(29, 78, 216, 0.14);
+  --radius: 22px;
+  min-block-size: 100vh;
+  color: var(--ink);
+  background: var(--canvas);
+  font-family: "DM Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+.public-site *, .public-site *::before, .public-site *::after { box-sizing: border-box; }
+.public-site :is(h1, h2, h3) { font-family: "Manrope", "DM Sans", sans-serif; color: var(--ink); margin: 0; }
+.public-site p { margin: 0; }
+.public-site a { color: inherit; }
+.public-site :is(a, button, summary):focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
+.lp-shell { inline-size: min(1180px, 100% - 48px); margin-inline: auto; }
+
+.lp-skip { position: absolute; inset-inline-start: 16px; inset-block-start: -60px; z-index: 100; padding: 10px 14px; border-radius: 10px; background: var(--ink); color: #fff !important; text-decoration: none; }
+.lp-skip:focus { inset-block-start: 12px; }
+
+/* Header */
+.lp-header { position: sticky; inset-block-start: 0; z-index: 50; padding-block: 14px; background: rgba(243, 248, 255, 0.78); backdrop-filter: blur(16px) saturate(140%); border-block-end: 1px solid rgba(214, 228, 245, 0.7); }
+.lp-header-inner { display: flex; align-items: center; gap: 28px; }
+.lp-brand { display: inline-flex; align-items: center; text-decoration: none; }
+.lp-brand .lawcovery-logo { display: block; block-size: 76px; inline-size: auto; }
+.lp-nav { display: flex; gap: 6px; margin-inline: auto; }
+.lp-nav a { padding: 8px 14px; border-radius: 999px; color: var(--muted); font-size: 14px; font-weight: 600; text-decoration: none; transition: background 0.2s, color 0.2s; }
+.lp-nav a:hover { background: var(--surface); color: var(--ink); }
+.lp-login { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: #fff !important; font-size: 14px; font-weight: 700; text-decoration: none; transition: transform 0.2s, background 0.2s; }
+.lp-login:hover { background: var(--accent-strong); transform: translateY(-1px); }
+
+/* Shared type and buttons */
+.lp-eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.lp-pulse { inline-size: 8px; block-size: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 rgba(22, 128, 90, 0.5); animation: lp-pulse 2.4s infinite; }
+@keyframes lp-pulse { 70% { box-shadow: 0 0 0 10px rgba(22, 128, 90, 0); } 100% { box-shadow: 0 0 0 0 rgba(22, 128, 90, 0); } }
+.lp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; }
+.lp-button { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 14px; background: var(--accent); color: #fff !important; font-weight: 700; font-size: 15px; text-decoration: none; box-shadow: 0 12px 26px rgba(29, 78, 216, 0.28); transition: transform 0.2s, box-shadow 0.2s, background 0.2s; }
+.lp-button:hover { transform: translateY(-2px); background: var(--accent-strong); box-shadow: 0 16px 32px rgba(29, 78, 216, 0.32); }
+.lp-button.is-light { background: #fff; color: var(--accent-strong) !important; box-shadow: 0 12px 26px rgba(4, 18, 52, 0.25); }
+.lp-button.is-light:hover { background: var(--accent-soft); }
+.lp-text-link { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-strong) !important; font-weight: 700; font-size: 15px; text-decoration: none; }
+.lp-text-link:hover { text-decoration: underline; }
+.lp-section { padding-block: clamp(72px, 10vw, 120px); }
+.lp-section-heading { display: grid; gap: 12px; margin-block-end: 40px; max-inline-size: 640px; }
+.lp-section-heading h2 { font-size: clamp(32px, 4vw, 46px); font-weight: 750; letter-spacing: -0.035em; line-height: 1.08; }
+.lp-section-heading p:not(.lp-eyebrow) { color: var(--muted); font-size: 17px; line-height: 1.6; }
+.lp-centred { margin-inline: auto; text-align: center; justify-items: center; }
+
+/* Hero: a tall track with a pinned stage; --p fans the 3D case stack out. */
+.lp-hero { position: relative; block-size: 190vh; background: radial-gradient(60% 50% at 75% 35%, #dbeafe 0%, transparent 70%), radial-gradient(40% 40% at 10% 80%, #e5f6ee 0%, transparent 70%); }
+.lp-hero-sticky { position: sticky; inset-block-start: 0; display: grid; align-items: center; block-size: 100vh; overflow: hidden; }
+.lp-hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); align-items: center; gap: 40px; padding-block: 80px 40px; }
+.lp-hero-copy { display: grid; gap: 22px; justify-items: start; transform: translateY(calc(var(--p, 0) * -60px)); opacity: calc(1 - var(--p, 0) * 0.9); }
+.lp-hero h1 { font-size: clamp(42px, 5vw, 68px); font-weight: 800; letter-spacing: -0.045em; line-height: 1.02; }
+.lp-hero h1 em { font-style: normal; background: linear-gradient(90deg, var(--accent) 0%, #0f8ca5 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.lp-lede { max-inline-size: 520px; color: var(--muted); font-size: 19px; line-height: 1.6; }
+.lp-affiliation { color: var(--subtle); font-size: 14px; }
+.lp-affiliation strong { color: var(--ink); }
+.lp-hero-visual { display: grid; place-items: center; min-block-size: 460px; }
+.lp-scroll-cue { position: absolute; inset-block-end: 26px; inset-inline-start: 50%; translate: -50% 0; display: grid; justify-items: center; gap: 8px; color: var(--subtle); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: calc(1 - var(--p, 0) * 4); }
+.lp-scroll-cue span { inline-size: 22px; block-size: 34px; border: 2px solid var(--subtle); border-radius: 12px; position: relative; }
+.lp-scroll-cue span::after { content: ""; position: absolute; inset-inline-start: 50%; inset-block-start: 6px; inline-size: 4px; block-size: 7px; translate: -50% 0; border-radius: 2px; background: var(--subtle); animation: lp-wheel 1.6s infinite; }
+@keyframes lp-wheel { 0% { opacity: 0; transform: translateY(0); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(10px); } }
+
+/* 3D case stack (shared with the login page) */
+.cs3d { position: relative; inline-size: min(440px, 100%); aspect-ratio: 1 / 0.95; perspective: 1500px; }
+.cs3d-stage {
+  position: absolute; inset: 0; display: grid; place-items: center; transform-style: preserve-3d;
+  transform: rotateX(calc(56deg - var(--p, 0) * 36deg)) rotateZ(calc(-36deg + var(--p, 0) * 28deg)) translateY(calc(var(--p, 0) * -10px));
+
+}
+.cs3d-card {
+  position: absolute; inline-size: 300px; padding: 20px; display: grid; gap: 10px;
+  border: 1px solid rgba(214, 228, 245, 0.9); border-radius: 18px; background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 18px 40px rgba(15, 36, 71, 0.12);
+  transform: translate3d(calc(var(--i) * (8px + var(--p, 0) * 40px)), calc(var(--i) * (-6px + var(--p, 0) * -30px)), calc(var(--i) * (38px + var(--p, 0) * 80px)));
+
+  backface-visibility: hidden;
+}
+.cs3d-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cs3d-chip { padding: 4px 10px; border-radius: 999px; background: var(--accent-soft, #dbeafe); color: var(--accent-strong, #163eaf); font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.cs3d-chip.is-amber { background: #fff3df; color: #a95c0d; }
+.cs3d-chip.is-green { background: #e5f6ee; color: #16805a; }
+.cs3d-muted { color: #6d829e; font-size: 12px; font-weight: 700; }
+.cs3d-title { font-family: "Manrope", sans-serif; font-size: 20px; color: #0f2447; }
+.cs3d-line { display: block; block-size: 7px; inline-size: var(--w); border-radius: 99px; background: #e4eefb; }
+.cs3d-foot { padding-block-start: 10px; border-block-start: 1px dashed #d6e4f5; color: #415a77; font-size: 12px; font-weight: 700; }
+.cs3d-dot { inline-size: 9px; block-size: 9px; border-radius: 50%; background: #1d4ed8; }
+.cs3d-date { display: flex; align-items: center; gap: 14px; color: #415a77; font-size: 13px; font-weight: 700; line-height: 1.3; }
+.cs3d-date b { font-family: "Manrope", sans-serif; font-size: 44px; line-height: 1; color: #0f2447; }
+.cs3d-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.cs3d-steps i { block-size: 6px; border-radius: 99px; background: #e4eefb; }
+.cs3d-steps i.is-done { background: #1d4ed8; }
+.cs3d-steps i.is-now { background: #f0b45c; }
+.cs3d-check { display: grid; place-items: center; inline-size: 26px; block-size: 26px; border-radius: 50%; background: #16805a; color: #fff; font-size: 14px; font-weight: 800; }
+.cs3d-figure { font-family: "Manrope", sans-serif; font-size: 44px; line-height: 1; color: #16805a; letter-spacing: -0.03em; }
+.cs3d-meter { display: block; block-size: 10px; border-radius: 99px; background: #dceafd; overflow: hidden; }
+.cs3d-meter i { display: block; block-size: 100%; inline-size: calc(40% + var(--p, 0) * 28%); border-radius: inherit; background: linear-gradient(90deg, #16805a, #34a873); }
+.cs3d-shadow { position: absolute; inset-inline: 18%; inset-block-end: 4%; block-size: 26px; border-radius: 50%; background: radial-gradient(closest-side, rgba(15, 36, 71, 0.22), transparent); filter: blur(6px); transform: scaleX(calc(1 + var(--p, 0) * 0.3)); }
+.cs3d.is-idle .cs3d-stage { transform: rotateX(42deg) rotateZ(-24deg); animation: cs3d-float 7s ease-in-out infinite; }
+.cs3d.is-idle .cs3d-card { transform: translate3d(calc(var(--i) * 26px), calc(var(--i) * -20px), calc(var(--i) * 70px)); }
+.cs3d.is-idle .cs3d-meter i { inline-size: 68%; }
+@keyframes cs3d-float { 0%, 100% { transform: rotateX(42deg) rotateZ(-24deg) translateZ(0); } 50% { transform: rotateX(38deg) rotateZ(-18deg) translateZ(18px); } }
+
+/* Services: cards tilt up out of the page as they enter. */
+.lp-service-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; perspective: 1200px; }
+.lp-service {
+  display: grid; gap: 14px; align-content: start; padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: 0 10px 30px rgba(15, 36, 71, 0.06);
+  transform-origin: 50% 100%;
+  transform: rotateX(calc((1 - var(--p, 1)) * 38deg)) translateY(calc((1 - var(--p, 1)) * 60px));
+  opacity: calc(0.2 + var(--p, 1) * 0.8);
+  transition: box-shadow 0.25s;
+}
+.lp-service:hover { box-shadow: var(--shadow); }
+.lp-service-icon { display: grid; place-items: center; inline-size: 48px; block-size: 48px; border-radius: 14px; background: var(--accent-soft); color: var(--accent-strong); }
+.lp-service h3 { font-size: 21px; font-weight: 750; letter-spacing: -0.02em; }
+.lp-service p { color: var(--muted); font-size: 16px; line-height: 1.6; }
+
+/* How it works: pinned stage; the deck turns one card toward you per step. */
+.lp-process { position: relative; block-size: 320vh; background: linear-gradient(180deg, var(--canvas) 0%, var(--canvas-2) 50%, var(--canvas) 100%); }
+.lp-process-anchor { position: absolute; inset-inline-start: 0; inset-block-start: calc(var(--at) * (100% - 100vh)); inline-size: 1px; block-size: 1px; scroll-margin-block-start: 0; }
+.lp-process-sticky { position: sticky; inset-block-start: 0; display: grid; align-items: center; block-size: 100vh; overflow: hidden; }
+.lp-process-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: 56px; padding-block-start: 60px; }
+.lp-process-copy { display: grid; gap: 18px; }
+.lp-process-copy h2 { font-size: clamp(32px, 4vw, 46px); font-weight: 750; letter-spacing: -0.035em; line-height: 1.08; }
+.lp-process-steps { display: grid; gap: 10px; margin: 8px 0 0; padding: 0; list-style: none; }
+.lp-process-steps li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 14px 16px; border-radius: 16px; opacity: 0.45; transition: opacity 0.3s, background 0.3s, transform 0.3s; }
+.lp-process-steps li[data-active] { opacity: 1; background: var(--surface); box-shadow: 0 10px 28px rgba(15, 36, 71, 0.08); transform: translateX(6px); }
+.lp-step-number { display: grid; place-items: center; inline-size: 40px; block-size: 40px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); font-family: "Manrope", sans-serif; font-weight: 800; }
+.lp-process-steps li[data-active] .lp-step-number { background: var(--accent); color: #fff; }
+.lp-process-steps strong { color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+.lp-process-steps h3 { margin-block: 4px; font-size: 19px; font-weight: 750; }
+.lp-process-steps p { color: var(--muted); font-size: 15px; line-height: 1.55; display: none; }
+.lp-process-steps li[data-active] p { display: block; }
+.lp-process-rail { block-size: 4px; border-radius: 99px; background: var(--line); overflow: hidden; }
+.lp-process-rail i { display: block; block-size: 100%; inline-size: calc(var(--p, 0) * 100%); background: linear-gradient(90deg, var(--accent), #0f8ca5); }
+/* Flat stacking context: each card carries its own perspective, so z-index
+   (set from the scroll position) decides overlap instead of 3D depth sorting. */
+.lp-deck { position: relative; block-size: 420px; }
+.lp-deck-card {
+  position: absolute; inset: 0; margin: auto; inline-size: min(380px, 100%); block-size: 340px; padding: 28px; display: grid; align-content: start; gap: 16px;
+  border: 1px solid var(--line); border-radius: 24px; background: var(--surface); box-shadow: var(--shadow);
+  /* Upcoming cards wait behind (--next), the finished card flips up and away (--past). */
+  transform-origin: 50% 0%;
+  transform:
+    perspective(1300px)
+    translateY(calc(var(--next) * 26px - var(--past) * 140px))
+    translateZ(calc(var(--next) * -90px + var(--past) * 60px))
+    rotateX(calc(var(--past) * 48deg))
+    scale(calc(1 - var(--next) * 0.06));
+  /* Stay solid until clearly flipping away, then fade fast: no see-through overlap. */
+  opacity: clamp(0, calc(1 - (var(--past) - 0.12) * 2.6), 1);
+
+}
+.lp-deck-card[data-active] { z-index: 20; }
+/* Waiting cards show only their shell, so their text never shows behind the active card. */
+.lp-deck-card > * { opacity: clamp(0, calc(1 - var(--next) * 2.6), 1); }
+.lp-deck-card { box-shadow: 0 calc(10px + var(--next) * -6px) 40px rgba(15, 36, 71, calc(0.14 - var(--next) * 0.05)); }
+.lp-deck-head { display: flex; align-items: center; justify-content: space-between; color: var(--subtle); font-size: 13px; font-weight: 700; }
+.lp-deck-card > strong { font-family: "Manrope", sans-serif; font-size: 28px; letter-spacing: -0.02em; color: var(--ink); }
+.lp-deck-card ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.lp-deck-card li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--canvas); color: var(--ink); font-weight: 650; font-size: 15px; }
+.lp-deck-card li svg { color: var(--green); flex: none; }
+.lp-deck-bar { display: block; margin-block-start: auto; block-size: 8px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; }
+.lp-deck-bar i { display: block; block-size: 100%; border-radius: inherit; background: var(--accent); }
+
+/* Partners */
+.lp-partner-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 48px; align-items: center; }
+.lp-partner-options { display: grid; gap: 12px; }
+.lp-partner-card { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 16px; inline-size: 100%; padding: 16px 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); text-align: start; font: inherit; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; }
+.lp-partner-card:hover { border-color: #9fc5f6; transform: translateX(4px); }
+.lp-partner-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.14), 0 14px 30px rgba(15, 36, 71, 0.08); }
+.lp-partner-card > svg { color: var(--subtle); transition: transform 0.2s, color 0.2s; }
+.lp-partner-card[aria-pressed="true"] > svg { color: var(--accent); transform: translateX(3px); }
+.lp-partner-icon { display: grid; place-items: center; inline-size: 44px; block-size: 44px; border-radius: 12px; background: var(--accent-soft); color: var(--accent-strong); }
+.lp-partner-card-copy { display: grid; gap: 2px; }
+.lp-partner-card-copy strong { font-size: 17px; }
+.lp-partner-card-copy small { color: var(--muted); font-size: 14px; }
+.lp-partner-stage { perspective: 1200px; }
+.lp-partner-copy {
+  display: grid; gap: 16px; padding: 36px; border-radius: 28px; color: #fff;
+  background: radial-gradient(120% 120% at 0% 0%, #2563eb 0%, #163eaf 45%, #0f2447 100%);
+  box-shadow: 0 30px 70px rgba(22, 62, 175, 0.35);
+  transform: rotateY(calc((1 - var(--p, 1)) * -24deg)) rotateX(calc((1 - var(--p, 1)) * 8deg));
+
+  animation: lp-swap 0.45s ease;
+}
+@keyframes lp-swap { from { opacity: 0; transform: rotateY(-18deg) translateX(20px); } }
+.lp-partner-copy h3 { color: #fff; font-size: clamp(24px, 2.6vw, 32px); font-weight: 750; letter-spacing: -0.025em; line-height: 1.15; }
+.lp-partner-copy p { color: #d6e4ff; font-size: 17px; line-height: 1.65; }
+.lp-partner-badge { display: inline-flex; align-items: center; gap: 8px; justify-self: start; padding: 6px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.14); color: #fff; font-size: 13px; font-weight: 700; }
+
+/* Results */
+.lp-results-layout { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 48px; align-items: center; }
+.lp-results-copy { display: grid; gap: 14px; }
+.lp-results-copy h2 { font-size: clamp(32px, 4vw, 46px); font-weight: 750; letter-spacing: -0.035em; }
+.lp-results-copy p:not(.lp-eyebrow) { color: var(--muted); font-size: 17px; line-height: 1.6; }
+.lp-result-card { display: grid; grid-template-columns: 160px minmax(0, 1fr); align-items: center; gap: 28px; padding: 32px; border: 1px solid var(--line); border-radius: 28px; background: var(--surface); box-shadow: var(--shadow); }
+.lp-ring svg { display: block; inline-size: 160px; block-size: 160px; transform: rotate(-90deg); }
+.lp-ring circle { fill: none; stroke: var(--accent-soft); stroke-width: 12; }
+.lp-ring .lp-ring-fill { stroke: var(--green); stroke-linecap: round; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--p, 1) * 52); }
+.lp-result-card strong { display: block; font-family: "Manrope", sans-serif; font-size: 64px; line-height: 1; letter-spacing: -0.04em; color: var(--green); }
+.lp-result-card strong span { font-size: 0.55em; }
+.lp-result-card h3 { margin-block: 10px 8px; font-size: 20px; font-weight: 750; }
+.lp-result-card p { color: var(--muted); font-size: 14px; line-height: 1.6; }
+
+/* FAQ */
+.lp-faq-layout { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 48px; align-items: start; }
+.lp-questions { display: grid; gap: 12px; }
+.lp-questions details { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); transition: box-shadow 0.2s; }
+.lp-questions details[open] { box-shadow: 0 12px 30px rgba(15, 36, 71, 0.07); }
+.lp-questions summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 22px; font-size: 17px; font-weight: 700; cursor: pointer; list-style: none; }
+.lp-questions summary::-webkit-details-marker { display: none; }
+.lp-questions summary::after { content: "+"; display: grid; place-items: center; flex: none; inline-size: 30px; block-size: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-strong); font-size: 20px; font-weight: 600; transition: transform 0.25s; }
+.lp-questions details[open] summary::after { transform: rotate(45deg); }
+.lp-questions details p { padding: 0 22px 22px; color: var(--muted); font-size: 16px; line-height: 1.65; }
+
+/* Closing */
+.lp-closing { padding-block: 0 clamp(72px, 10vw, 120px); }
+.lp-closing-card {
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); align-items: center; gap: 24px; overflow: hidden;
+  padding: clamp(32px, 5vw, 56px); border-radius: 32px; color: #fff;
+  background: radial-gradient(90% 120% at 100% 0%, #2563eb 0%, #163eaf 40%, #0f2447 100%);
+  box-shadow: 0 30px 80px rgba(22, 62, 175, 0.3);
+  transform: perspective(1400px) rotateX(calc((1 - var(--p, 1)) * 14deg)) scale(calc(0.94 + var(--p, 1) * 0.06));
+
+}
+.lp-closing-copy { display: grid; gap: 18px; }
+.lp-closing-copy h2 { color: #fff; font-size: clamp(30px, 3.6vw, 44px); font-weight: 750; letter-spacing: -0.03em; }
+.lp-closing-copy p { color: #d6e4ff; font-size: 17px; line-height: 1.6; max-inline-size: 520px; }
+.lp-closing-visual { display: grid; place-items: center; min-block-size: 280px; }
+.lp-closing-visual .cs3d { inline-size: min(320px, 100%); }
+.lp-closing-visual .cs3d-card { inline-size: 220px; padding: 14px; gap: 7px; }
+.lp-closing-visual .cs3d-title, .lp-closing-visual .cs3d-date b, .lp-closing-visual .cs3d-figure { font-size: 26px; }
+
+/* Footer */
+.lp-footer { padding-block: 28px; border-block-start: 1px solid var(--line); background: var(--surface); }
+.lp-footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; color: var(--subtle); font-size: 14px; }
+.lp-footer-inner > a:last-child { display: inline-flex; align-items: center; gap: 8px; color: var(--accent-strong); font-weight: 700; text-decoration: none; }
+.lp-footer .lawcovery-logo { block-size: 56px; }
+
+/* Responsive */
+@media (max-width: 980px) {
+  .lp-nav { display: none; }
+  .lp-header-inner { justify-content: space-between; }
+  .lp-hero { block-size: auto; }
+  .lp-hero-sticky { position: relative; block-size: auto; overflow: visible; }
+  .lp-hero-grid, .lp-process-grid, .lp-partner-layout, .lp-results-layout, .lp-faq-layout, .lp-closing-card { grid-template-columns: 1fr; }
+  .lp-hero-copy { transform: none; opacity: 1; }
+  .lp-hero-visual { min-block-size: 360px; }
+  .lp-hero .cs3d { --p: 0.55; }
+  .lp-scroll-cue { display: none; }
+  .lp-service-grid { grid-template-columns: 1fr; }
+  .lp-process { block-size: 300vh; }
+  .lp-process-grid { gap: 20px; padding-block-start: 70px; }
+  .lp-process-steps li:not([data-active]) { display: none; }
+  .lp-deck { block-size: 300px; }
+  .lp-deck-card { block-size: 270px; padding: 22px; }
+  .lp-closing-visual { display: none; }
+}
+@media (max-width: 560px) {
+  .lp-shell { inline-size: calc(100% - 32px); }
+  .lp-login { padding: 9px 14px; font-size: 13px; }
+  .lp-brand .lawcovery-logo { block-size: 54px; }
+  .lp-hero-grid { padding-block: 40px 20px; }
+  .lp-lede { font-size: 17px; }
+  .cs3d-card { inline-size: 220px; padding: 14px; gap: 7px; }
+  .cs3d-title, .cs3d-date b, .cs3d-figure { font-size: 28px; }
+  .lp-hero-visual { min-block-size: 360px; margin-block-start: 70px; }
+  .lp-hero .cs3d { inline-size: 300px; --p: 0.2; }
+  .lp-result-card { grid-template-columns: 1fr; justify-items: start; }
+  .lp-ring svg { inline-size: 110px; block-size: 110px; }
+  .lp-footer-inner { justify-content: center; text-align: center; }
+}
+
+/* Reduced motion: no pinned tracks, no animation; everything readable at once. */
+@media (prefers-reduced-motion: reduce) {
+  .public-site *, .public-site *::before, .public-site *::after { animation: none !important; transition: none !important; }
+  .lp-hero, .lp-process { block-size: auto; }
+  .lp-hero-sticky, .lp-process-sticky { position: relative; block-size: auto; overflow: visible; padding-block: 60px; }
+  .lp-hero-copy { transform: none; opacity: 1; }
+  .lp-scroll-cue { display: none; }
+  .lp-process-steps li { opacity: 1; }
+  .lp-process-steps li p, .lp-process-steps li:not([data-active]) { display: grid; }
+  .lp-deck { display: none; }
+  .lp-process-rail { display: none; }
+}

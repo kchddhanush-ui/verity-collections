@@ -1,0 +1,76 @@
+body {
+  width: 340px;
+  margin: 0;
+  padding: 22px;
+  background: #f7f8f5;
+  color: #173c34;
+  font: 14px/1.5 system-ui;
+}
+h1 {
+  font-size: 32px;
+  margin: 0;
+}
+h1 .brand-dot {
+  color: #b68b40;
+}
+textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid #bbc9bf;
+  border-radius: 8px;
+}
+button {
+  border: 0;
+  border-radius: 7px;
+  background: #173c34;
+  color: white;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.6;
+}
+p {
+  color: #52675e;
+}
+#status {
+  overflow-wrap: anywhere;
+}
+label {
+  font-weight: 600;
+}
+fieldset {
+  min-inline-size: 0;
+  border: 1px solid #bbc9bf;
+  border-radius: 8px;
+  padding: 10px;
+  margin: 12px 0;
+}
+legend { font-weight: 600; }
+#fetch-modes button { display: block; inline-size: 100%; margin-block: 6px; }
+#fetch-modes button[aria-pressed="false"] { background: transparent; color: #173c34; outline: 1px solid #bbc9bf; }
+progress { inline-size: 100%; accent-color: #173c34; }
+button:focus-visible { outline: 3px solid #8c631b; outline-offset: 3px; }
+@media (forced-colors: active) {
+  #fetch-modes button[aria-pressed="true"] { border: 2px solid ButtonText; }
+}
+
+.brand-wordmark { white-space: nowrap; }
+h1 .brand-law {
+  display: inline-block;
+  padding: .03em .18em .08em;
+  margin-inline-end: .06em;
+  border: 1px solid #b49a64;
+  border-radius: .18em;
+  background: #0b241f;
+  color: #f7f6ef;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+@media (forced-colors: active) {
+  h1 .brand-law { color: CanvasText; background: Canvas; border-color: CanvasText; }
+}

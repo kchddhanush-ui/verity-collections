@@ -1,19 +1,26 @@
 {
-  "name": "verity-collections",
+  "name": "lawcovery",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "preview": "vite preview --host 127.0.0.1"
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "node --test tests/*.test.js",
+    "demo:export": "node scripts/export-demo-data.mjs",
+    "demo:build": "vite build --config vite.demo.config.js && node scripts/inline-demo.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
+    "lucide-react": "^1.73.0",
+    "motion": "^14.14.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
+    "linkedom": "^0.18.14",
     "vite": "^7.1.0"
   },
   "engines": {
